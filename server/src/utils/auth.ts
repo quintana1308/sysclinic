@@ -37,6 +37,7 @@ export const generateToken = (payload: TokenPayload): string => {
     throw new Error('JWT_SECRET no está configurado');
   }
 
+  // Convertir payload a object para compatibilidad con jwt.sign
   return jwt.sign(
     payload as object,
     secret,
