@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { TokenPayload } from '../types';
 
@@ -37,12 +37,12 @@ export const generateToken = (payload: TokenPayload): string => {
     throw new Error('JWT_SECRET no está configurado');
   }
 
-  // Crear objeto de opciones separadamente
-  const options = {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+  // Crear objeto de opciones con tipos explícitos
+  const options: SignOptions = {
+    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string
   };
 
-  // Usar jwt.sign con tipos explícitos
+  // Usar jwt.sign con tipos correctos
   return jwt.sign(payload, secret, options);
 };
 
