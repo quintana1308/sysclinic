@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService, Supply as ApiSupply, SupplyFormData, InventoryFilters, InventoryMovement } from '../services/inventoryService';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 // Iconos SVG mejorados
 const PlusIcon = ({ className }: { className?: string }) => (
@@ -346,46 +346,10 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Toast Notifications */}
-      <Toaster 
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          // Estilos por defecto
-          style: {
-            background: '#fff',
-            color: '#363636',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          },
-          // Estilos para éxito
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-            style: {
-              border: '1px solid #10b981',
-            },
-          },
-          // Estilos para error
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-            style: {
-              border: '1px solid #ef4444',
-            },
-          },
-        }}
-      />
-      
-      {/* Header Mejorado */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-pink-800">📦 Gestión de Inventario</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Inventario</h1>
           <p className="text-gray-600 mt-1">Administra insumos, stock y movimientos de inventario</p>
         </div>
         

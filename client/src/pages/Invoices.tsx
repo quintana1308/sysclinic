@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { invoiceService, Invoice as ApiInvoice, InvoiceFormData, InvoiceFilters } from '../services/invoiceService';
 import { paymentService, PaymentFormData } from '../services/paymentService';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 // Iconos SVG
 const DocumentIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c0 .621-.504 1.125-1.125-1.125V11.25a9 9 0 00-9-9z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-4.5B4.875 8.25 2.25 10.875 2.25 14.25V16.5a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 16.5v-2.25z" />
   </svg>
 );
 
@@ -401,46 +401,10 @@ const Invoices: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Toast Notifications */}
-      <Toaster 
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          // Estilos por defecto
-          style: {
-            background: '#fff',
-            color: '#363636',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          },
-          // Estilos para éxito
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-            style: {
-              border: '1px solid #10b981',
-            },
-          },
-          // Estilos para error
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-            style: {
-              border: '1px solid #ef4444',
-            },
-          },
-        }}
-      />
-      
-      {/* Header Mejorado */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-pink-800">🧾 Gestión de Facturas</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Facturas</h1>
           <p className="text-gray-600 mt-1">Administra facturas, pagos y estados de facturación</p>
         </div>
         
