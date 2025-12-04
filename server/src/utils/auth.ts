@@ -37,9 +37,13 @@ export const generateToken = (payload: TokenPayload): string => {
     throw new Error('JWT_SECRET no está configurado');
   }
 
-  return jwt.sign(payload, secret, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-  });
+  return jwt.sign(
+    payload as object,
+    secret,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    }
+  );
 };
 
 // Verificar token JWT
