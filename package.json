@@ -1,0 +1,28 @@
+{
+  "name": "sysclinic-app",
+  "version": "1.0.0",
+  "description": "SysClinic - Sistema integral de gestión para clínicas y centros médicos",
+  "main": "server/dist/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "cd server && npm run dev",
+    "client:dev": "cd client && npm start",
+    "build": "npm run client:build && npm run server:build",
+    "client:build": "cd client && npm run build",
+    "server:build": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": [
+    "clinica",
+    "citas",
+    "gestion",
+    "estetica",
+    "mysql"
+  ],
+  "author": "Sistema de Gestión Clínica",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
