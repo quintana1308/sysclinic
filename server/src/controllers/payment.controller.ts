@@ -106,7 +106,11 @@ export const createPayment = async (
       throw new AppError('Debe proporcionar appointmentId o invoiceId válido', 400);
     }
 
+    // Generar ID único para el pago
+    const paymentId = generateId();
+
     console.log('💰 Insertando pago con datos:', {
+      id: paymentId,
       clientId,
       appointmentId: appointmentId || null,
       invoiceId: invoiceId || null,
@@ -118,10 +122,11 @@ export const createPayment = async (
 
     const insertResult = await query(`
       INSERT INTO payments (
-        clientId, appointmentId, invoiceId, amount, method, status, description, transactionId, paidDate
+        id, clientId, appointmentId, invoiceId, amount, method, status, description, transactionId, paidDate
       )
-      VALUES (?, ?, ?, ?, ?, 'PAID', ?, ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?, 'PAID', ?, ?, NOW())
     `, [
+      paymentId,
       clientId,
       appointmentId || null,
       invoiceId || null,
@@ -292,7 +297,7 @@ export const getPaymentById = async (
         a.startTime as appointmentTime,
         GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames
       FROM payments p
-      INNER JOIN appointments a ON p.appointmentId = a.id
+      LEFT JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
@@ -334,7 +339,7 @@ export const getPaymentStats = async (
         SUM(CASE WHEN status = 'PAID' THEN amount ELSE 0 END) as totalRevenue,
         AVG(CASE WHEN status = 'PAID' THEN amount ELSE NULL END) as averagePayment
       FROM payments p
-      INNER JOIN appointments a ON p.appointmentId = a.id
+      LEFT JOIN appointments a ON p.appointmentId = a.id
       WHERE 1=1
     `);
 
