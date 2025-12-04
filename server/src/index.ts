@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import { testConnection } from './config/database';
+import { initializeDatabase } from './database/init';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 
@@ -103,6 +104,9 @@ async function startServer() {
     if (!connected) {
       throw new Error('No se pudo conectar a la base de datos');
     }
+
+    // Inicializar base de datos si es necesario
+    await initializeDatabase();
 
     // Iniciar servidor
     app.listen(PORT, () => {
