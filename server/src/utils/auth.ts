@@ -37,13 +37,12 @@ export const generateToken = (payload: TokenPayload): string => {
     throw new Error('JWT_SECRET no está configurado');
   }
 
-  // Crear objeto de opciones con tipos explícitos
-  const options: SignOptions = {
-    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string
-  };
-
-  // Usar jwt.sign con tipos correctos
-  return jwt.sign(payload, secret, options);
+  // Usar jwt.sign directamente sin opciones separadas
+  return jwt.sign(
+    payload,
+    secret,
+    { expiresIn: '7d' }
+  );
 };
 
 // Verificar token JWT
