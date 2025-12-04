@@ -124,7 +124,7 @@ export const createPayment = async (
       INSERT INTO payments (
         id, clientId, appointmentId, invoiceId, amount, method, status, description, transactionId, paidDate
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'PAID', ?, ?, NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `, [
       paymentId,
       clientId,
@@ -132,12 +132,14 @@ export const createPayment = async (
       invoiceId || null,
       amount,
       method,
+      'PAID',
       notes || null,
       transactionId || null
     ]);
 
     console.log('✅ Pago creado exitosamente para cliente:', clientId);
     console.log('💾 Datos del pago insertado:', {
+      id: paymentId,
       clientId,
       appointmentId: appointmentId || null,
       invoiceId: invoiceId || null,
@@ -147,18 +149,17 @@ export const createPayment = async (
       description: notes || null,
       transactionId: transactionId || null
     });
-    
-    // Verificar que el pago se guardó correctamente
-    const savedPayment = await query(`
-      SELECT * FROM payments WHERE clientId = ? AND amount = ? AND method = ? ORDER BY createdAt DESC LIMIT 1
-    `, [clientId, amount, method]);
-    
-    console.log('🔍 Pago guardado verificado:', savedPayment[0]);
 
     const response: ApiResponse = {
       success: true,
       message: 'Pago registrado exitosamente',
-      data: { clientId, amount, method }
+      data: { 
+        id: paymentId,
+        clientId, 
+        amount, 
+        method,
+        status: 'PAID'
+      }
     };
 
     res.status(201).json(response);
