@@ -223,7 +223,7 @@ export const getPayments = async (
     const totalResult = await queryOne<{ total: number }>(`
       SELECT COUNT(*) as total
       FROM payments p
-      LEFT JOIN appointments a ON p.appointmentId = a.id
+      INNER JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       ${whereClause}
@@ -243,7 +243,7 @@ export const getPayments = async (
         a.startTime as appointmentTime,
         GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames
       FROM payments p
-      LEFT JOIN appointments a ON p.appointmentId = a.id
+      INNER JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
@@ -292,7 +292,7 @@ export const getPaymentById = async (
         a.startTime as appointmentTime,
         GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames
       FROM payments p
-      LEFT JOIN appointments a ON p.appointmentId = a.id
+      INNER JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
@@ -334,7 +334,7 @@ export const getPaymentStats = async (
         SUM(CASE WHEN status = 'PAID' THEN amount ELSE 0 END) as totalRevenue,
         AVG(CASE WHEN status = 'PAID' THEN amount ELSE NULL END) as averagePayment
       FROM payments p
-      LEFT JOIN appointments a ON p.appointmentId = a.id
+      INNER JOIN appointments a ON p.appointmentId = a.id
       WHERE 1=1
     `);
 
