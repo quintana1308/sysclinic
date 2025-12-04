@@ -186,10 +186,10 @@ export const getPayments = async (
       if (!req.user?.companies?.current?.id) {
         throw new AppError('Usuario no tiene empresa asignada', 403);
       }
-      whereClause += ` AND a.companyId = ?`;
+      whereClause += ` AND c.companyId = ?`;
       params.push(req.user.companies.current.id);
     } else if (req.companyId) {
-      whereClause += ` AND a.companyId = ?`;
+      whereClause += ` AND c.companyId = ?`;
       params.push(req.companyId);
     }
 
@@ -223,7 +223,7 @@ export const getPayments = async (
     const totalResult = await queryOne<{ total: number }>(`
       SELECT COUNT(*) as total
       FROM payments p
-      INNER JOIN appointments a ON p.appointmentId = a.id
+      LEFT JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       ${whereClause}
@@ -243,7 +243,7 @@ export const getPayments = async (
         a.startTime as appointmentTime,
         GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames
       FROM payments p
-      INNER JOIN appointments a ON p.appointmentId = a.id
+      LEFT JOIN appointments a ON p.appointmentId = a.id
       INNER JOIN clients c ON p.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
