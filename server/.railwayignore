@@ -1,0 +1,6 @@
+node_modules
+.env
+*.log
+dist/*.map
+src/**/*.test.ts
+src/**/*.spec.ts
