@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { treatmentService, Treatment as ApiTreatment, TreatmentFormData as ApiTreatmentFormData } from '../services/treatmentService';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Iconos SVG
 const PlusIcon = ({ className }: { className?: string }) => (
@@ -30,6 +30,18 @@ const ClockIcon = ({ className }: { className?: string }) => (
 const XMarkIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+  </svg>
+);
+
+const SparklesIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
   </svg>
 );
 
@@ -621,87 +633,154 @@ const Treatments: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
+          // Estilos para éxito
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #10b981',
+            },
+          },
+          // Estilos para error
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #ef4444',
+            },
+          },
+        }}
+      />
+      
+      {/* Header Mejorado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Catálogo de Tratamientos</h1>
-          <p className="text-gray-600 mt-1">Gestiona todos los servicios de la clínica</p>
+          <h1 className="text-2xl font-bold text-pink-800">✨ Catálogo de Tratamientos</h1>
+          <p className="text-gray-600 mt-1">Gestiona todos los servicios y procedimientos de la clínica</p>
         </div>
-        <button
-          onClick={() => setShowNewTreatmentModal(true)}
-          className="btn-primary"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nuevo Tratamiento
-        </button>
+        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              setFilters({
+                category: 'Todas las categorías',
+                status: 'Todos',
+                minPrice: '',
+                maxPrice: '',
+                search: ''
+              });
+              setCurrentPage(1);
+              loadTreatments();
+            }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+          >
+            🔄 Limpiar Filtros
+          </button>
+          <button
+            onClick={() => setShowNewTreatmentModal(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            ✨ Nuevo Tratamiento
+          </button>
+        </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      {/* Filtros Mejorados */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          <span className="text-sm text-gray-500">
+            {getTotalFilteredCount()} tratamiento(s) encontrado(s)
+          </span>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Búsqueda */}
+          {/* Búsqueda con icono */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              placeholder="Nombre del tratamiento..."
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-            />
+            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Tratamiento</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Buscar por nombre..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+              />
+            </div>
           </div>
 
           {/* Categoría */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Categoría</label>
             <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             >
-              <option value="Todas las categorías">Todas las categorías</option>
-              <option value="Facial">Facial</option>
-              <option value="Corporal">Corporal</option>
-              <option value="Estético">Estético</option>
-              <option value="Depilación">Depilación</option>
+              <option value="Todas las categorías">📋 Todas las categorías</option>
+              <option value="Facial">🧴 Facial</option>
+              <option value="Corporal">💆 Corporal</option>
+              <option value="Estético">✨ Estético</option>
+              <option value="Depilación">🪒 Depilación</option>
             </select>
           </div>
 
           {/* Estado */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                 <select
-                   value={filters.status}
-                   onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                 >
-                   <option value="Todos">Todos</option>
-                   <option value="active">Activo</option>
-                   <option value="inactive">Inactivo</option>
-                 </select>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+            >
+              <option value="Todos">📊 Todos los estados</option>
+              <option value="active">✅ Activo</option>
+              <option value="inactive">❌ Inactivo</option>
+            </select>
           </div>
 
           {/* Precio Mínimo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio Mínimo</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Precio Mínimo</label>
             <input
               type="number"
               value={filters.minPrice}
               onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-              placeholder="$0"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              placeholder="💰 $0"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             />
           </div>
 
           {/* Precio Máximo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio Máximo</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Precio Máximo</label>
             <input
               type="number"
               value={filters.maxPrice}
               onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-              placeholder="$500"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              placeholder="💰 $500"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             />
           </div>
         </div>
@@ -881,10 +960,10 @@ const Treatments: React.FC = () => {
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       currentPage === index + 1
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-pink-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-pink-50 hover:border-pink-300'
                     }`}
                   >
                     {index + 1}
@@ -894,28 +973,29 @@ const Treatments: React.FC = () => {
             )}
           </div>
 
-          {/* Estadísticas */}
+          {/* Estadísticas Mejoradas */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Estadísticas del Catálogo</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {(() => {
                 const stats = getStatistics();
                 return (
                   <>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-900">{stats.totalTreatments}</div>
-                      <div className="text-sm text-gray-600 mt-1">Total Tratamientos</div>
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <div className="text-3xl font-bold text-pink-600">{stats.totalTreatments}</div>
+                      <div className="text-sm text-gray-600 mt-1">📋 Total Tratamientos</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
                       <div className="text-3xl font-bold text-green-600">{stats.activeTreatments}</div>
-                      <div className="text-sm text-gray-600 mt-1">Activos</div>
+                      <div className="text-sm text-gray-600 mt-1">✅ Activos</div>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center p-4 bg-pink-50 rounded-lg">
                       <div className="text-3xl font-bold text-pink-600">${formatPrice(stats.averagePrice)}</div>
-                      <div className="text-sm text-gray-600 mt-1">Precio Promedio</div>
+                      <div className="text-sm text-gray-600 mt-1">💰 Precio Promedio</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-blue-600">{Math.round(stats.averagePopularity || 0)}%</div>
-                      <div className="text-sm text-gray-600 mt-1">Popularidad Promedio</div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-3xl font-bold text-purple-600">{Math.round(stats.averagePopularity || 0)}%</div>
+                      <div className="text-sm text-gray-600 mt-1">⭐ Popularidad Promedio</div>
                     </div>
                   </>
                 );

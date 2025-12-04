@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { paymentService, Payment } from '../services/paymentService';
 import { invoiceService } from '../services/invoiceService';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Iconos SVG
 const DocumentIcon = ({ className }: { className?: string }) => (
@@ -44,6 +44,24 @@ const ArrowTopRightOnSquareIcon = ({ className }: { className?: string }) => (
 const XMarkIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+  </svg>
+);
+
+const CalendarDaysIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5" />
+  </svg>
+);
+
+const ChartBarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
   </svg>
 );
 
@@ -360,132 +378,193 @@ const Payments: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Historial de Pagos</h1>
-        <p className="text-gray-600 mt-1">Visualización y seguimiento de abonos realizados</p>
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
+          // Estilos para éxito
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #10b981',
+            },
+          },
+          // Estilos para error
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #ef4444',
+            },
+          },
+        }}
+      />
+      
+      {/* Header Mejorado */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-pink-800">💳 Historial de Pagos</h1>
+          <p className="text-gray-600 mt-1">Visualización y seguimiento de todos los abonos realizados</p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              setFilters({
+                search: '',
+                status: 'Todos',
+                method: 'Todos',
+                dateFrom: '',
+                dateTo: ''
+              });
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+          >
+            🔄 Limpiar Filtros
+          </button>
+        </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <DocumentIcon className="h-8 w-8 text-blue-600" />
+      {/* Estadísticas Mejoradas */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Resumen de Pagos</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center p-4 bg-pink-50 rounded-lg">
+            <div className="flex items-center justify-center mb-2">
+              <ChartBarIcon className="h-8 w-8 text-pink-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total de Abonos</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalPayments}</p>
-              <p className="text-xs text-gray-500">Registros de pagos</p>
-            </div>
+            <p className="text-2xl font-bold text-pink-600">{stats.totalPayments}</p>
+            <p className="text-sm text-gray-600 mt-1">📋 Total de Abonos</p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <CheckCircleIcon className="h-8 w-8 text-green-600" />
+          
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="flex items-center justify-center mb-2">
+              <BanknotesIcon className="h-8 w-8 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Abonos Procesados</p>
-              <p className="text-2xl font-bold text-green-600">${stats.totalAmount.toFixed(2)}</p>
-              <p className="text-xs text-gray-500">Dinero recibido</p>
-            </div>
+            <p className="text-2xl font-bold text-green-600">${stats.totalAmount.toFixed(2)}</p>
+            <p className="text-sm text-gray-600 mt-1">💰 Monto Total</p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
+          
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <div className="flex items-center justify-center mb-2">
               <CreditCardIcon className="h-8 w-8 text-purple-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Método Más Usado</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.mostUsedMethod}</p>
-              <p className="text-xs text-gray-500">Forma de pago preferida</p>
-            </div>
+            <p className="text-2xl font-bold text-purple-600">{stats.mostUsedMethod}</p>
+            <p className="text-sm text-gray-600 mt-1">💳 Método Preferido</p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <BanknotesIcon className="h-8 w-8 text-orange-600" />
+          
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-center mb-2">
+              <DocumentIcon className="h-8 w-8 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Facturas Vinculadas</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.linkedInvoices}</p>
-              <p className="text-xs text-gray-500">Con factura asociada</p>
-            </div>
+            <p className="text-2xl font-bold text-blue-600">{stats.linkedInvoices}</p>
+            <p className="text-sm text-gray-600 mt-1">🧾 Facturas Vinculadas</p>
           </div>
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      {/* Filtros Mejorados */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          <span className="text-sm text-gray-500">
+            {getTotalFilteredCount()} pago(s) encontrado(s)
+          </span>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Buscar */}
+          {/* Buscar con icono */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              placeholder="Cliente, transacción..."
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-            />
+            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Pago</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Buscar por cliente, transacción..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+              />
+            </div>
           </div>
 
           {/* Estado */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
             <select
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             >
-              <option value="Todos">Todos</option>
-              <option value="Pagado">Pagado</option>
+              <option value="Todos">📊 Todos los estados</option>
+              <option value="Pagado">✅ Pagado</option>
             </select>
           </div>
 
           {/* Método de Pago */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Método de Pago</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Método de Pago</label>
             <select
               value={filters.method}
               onChange={(e) => setFilters({ ...filters, method: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             >
-              <option value="Todos">Todos</option>
-              <option value="Efectivo">Efectivo</option>
-              <option value="Transferencia">Transferencia</option>
-              <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-              <option value="Tarjeta de Débito">Tarjeta de Débito</option>
-              <option value="Cheque">Cheque</option>
+              <option value="Todos">💳 Todos los métodos</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta de Crédito">💳 Tarjeta de Crédito</option>
+              <option value="Tarjeta de Débito">💳 Tarjeta de Débito</option>
+              <option value="Cheque">📄 Cheque</option>
             </select>
           </div>
 
           {/* Fecha Desde */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Desde</label>
-            <input
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-            />
+            <label className="block text-sm font-medium text-pink-700 mb-1">Fecha Desde</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+              />
+            </div>
           </div>
 
           {/* Fecha Hasta */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha Hasta</label>
-            <input
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-            />
+            <label className="block text-sm font-medium text-pink-700 mb-1">Fecha Hasta</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -531,15 +610,27 @@ const Payments: React.FC = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="text-red-600">
-                      <p className="mb-2">{error}</p>
-                      <button
-                        onClick={loadPayments}
-                        className="text-sm text-pink-600 hover:text-pink-700 underline"
-                      >
-                        Intentar de nuevo
-                      </button>
+                  <td colSpan={7} className="px-6 py-12">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800">Error al cargar pagos</h3>
+                          <div className="mt-2 text-sm text-red-700">{error}</div>
+                          <div className="mt-3">
+                            <button
+                              onClick={loadPayments}
+                              className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 transition-colors"
+                            >
+                              🔄 Intentar de nuevo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>

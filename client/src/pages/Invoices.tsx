@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoiceService, Invoice as ApiInvoice, InvoiceFormData, InvoiceFilters } from '../services/invoiceService';
 import { paymentService, PaymentFormData } from '../services/paymentService';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Iconos SVG
 const DocumentIcon = ({ className }: { className?: string }) => (
@@ -38,6 +38,24 @@ const PencilIcon = ({ className }: { className?: string }) => (
 const TrashIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+  </svg>
+);
+
+const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+  </svg>
+);
+
+const XMarkIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const ReceiptPercentIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
   </svg>
 );
 
@@ -383,105 +401,196 @@ const Invoices: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          },
+          // Estilos para éxito
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #10b981',
+            },
+          },
+          // Estilos para error
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+            style: {
+              border: '1px solid #ef4444',
+            },
+          },
+        }}
+      />
+      
+      {/* Header Mejorado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Facturas</h1>
-          <p className="text-gray-600 mt-1">Gestión de facturas y pagos</p>
+          <h1 className="text-2xl font-bold text-pink-800">🧾 Gestión de Facturas</h1>
+          <p className="text-gray-600 mt-1">Administra facturas, pagos y estados de facturación</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Nueva Factura
-        </button>
+        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              setFilters({
+                page: 1,
+                limit: 10,
+                search: '',
+                status: undefined,
+                clientId: undefined
+              });
+              loadInvoices();
+            }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+          >
+            🔄 Limpiar Filtros
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            🧾 Nueva Factura
+          </button>
+        </div>
       </div>
 
-      {/* Estadísticas */}
+      {/* Estadísticas Mejoradas */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <DocumentIcon className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Facturas</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalInvoices || 0}</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Resumen de Facturas</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-pink-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <DocumentIcon className="h-8 w-8 text-pink-600" />
               </div>
+              <p className="text-2xl font-bold text-pink-600">{stats.totalInvoices || 0}</p>
+              <p className="text-sm text-gray-600 mt-1">📋 Total Facturas</p>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Pagado</p>
-                <p className="text-2xl font-bold text-gray-900">${formatAmount(stats.totalPaid)}</p>
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
               </div>
+              <p className="text-2xl font-bold text-green-600">${formatAmount(stats.totalPaid)}</p>
+              <p className="text-sm text-gray-600 mt-1">💰 Total Pagado</p>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <DocumentIcon className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pendientes</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pendingInvoices || 0}</p>
+            
+            <div className="text-center p-4 bg-yellow-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <ReceiptPercentIcon className="h-8 w-8 text-yellow-600" />
               </div>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pendingInvoices || 0}</p>
+              <p className="text-sm text-gray-600 mt-1">⏳ Pendientes</p>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <DocumentIcon className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Vencidas</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.overdueInvoices || 0}</p>
+            
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="flex items-center justify-center mb-2">
+                <DocumentIcon className="h-8 w-8 text-red-600" />
               </div>
+              <p className="text-2xl font-bold text-red-600">{stats.overdueInvoices || 0}</p>
+              <p className="text-sm text-gray-600 mt-1">🚨 Vencidas</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      {/* Filtros Mejorados */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          <span className="text-sm text-gray-500">
+            {invoices.length} factura(s) encontrada(s)
+          </span>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
-            <input
-              type="text"
-              value={filters.search || ''}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg"
-              placeholder="Buscar por cliente, descripción..."
-            />
+            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Factura</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={filters.search || ''}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Buscar por cliente, descripción..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
+              />
+            </div>
           </div>
+          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
             <select
               value={filters.status || ''}
               onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
             >
-              <option value="">Todos</option>
-              <option value="PENDING">Pendiente</option>
-              <option value="PAID">Pagada</option>
-              <option value="OVERDUE">Vencida</option>
-              <option value="PARTIAL">Parcial</option>
-              <option value="CANCELLED">Cancelada</option>
+              <option value="">📊 Todos los estados</option>
+              <option value="PENDING">⏳ Pendiente</option>
+              <option value="PAID">✅ Pagada</option>
+              <option value="OVERDUE">🚨 Vencida</option>
+              <option value="PARTIAL">🔄 Parcial</option>
+              <option value="CANCELLED">❌ Cancelada</option>
             </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-pink-700 mb-1">Acciones Rápidas</label>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setFilters({ ...filters, status: 'PENDING' })}
+                className="flex-1 px-3 py-2 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
+              >
+                ⏳ Pendientes
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: 'OVERDUE' })}
+                className="flex-1 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                🚨 Vencidas
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Lista de facturas */}
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+          <span className="ml-3 text-gray-600">Cargando facturas...</span>
         </div>
       ) : error ? (
-        <div className="text-center py-12">
-          <p className="text-red-600">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error al cargar facturas</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
