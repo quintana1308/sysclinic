@@ -285,7 +285,8 @@ const Invoices: React.FC = () => {
       
       // Prueba directa de la API
       console.log('🌐 Haciendo llamada directa a la API...');
-      const apiUrl = `http://localhost:5000/api/invoices/${invoiceId}`;
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = `${API_BASE_URL}/invoices/${invoiceId}`;
       console.log('🌐 URL completa:', apiUrl);
       const directResponse = await fetch(apiUrl, {
         headers: {
@@ -312,7 +313,7 @@ const Invoices: React.FC = () => {
       
       // Probar también la ruta de debug
       console.log('🐛 Probando ruta de debug de pagos...');
-      const debugUrl = `http://localhost:5000/api/invoices/${invoiceId}/debug-payments`;
+      const debugUrl = `${API_BASE_URL}/invoices/${invoiceId}/debug-payments`;
       console.log('🐛 URL de debug:', debugUrl);
       const debugResponse = await fetch(debugUrl, {
         headers: {
