@@ -10,6 +10,7 @@ import {
   getInvoiceStats,
   markOverdueInvoices
 } from '../controllers/invoice.controller';
+import { debugPayments } from '../controllers/payment.controller';
 
 const router = Router();
 
@@ -38,6 +39,12 @@ router.patch('/mark-overdue',
 router.post('/', 
   requirePermission({ resource: 'invoices', action: 'create' }),
   createInvoice
+);
+
+// Debug: Verificar pagos de una factura
+router.get('/:id/debug-payments', 
+  requirePermission({ resource: 'invoices', action: 'read' }),
+  debugPayments
 );
 
 // Obtener factura específica

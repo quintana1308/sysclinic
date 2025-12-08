@@ -153,7 +153,14 @@ export const getInvoiceById = async (
       SELECT 
         p.id,
         p.amount,
-        p.method,
+        CASE 
+          WHEN p.method = 'CASH' THEN 'Efectivo'
+          WHEN p.method = 'CARD' THEN 'Tarjeta'
+          WHEN p.method = 'TRANSFER' THEN 'Transferencia'
+          WHEN p.method = 'CHECK' THEN 'Cheque'
+          WHEN p.method = 'FINANCING' THEN 'Financiamiento'
+          ELSE 'Método no especificado'
+        END as method,
         p.status,
         p.description as notes,
         p.transactionId,
@@ -162,9 +169,22 @@ export const getInvoiceById = async (
         p.invoiceId,
         'Sistema' as createdBy
       FROM payments p
-      WHERE p.invoiceId = ?
+      WHERE p.invoiceId = ? AND p.status = 'PAID'
       ORDER BY p.createdAt DESC
     `, [id]);
+
+    console.log('💳 === CONSULTA DE PAGOS PARA FACTURA ===');
+    console.log('🔍 ID de factura:', id);
+    console.log('📊 Pagos encontrados:', payments?.length || 0);
+    if (payments && payments.length > 0) {
+      console.log('💰 Primer pago de ejemplo:', {
+        id: payments[0].id,
+        amount: payments[0].amount,
+        method: payments[0].method,
+        status: payments[0].status,
+        paidDate: payments[0].paidDate
+      });
+    }
 
     // Agregar historial de pagos a la factura
     const invoiceWithPayments = {
@@ -177,6 +197,7 @@ export const getInvoiceById = async (
     console.log('🔗 invoiceWithPayments.clientFirstName:', invoiceWithPayments.clientFirstName);
     console.log('🔗 invoiceWithPayments.clientLastName:', invoiceWithPayments.clientLastName);
     console.log('📊 Cantidad de pagos en historial:', payments?.length || 0);
+    console.log('💳 paymentHistory completo:', invoiceWithPayments.paymentHistory);
 
     const response: ApiResponse = {
       success: true,

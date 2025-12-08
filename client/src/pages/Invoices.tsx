@@ -138,14 +138,32 @@ const Invoices: React.FC = () => {
   // Cargar facturas
   const loadInvoices = async () => {
     try {
+      console.log('📥 === CARGANDO LISTA DE FACTURAS ===');
+      console.log('🔍 Filtros aplicados:', filters);
+      
       setLoading(true);
       setError(null);
       const response = await invoiceService.getInvoices(filters);
+      
+      console.log('📡 Respuesta del servicio getInvoices:', {
+        success: response.success,
+        dataLength: response.data?.length || 0
+      });
+      
       if (response.success) {
+        console.log('✅ Facturas cargadas:', response.data?.map((invoice: Invoice) => ({
+          id: invoice.id,
+          clientName: invoice.clientName,
+          amount: invoice.amount,
+          totalPaid: invoice.totalPaid,
+          hasPaymentHistory: !!invoice.paymentHistory,
+          paymentHistoryLength: invoice.paymentHistory?.length || 0
+        })));
+        
         setInvoices(response.data);
       }
     } catch (error) {
-      console.error('Error loading invoices:', error);
+      console.error('❌ Error loading invoices:', error);
       setError('Error al cargar las facturas');
     } finally {
       setLoading(false);
@@ -229,25 +247,108 @@ const Invoices: React.FC = () => {
   };
 
   const openDetailsModal = async (invoice: Invoice) => {
+    console.log('🔍 === ABRIENDO MODAL DE DETALLES DE FACTURA ===');
+    console.log('📋 Factura seleccionada:', {
+      id: invoice.id,
+      clientName: invoice.clientName,
+      amount: invoice.amount,
+      totalPaid: invoice.totalPaid,
+      status: invoice.status,
+      paymentHistoryLength: invoice.paymentHistory?.length || 0
+    });
+    
     // Primero mostrar el modal con los datos básicos
     setSelectedInvoice(invoice);
     setShowDetailsModal(true);
     
     // Luego cargar los detalles completos incluyendo el historial de pagos
     console.log('📋 Cargando detalles completos de la factura al abrir modal...');
-    await reloadSelectedInvoiceDetails(invoice.id);
+    console.log('🔄 Llamando a reloadSelectedInvoiceDetails con ID:', invoice.id);
+    
+    // Forzar ejecución inmediata
+    setTimeout(async () => {
+      console.log('⏰ Ejecutando reloadSelectedInvoiceDetails en setTimeout...');
+      try {
+        await reloadSelectedInvoiceDetails(invoice.id);
+        console.log('✅ reloadSelectedInvoiceDetails completado exitosamente');
+      } catch (error) {
+        console.error('❌ Error en reloadSelectedInvoiceDetails:', error);
+      }
+    }, 100);
   };
 
   // Función para recargar los detalles de la factura seleccionada
   const reloadSelectedInvoiceDetails = async (invoiceId: string) => {
     try {
+      console.log('🔄 === RECARGANDO DETALLES DE FACTURA ===');
+      console.log('📋 ID de factura a cargar:', invoiceId);
+      
+      // Prueba directa de la API
+      console.log('🌐 Haciendo llamada directa a la API...');
+      const apiUrl = `http://localhost:5000/api/invoices/${invoiceId}`;
+      console.log('🌐 URL completa:', apiUrl);
+      const directResponse = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('🌐 Status de respuesta:', directResponse.status);
+      console.log('🌐 Headers de respuesta:', Object.fromEntries(directResponse.headers.entries()));
+      
+      const responseText = await directResponse.text();
+      console.log('🌐 Respuesta como texto:', responseText.substring(0, 500));
+      
+      let directData;
+      try {
+        directData = JSON.parse(responseText);
+        console.log('🌐 Respuesta parseada como JSON:', directData);
+      } catch (parseError) {
+        console.error('🌐 Error parseando JSON:', parseError);
+        console.log('🌐 Respuesta completa:', responseText);
+        return;
+      }
+      
+      // Probar también la ruta de debug
+      console.log('🐛 Probando ruta de debug de pagos...');
+      const debugUrl = `http://localhost:5000/api/invoices/${invoiceId}/debug-payments`;
+      console.log('🐛 URL de debug:', debugUrl);
+      const debugResponse = await fetch(debugUrl, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const debugData = await debugResponse.json();
+      console.log('🐛 Respuesta de debug de pagos:', debugData);
+      
       const response = await invoiceService.getInvoiceById(invoiceId);
       
+      console.log('📡 Respuesta del servicio:', {
+        success: response.success,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+      
       if (response.success && response.data) {
+        console.log('✅ Datos de factura recargados:', {
+          id: response.data.id,
+          clientName: response.data.clientName,
+          amount: response.data.amount,
+          totalPaid: response.data.totalPaid,
+          paymentHistoryExists: !!response.data.paymentHistory,
+          paymentHistoryLength: response.data.paymentHistory?.length || 0,
+          paymentHistoryData: response.data.paymentHistory
+        });
+        
         setSelectedInvoice(response.data);
+        console.log('🎯 Estado de selectedInvoice actualizado');
+      } else {
+        console.warn('⚠️ No se pudieron cargar los detalles de la factura');
       }
     } catch (error) {
-      console.error('Error recargando detalles de factura:', error);
+      console.error('❌ Error recargando detalles de factura:', error);
       toast.error('Error al cargar los detalles de la factura');
     }
   };
@@ -617,10 +718,7 @@ const Invoices: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setShowDetailsModal(true);
-                          }}
+                          onClick={() => openDetailsModal(invoice)}
                           className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                         >
                           <EyeIcon className="h-4 w-4 mr-1" />
@@ -837,71 +935,111 @@ const Invoices: React.FC = () => {
               </div>
 
               {/* Historial de Pagos */}
-              <div>
-                <h5 className="text-sm font-medium text-gray-700 mb-3">
-                  Historial de Pagos ({selectedInvoice.paymentHistory?.length || 0})
-                </h5>
+              <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                <h3 className="text-lg font-medium text-pink-800 mb-4">💳 Historial de Pagos</h3>
+                
+                {(() => {
+                  console.log('🎨 === RENDERIZANDO HISTORIAL DE PAGOS ===');
+                  console.log('📋 selectedInvoice:', selectedInvoice);
+                  console.log('💳 paymentHistory:', selectedInvoice.paymentHistory);
+                  console.log('📊 paymentHistory length:', selectedInvoice.paymentHistory?.length || 0);
+                  console.log('🔢 paymentCount:', selectedInvoice.paymentCount);
+                  console.log('💰 totalPaid:', selectedInvoice.totalPaid);
+                  console.log('✅ Tiene pagos:', !!(selectedInvoice.paymentHistory && selectedInvoice.paymentHistory.length > 0));
+                  return null;
+                })()}
                 
                 {selectedInvoice.paymentHistory && selectedInvoice.paymentHistory.length > 0 ? (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="space-y-3">
-                      {selectedInvoice.paymentHistory.map((payment, index) => (
-                        <div key={payment.id || index} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-900">
-                                ${formatAmount(payment.amount)}
-                              </span>
-                              <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                                Pagado
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('es-ES') : new Date(payment.createdAt).toLocaleDateString('es-ES')} - {payment.method}
-                            </div>
-                            {payment.notes && (
-                              <div className="text-xs text-gray-400 italic mt-1">
-                                {payment.notes}
+                  <div className="space-y-4">
+                    
+                    <div className="bg-white rounded-lg p-4 border border-pink-100">
+                      <div className="space-y-3">
+                        {selectedInvoice.paymentHistory?.map((payment, index) => (
+                          <div key={payment.id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex-shrink-0">
+                                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                  <span className="text-green-600 font-semibold">💰</span>
+                                </div>
                               </div>
-                            )}
-                            {payment.transactionId && (
-                              <div className="text-xs text-blue-600 mt-1">
-                                ID: {payment.transactionId}
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-lg font-bold text-gray-900">
+                                    ${formatAmount(payment.amount)}
+                                  </span>
+                                  <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                    ✅ Pagado
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-4 mt-1">
+                                  <div className="text-sm text-gray-600">
+                                    📅 {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('es-ES') : new Date(payment.createdAt).toLocaleDateString('es-ES')}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    💳 {payment.method}
+                                  </div>
+                                </div>
+                                {payment.notes && (
+                                  <div className="text-sm text-gray-500 italic mt-1 bg-white p-2 rounded border">
+                                    📝 {payment.notes}
+                                  </div>
+                                )}
+                                {payment.transactionId && (
+                                  <div className="text-xs text-blue-600 mt-1 font-mono">
+                                    🔗 ID: {payment.transactionId}
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
+                            <div className="flex-shrink-0">
+                              <button
+                                onClick={() => openPaymentDetailsModal(payment)}
+                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-pink-700 bg-pink-100 border border-pink-300 rounded-lg hover:bg-pink-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                                title="Ver detalles del pago"
+                              >
+                                <EyeIcon className="h-4 w-4 mr-1" />
+                                Ver Detalle
+                              </button>
+                            </div>
                           </div>
-                          <div className="ml-4">
-                            <button
-                              onClick={() => openPaymentDetailsModal(payment)}
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-                              title="Ver detalles del pago"
-                            >
-                              <EyeIcon className="h-3 w-3 mr-1" />
-                              Ver Detalle
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                     
                     {/* Resumen de Pagos */}
-                    <div className="mt-4 pt-3 border-t border-gray-300">
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm">
-                          <span className="text-gray-600">Total Pagado: </span>
-                          <span className="font-medium text-green-600">${formatAmount(selectedInvoice.totalPaid || 0)}</span>
+                    <div className="bg-white rounded-lg p-4 border border-pink-100">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-2xl font-bold text-green-600">
+                            ${formatAmount(selectedInvoice.totalPaid || 0)}
+                          </div>
+                          <div className="text-sm text-green-700 font-medium">✅ Total Pagado</div>
                         </div>
-                        <div className="text-sm">
-                          <span className="text-gray-600">Saldo Pendiente: </span>
-                          <span className="font-medium text-red-600">${formatAmount(calculateRemainingAmount(selectedInvoice))}</span>
+                        <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                          <div className="text-2xl font-bold text-red-600">
+                            ${formatAmount(calculateRemainingAmount(selectedInvoice))}
+                          </div>
+                          <div className="text-sm text-red-700 font-medium">⏳ Saldo Pendiente</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-center">
+                        <div className="text-sm text-gray-600">
+                          📊 Total de pagos registrados: <span className="font-semibold text-pink-700">{selectedInvoice.paymentHistory?.length || 0}</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-                    <p className="text-sm text-gray-500 mb-1">No hay pagos registrados para esta factura</p>
-                    <p className="text-xs text-gray-400">El historial de pagos aparecerá aquí cuando se registren abonos</p>
+                  <div className="bg-white rounded-lg p-8 text-center border border-pink-100">
+                    <div className="flex flex-col items-center">
+                      <div className="text-gray-400 mb-3">
+                        <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">No hay pagos registrados para esta factura</p>
+                      <p className="text-xs text-gray-500">El historial de pagos aparecerá aquí cuando se registren abonos</p>
+                    </div>
                   </div>
                 )}
               </div>

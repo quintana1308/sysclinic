@@ -28,7 +28,7 @@ export const debugPayments = async (
   next: NextFunction
 ) => {
   try {
-    const { invoiceId } = req.params;
+    const { id: invoiceId } = req.params;
     
     console.log('🐛 DEBUG: Verificando pagos para factura:', invoiceId);
     
