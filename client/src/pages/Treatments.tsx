@@ -1,47 +1,113 @@
 import React, { useState, useEffect } from 'react';
-import { treatmentService, Treatment as ApiTreatment, TreatmentFormData as ApiTreatmentFormData } from '../services/treatmentService';
+import {
+  treatmentService,
+  Treatment as ApiTreatment,
+  TreatmentFormData as ApiTreatmentFormData,
+} from '../services/treatmentService';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Iconos SVG
 const PlusIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
   </svg>
 );
 
 const PencilIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+    />
   </svg>
 );
 
 const TrashIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+    />
   </svg>
 );
 
 const ClockIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+    />
   </svg>
 );
 
 const XMarkIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+    />
   </svg>
 );
 
 const SparklesIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+    />
   </svg>
 );
 
@@ -82,7 +148,7 @@ const formatPrice = (price: number | string): string => {
 // Componente para la barra de popularidad
 const PopularityBar: React.FC<{ popularity: number }> = ({ popularity }) => {
   const percentage = Math.max(0, Math.min(100, popularity || 0));
-  
+
   // Determinar el color basado en el porcentaje
   const getColor = (percentage: number) => {
     if (percentage >= 80) return 'bg-green-500';
@@ -99,7 +165,7 @@ const PopularityBar: React.FC<{ popularity: number }> = ({ popularity }) => {
         <span className="text-xs font-semibold text-gray-900">{percentage}%</span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
+        <div
           className={`h-2 rounded-full transition-all duration-300 ${getColor(percentage)}`}
           style={{ width: `${percentage}%` }}
         ></div>
@@ -115,7 +181,7 @@ const Treatments: React.FC = () => {
     page: 1,
     limit: 9,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -125,12 +191,13 @@ const Treatments: React.FC = () => {
     status: 'Todos',
     minPrice: '',
     maxPrice: '',
-    search: ''
+    search: '',
   });
 
   // Modal states
   const [showNewTreatmentModal, setShowNewTreatmentModal] = useState(false);
   const [showEditTreatmentModal, setShowEditTreatmentModal] = useState(false);
+  const [showViewTreatmentModal, setShowViewTreatmentModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null);
@@ -143,7 +210,7 @@ const Treatments: React.FC = () => {
     duration: 30,
     price: 0,
     description: '',
-    supplies: []
+    supplies: [],
   });
 
   const [editFormData, setEditFormData] = useState<TreatmentFormData>({
@@ -152,7 +219,7 @@ const Treatments: React.FC = () => {
     duration: 30,
     price: 0,
     description: '',
-    supplies: []
+    supplies: [],
   });
 
   // Estado para el campo de insumo actual
@@ -165,7 +232,7 @@ const Treatments: React.FC = () => {
     selectedClient: '',
     date: '',
     time: '',
-    notes: ''
+    notes: '',
   });
 
   // Estados para el filtrado de clientes
@@ -181,7 +248,7 @@ const Treatments: React.FC = () => {
     { id: '1', name: 'Alisson Geraldin Gomez Perez', email: 'alissongeraldin@clinica.com' },
     { id: '2', name: 'Patricia Fernandez', email: 'patriciafernandez@clinic.com' },
     { id: '3', name: 'María González', email: 'maria@clinic.com' },
-    { id: '4', name: 'Carmen López', email: 'carmen@clinic.com' }
+    { id: '4', name: 'Carmen López', email: 'carmen@clinic.com' },
   ];
 
   // Cargar tratamientos desde la base de datos
@@ -189,7 +256,7 @@ const Treatments: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const filterParams = {
         page: currentPage,
         limit: treatmentsPerPage,
@@ -197,18 +264,21 @@ const Treatments: React.FC = () => {
         category: filters.category !== 'Todas las categorías' ? filters.category : undefined,
         status: filters.status !== 'Todos' ? filters.status : undefined,
         minPrice: filters.minPrice || undefined,
-        maxPrice: filters.maxPrice || undefined
+        maxPrice: filters.maxPrice || undefined,
       };
-      
+
       const response = await treatmentService.getTreatments(filterParams);
-      
+
       if (response.success) {
         // Mapear datos de la API al formato del frontend
         const mappedTreatments: Treatment[] = response.data.map((treatment: any) => ({
           ...treatment,
-          price: typeof treatment.price === 'string' ? parseFloat(treatment.price) : treatment.price,
+          price:
+            typeof treatment.price === 'string' ? parseFloat(treatment.price) : treatment.price,
           status: treatment.isActive ? 'active' : 'inactive',
-          popularity: treatment.totalAppointments ? Math.min((treatment.totalAppointments * 10), 100) : 0,
+          popularity: treatment.totalAppointments
+            ? Math.min(treatment.totalAppointments * 10, 100)
+            : 0,
           supplies: (() => {
             if (!treatment.supplies) return [];
             if (Array.isArray(treatment.supplies)) return treatment.supplies;
@@ -225,12 +295,15 @@ const Treatments: React.FC = () => {
           hasScheduledAppointments: (treatment.activeAppointments || 0) > 0,
           hasConfirmedAppointments: (treatment.activeAppointments || 0) > 0,
           hasPendingPayments: false, // Se puede agregar lógica específica si es necesario
-          canDelete: treatment.canDelete === 1
+          canDelete: treatment.canDelete === 1,
         }));
-        
-        console.log('Loaded treatments with supplies:', mappedTreatments.map(t => ({ name: t.name, supplies: t.supplies })));
+
+        console.log(
+          'Loaded treatments with supplies:',
+          mappedTreatments.map(t => ({ name: t.name, supplies: t.supplies }))
+        );
         setTreatments(mappedTreatments);
-        
+
         if (response.pagination) {
           setPagination(response.pagination);
         }
@@ -267,7 +340,7 @@ const Treatments: React.FC = () => {
       duration: 30,
       price: 0,
       description: '',
-      supplies: []
+      supplies: [],
     });
   };
 
@@ -275,7 +348,7 @@ const Treatments: React.FC = () => {
     if (currentSupply.trim() && !formData.supplies.includes(currentSupply.trim())) {
       setFormData(prev => ({
         ...prev,
-        supplies: [...prev.supplies, currentSupply.trim()]
+        supplies: [...prev.supplies, currentSupply.trim()],
       }));
       setCurrentSupply('');
     }
@@ -284,7 +357,7 @@ const Treatments: React.FC = () => {
   const handleRemoveSupply = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      supplies: prev.supplies.filter((_, i) => i !== index)
+      supplies: prev.supplies.filter((_, i) => i !== index),
     }));
   };
 
@@ -292,7 +365,7 @@ const Treatments: React.FC = () => {
     if (currentEditSupply.trim() && !editFormData.supplies.includes(currentEditSupply.trim())) {
       setEditFormData(prev => ({
         ...prev,
-        supplies: [...prev.supplies, currentEditSupply.trim()]
+        supplies: [...prev.supplies, currentEditSupply.trim()],
       }));
       setCurrentEditSupply('');
     }
@@ -301,7 +374,7 @@ const Treatments: React.FC = () => {
   const handleRemoveEditSupply = (index: number) => {
     setEditFormData(prev => ({
       ...prev,
-      supplies: prev.supplies.filter((_, i) => i !== index)
+      supplies: prev.supplies.filter((_, i) => i !== index),
     }));
   };
 
@@ -315,33 +388,32 @@ const Treatments: React.FC = () => {
       duration: 30,
       price: 0,
       description: '',
-      supplies: []
+      supplies: [],
     });
   };
 
   const handleSubmitEditTreatment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTreatment) return;
-    
+
     setSubmitting(true);
     try {
       console.log('Updating treatment:', selectedTreatment.id, editFormData);
       console.log('Supplies being sent for update:', editFormData.supplies);
-      
+
       const response = await treatmentService.updateTreatment(selectedTreatment.id, editFormData);
-      
+
       if (response.success) {
         // Recargar la lista de tratamientos para obtener datos actualizados
         await loadTreatments();
-        
+
         handleCloseEditModal();
-        
+
         toast.success('Tratamiento actualizado exitosamente', {
           duration: 4000,
           position: 'top-center',
         });
       }
-      
     } catch (error) {
       console.error('Error updating treatment:', error);
       toast.error('Error al actualizar el tratamiento. Por favor, intente nuevamente.', {
@@ -368,17 +440,18 @@ const Treatments: React.FC = () => {
       selectedClient: '',
       date: '',
       time: '',
-      notes: ''
+      notes: '',
     });
   };
 
   const handleClientSearch = (searchValue: string) => {
     setScheduleFormData({ ...scheduleFormData, clientSearch: searchValue, selectedClient: '' });
-    
+
     if (searchValue.trim().length > 0) {
-      const filtered = mockClients.filter(client => 
-        client.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchValue.toLowerCase())
+      const filtered = mockClients.filter(
+        client =>
+          client.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+          client.email.toLowerCase().includes(searchValue.toLowerCase())
       );
       setFilteredClients(filtered);
       setShowClientDropdown(true);
@@ -389,10 +462,10 @@ const Treatments: React.FC = () => {
   };
 
   const handleSelectClient = (client: any) => {
-    setScheduleFormData({ 
-      ...scheduleFormData, 
+    setScheduleFormData({
+      ...scheduleFormData,
       clientSearch: client.name,
-      selectedClient: client.id 
+      selectedClient: client.id,
     });
     setShowClientDropdown(false);
     setFilteredClients([]);
@@ -418,23 +491,22 @@ const Treatments: React.FC = () => {
   const handleSubmitSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTreatment) return;
-    
+
     setSubmitting(true);
     try {
       // Aquí iría la lógica para agendar la cita
       console.log('Scheduling appointment:', {
         treatment: selectedTreatment,
-        schedule: scheduleFormData
+        schedule: scheduleFormData,
       });
-      
+
       // Simular delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Aquí se crearía la cita en el sistema
       // Por ahora solo mostramos en consola
-      
+
       handleCloseScheduleModal();
-      
     } catch (error) {
       console.error('Error scheduling appointment:', error);
     } finally {
@@ -454,36 +526,36 @@ const Treatments: React.FC = () => {
 
   const handleConfirmDeleteTreatment = async () => {
     if (!selectedTreatment) return;
-    
+
     setSubmitting(true);
     try {
       console.log('Deleting treatment:', selectedTreatment.id);
-      
+
       const response = await treatmentService.deleteTreatment(selectedTreatment.id);
-      
+
       if (response.success) {
         // Recargar la lista de tratamientos para obtener datos actualizados
         await loadTreatments();
-        
+
         handleCloseDeleteModal();
-        
+
         toast.success('Tratamiento eliminado exitosamente', {
           duration: 4000,
           position: 'top-center',
         });
       }
-      
     } catch (error: any) {
       console.error('Error deleting treatment:', error);
-      
+
       let errorMessage = 'Error al eliminar el tratamiento. Por favor, intente nuevamente.';
-      
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message === 'Network Error') {
-        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+        errorMessage =
+          'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
       }
-      
+
       toast.error(errorMessage, {
         duration: 5000,
         position: 'top-center',
@@ -500,11 +572,11 @@ const Treatments: React.FC = () => {
 
   const getDeleteRestrictionMessage = (treatment: Treatment) => {
     if (treatment.canDelete) return '';
-    
+
     if (treatment.activeAppointments && treatment.activeAppointments > 0) {
       return `No se puede eliminar: tiene ${treatment.activeAppointments} cita(s) asociada(s)`;
     }
-    
+
     return 'No se puede eliminar: tiene registros asociados';
   };
 
@@ -512,18 +584,23 @@ const Treatments: React.FC = () => {
   const getStatistics = () => {
     const activeTreatments = treatments.filter(t => t.status === 'active');
     const totalTreatments = treatments.length;
-    const averagePrice = treatments.length > 0 
-      ? treatments.reduce((sum, t) => sum + (typeof t.price === 'string' ? parseFloat(t.price) : t.price), 0) / treatments.length 
-      : 0;
-    const averagePopularity = treatments.length > 0 
-      ? treatments.reduce((sum, t) => sum + (t.popularity || 0), 0) / treatments.length 
-      : 0;
+    const averagePrice =
+      treatments.length > 0
+        ? treatments.reduce(
+            (sum, t) => sum + (typeof t.price === 'string' ? parseFloat(t.price) : t.price),
+            0
+          ) / treatments.length
+        : 0;
+    const averagePopularity =
+      treatments.length > 0
+        ? treatments.reduce((sum, t) => sum + (t.popularity || 0), 0) / treatments.length
+        : 0;
 
     return {
       totalTreatments,
       activeTreatments: activeTreatments.length,
       averagePrice,
-      averagePopularity
+      averagePopularity,
     };
   };
 
@@ -534,22 +611,22 @@ const Treatments: React.FC = () => {
       if (filters.category !== 'Todas las categorías' && treatment.category !== filters.category) {
         return false;
       }
-      
+
       // Filtro por estado
       if (filters.status !== 'Todos' && treatment.status !== filters.status) {
         return false;
       }
-      
+
       // Filtro por precio mínimo
       if (filters.minPrice && treatment.price < parseFloat(filters.minPrice)) {
         return false;
       }
-      
+
       // Filtro por precio máximo
       if (filters.maxPrice && treatment.price > parseFloat(filters.maxPrice)) {
         return false;
       }
-      
+
       return true;
     });
   };
@@ -575,20 +652,19 @@ const Treatments: React.FC = () => {
   const handleToggleStatus = async (treatment: Treatment) => {
     try {
       console.log(`Toggling treatment ${treatment.id} status`);
-      
+
       const response = await treatmentService.toggleTreatmentStatus(treatment.id);
-      
+
       if (response.success) {
         // Recargar la lista de tratamientos para obtener datos actualizados
         await loadTreatments();
-        
+
         const statusText = treatment.status === 'active' ? 'desactivado' : 'activado';
         toast.success(`Tratamiento ${statusText} exitosamente`, {
           duration: 4000,
           position: 'top-center',
         });
       }
-      
     } catch (error) {
       console.error('Error updating treatment status:', error);
       toast.error('Error al cambiar el estado del tratamiento. Por favor, intente nuevamente.', {
@@ -600,26 +676,25 @@ const Treatments: React.FC = () => {
 
   const handleSubmitTreatment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setSubmitting(true);
     try {
       console.log('Creating treatment:', formData);
       console.log('Supplies being sent:', formData.supplies);
-      
+
       const response = await treatmentService.createTreatment(formData);
-      
+
       if (response.success) {
         // Recargar la lista de tratamientos para obtener datos actualizados
         await loadTreatments();
-        
+
         handleCloseModal();
-        
+
         toast.success('Tratamiento creado exitosamente', {
           duration: 4000,
           position: 'top-center',
         });
       }
-      
     } catch (error) {
       console.error('Error creating treatment:', error);
       toast.error('Error al crear el tratamiento. Por favor, intente nuevamente.', {
@@ -634,7 +709,7 @@ const Treatments: React.FC = () => {
   return (
     <div className="p-6">
       {/* Toast Notifications */}
-      <Toaster 
+      <Toaster
         position="top-center"
         reverseOrder={false}
         toastOptions={{
@@ -668,7 +743,7 @@ const Treatments: React.FC = () => {
           },
         }}
       />
-      
+
       {/* Header Mejorado */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -684,104 +759,107 @@ const Treatments: React.FC = () => {
                 status: 'Todos',
                 minPrice: '',
                 maxPrice: '',
-                search: ''
+                search: '',
               });
               setCurrentPage(1);
               loadTreatments();
             }}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
             🔄 Limpiar Filtros
           </button>
           <button
             onClick={() => setShowNewTreatmentModal(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
             ✨ Nuevo Tratamiento
           </button>
         </div>
       </div>
 
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
-          <span className="text-sm text-gray-500">
-            {getTotalFilteredCount()} tratamiento(s) encontrado(s)
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Búsqueda con icono */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Tratamiento</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Búsqueda */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                🔍 Buscar Tratamientos
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, categoría..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
               </div>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Buscar por nombre..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
             </div>
-          </div>
 
-          {/* Categoría */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Categoría</label>
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="Todas las categorías">📋 Todas las categorías</option>
-              <option value="Facial">🧴 Facial</option>
-              <option value="Corporal">💆 Corporal</option>
-              <option value="Estético">✨ Estético</option>
-              <option value="Depilación">🪒 Depilación</option>
-            </select>
-          </div>
+            {/* Filtro por categoría */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📋 Categoría
+              </label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              >
+                <option value="Todas las categorías">✨ Todas las categorías</option>
+                <option value="Facial">🧴 Facial</option>
+                <option value="Corporal">💆 Corporal</option>
+                <option value="Estético">✨ Estético</option>
+                <option value="Depilación">🪒 Depilación</option>
+              </select>
+            </div>
 
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="Todos">📊 Todos los estados</option>
-              <option value="active">✅ Activo</option>
-              <option value="inactive">❌ Inactivo</option>
-            </select>
-          </div>
+            {/* Filtro por estado */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📊 Estado
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              >
+                <option value="Todos">📋 Todos los estados</option>
+                <option value="active">✅ Activos</option>
+                <option value="inactive">❌ Inactivos</option>
+              </select>
+            </div>
 
-          {/* Precio Mínimo */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Precio Mínimo</label>
-            <input
-              type="number"
-              value={filters.minPrice}
-              onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-              placeholder="💰 $0"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            />
-          </div>
-
-          {/* Precio Máximo */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Precio Máximo</label>
-            <input
-              type="number"
-              value={filters.maxPrice}
-              onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-              placeholder="💰 $500"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            />
+            {/* Filtro por precio */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                💰 Precio
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={filters.minPrice}
+                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -792,7 +870,11 @@ const Treatments: React.FC = () => {
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="ml-3">
@@ -811,199 +893,167 @@ const Treatments: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={loadTreatments}
-            className="btn-primary"
+            className="text-pink-600 hover:text-pink-700 font-medium"
           >
             Reintentar
           </button>
         </div>
+      ) : treatments.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="flex flex-col items-center">
+            <div className="text-gray-400 mb-3">
+              <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-600">
+              No hay tratamientos registrados
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Crea el primer tratamiento para comenzar
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {treatments.map((treatment) => (
-            <div key={treatment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              {/* Header de la tarjeta */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${
-                      treatment.status === 'active' ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
-                    <span className={`text-sm font-medium ${
-                      treatment.status === 'active' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {treatment.status === 'active' ? 'Activo' : 'Inactivo'}
-                    </span>
+            <div key={treatment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+              {/* Header de la tarjeta con gradiente */}
+              <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                      <span className="text-lg font-medium text-pink-700">
+                        ✨
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {treatment.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Tratamiento #{treatment.id.slice(-6).toUpperCase()}
+                      </p>
+                    </div>
                   </div>
-                  <button 
-                    onClick={() => handleToggleStatus(treatment)}
-                    className={`text-sm hover:underline ${
-                      treatment.status === 'active' 
-                        ? 'text-red-600 hover:text-red-700' 
-                        : 'text-green-600 hover:text-green-700'
-                    }`}
-                  >
-                    {treatment.status === 'active' ? 'Desactivar' : 'Activar'}
-                  </button>
-                </div>
-                <div className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                  {treatment.category}
+                  <div className="flex flex-col items-end space-y-2">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      treatment.status === 'active'
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {treatment.status === 'active' ? '✅ Activo' : '❌ Inactivo'}
+                    </span>
+                    <button
+                      onClick={() => handleToggleStatus(treatment)}
+                      className={`text-xs hover:underline font-medium px-2 py-1 rounded ${
+                        treatment.status === 'active'
+                          ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                          : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                      }`}
+                    >
+                      {treatment.status === 'active' ? '⏸️ Desactivar' : '▶️ Activar'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Nombre del tratamiento */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 leading-tight">
-                {treatment.name}
-              </h3>
-
               {/* Información del tratamiento */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center text-sm text-gray-600">
-                  <ClockIcon className="h-4 w-4 mr-2" />
-                  <span>{treatment.duration} min</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-gray-900">
-                    ${formatPrice(treatment.price)}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <PopularityBar popularity={treatment.popularity || 0} />
-                </div>
-                
-                {/* Insumos necesarios */}
-                {treatment.supplies && Array.isArray(treatment.supplies) && treatment.supplies.length > 0 && (
-                  <div className="mt-3">
-                    <div className="text-xs font-medium text-gray-700 mb-2">Insumos necesarios:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {treatment.supplies.slice(0, 3).map((supply, index) => (
-                        <span
-                          key={index}
-                          className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
-                        >
-                          {supply}
-                        </span>
-                      ))}
-                      {treatment.supplies.length > 3 && (
-                        <span className="inline-block bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">
-                          +{treatment.supplies.length - 3} más
-                        </span>
-                      )}
-                    </div>
+              <div className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-pink-500">📋</span>
+                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      {treatment.category}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-pink-500">⏱️</span>
+                    <span className="text-sm text-gray-700">{treatment.duration} minutos</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-pink-500">💰</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      ${formatPrice(treatment.price)}
+                    </span>
+                  </div>
+                  {treatment.description && (
+                    <div className="flex items-start space-x-2">
+                      <span className="text-pink-500">📝</span>
+                      <span className="text-sm text-gray-700 line-clamp-2">
+                        {treatment.description.length > 80 
+                          ? `${treatment.description.substring(0, 80)}...` 
+                          : treatment.description}
+                      </span>
+                    </div>
+                  )}
+                  {treatment.supplies && Array.isArray(treatment.supplies) && treatment.supplies.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-pink-500">🧴</span>
+                      <span className="text-sm text-gray-700">
+                        {treatment.supplies.length} insumo{treatment.supplies.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Botones de acción */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => {
-                    setSelectedTreatment(treatment);
-                    setEditFormData({
-                      name: treatment.name,
-                      category: treatment.category,
-                      duration: treatment.duration,
-                      price: treatment.price,
-                      description: treatment.description || '',
-                      supplies: Array.isArray(treatment.supplies) ? treatment.supplies : []
-                    });
-                    setShowEditTreatmentModal(true);
-                  }}
-                  className="flex items-center px-3 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <PencilIcon className="h-4 w-4 mr-1" />
-                  Editar
-                </button>
-                <button 
-                  onClick={() => handleScheduleAppointment(treatment)}
-                  className="flex items-center px-3 py-2 text-sm btn-primary"
-                >
-                  Agendar
-                </button>
-                <button 
-                  onClick={() => handleDeleteTreatment(treatment)}
-                  disabled={!canDeleteTreatment(treatment)}
-                  className={`flex items-center px-3 py-2 text-sm border rounded-lg transition-colors ${
-                    canDeleteTreatment(treatment)
-                      ? 'text-red-600 border-red-300 hover:bg-red-50'
-                      : 'text-gray-400 border-gray-300 cursor-not-allowed'
-                  }`}
-                  title={
-                    canDeleteTreatment(treatment)
-                      ? 'Eliminar tratamiento'
-                      : getDeleteRestrictionMessage(treatment)
-                  }
-                >
-                  <TrashIcon className="h-4 w-4 mr-1" />
-                  Eliminar
-                </button>
+              <div className="bg-white border-t border-gray-100 p-4">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setSelectedTreatment(treatment);
+                      setShowViewTreatmentModal(true);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                  >
+                    👁️ Ver
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedTreatment(treatment);
+                      setEditFormData({
+                        name: treatment.name,
+                        category: treatment.category,
+                        duration: treatment.duration,
+                        price: treatment.price,
+                        description: treatment.description || '',
+                        supplies: Array.isArray(treatment.supplies) ? treatment.supplies : [],
+                      });
+                      setShowEditTreatmentModal(true);
+                    }}
+                    className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTreatment(treatment)}
+                    disabled={!canDeleteTreatment(treatment)}
+                    className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+                      canDeleteTreatment(treatment)
+                        ? 'text-red-600 bg-red-100 border-red-300 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
+                        : 'text-gray-400 bg-gray-50 border-gray-300 cursor-not-allowed'
+                    }`}
+                    title={
+                      canDeleteTreatment(treatment)
+                        ? 'Eliminar tratamiento'
+                        : getDeleteRestrictionMessage(treatment)
+                    }
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Información de paginación y estadísticas */}
-      {!loading && treatments.length > 0 && (
-        <div className="mt-8">
-          {/* Información de resultados */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm text-gray-700">
-              Mostrando {((currentPage - 1) * treatmentsPerPage) + 1} a {Math.min(currentPage * treatmentsPerPage, getTotalFilteredCount())} de {getTotalFilteredCount()} resultados
-            </p>
-            
-            {/* Paginación */}
-            {getTotalPages() > 1 && (
-              <div className="flex items-center space-x-2">
-                {Array.from({ length: getTotalPages() }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      currentPage === index + 1
-                        ? 'bg-pink-600 text-white'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-pink-50 hover:border-pink-300'
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Estadísticas Mejoradas */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Estadísticas del Catálogo</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {(() => {
-                const stats = getStatistics();
-                return (
-                  <>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <div className="text-3xl font-bold text-pink-600">{stats.totalTreatments}</div>
-                      <div className="text-sm text-gray-600 mt-1">📋 Total Tratamientos</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-3xl font-bold text-green-600">{stats.activeTreatments}</div>
-                      <div className="text-sm text-gray-600 mt-1">✅ Activos</div>
-                    </div>
-                    <div className="text-center p-4 bg-pink-50 rounded-lg">
-                      <div className="text-3xl font-bold text-pink-600">${formatPrice(stats.averagePrice)}</div>
-                      <div className="text-sm text-gray-600 mt-1">💰 Precio Promedio</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <div className="text-3xl font-bold text-purple-600">{Math.round(stats.averagePopularity || 0)}%</div>
-                      <div className="text-sm text-gray-600 mt-1">⭐ Popularidad Promedio</div>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal Crear Nuevo Tratamiento */}
       {showNewTreatmentModal && (
@@ -1012,10 +1062,7 @@ const Treatments: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">🎆 Crear Nuevo Tratamiento</h2>
-              <button
-                onClick={handleCloseModal}
-                className="text-pink-400 hover:text-pink-600"
-              >
+              <button onClick={handleCloseModal} className="text-pink-400 hover:text-pink-600">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -1034,7 +1081,7 @@ const Treatments: React.FC = () => {
                       <input
                         type="text"
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         required
                         placeholder="Ej: Hidrafacial Coreano"
@@ -1046,7 +1093,7 @@ const Treatments: React.FC = () => {
                       </label>
                       <select
                         value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        onChange={e => setFormData({ ...formData, category: e.target.value })}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         required
                       >
@@ -1062,14 +1109,16 @@ const Treatments: React.FC = () => {
 
                 {/* Sección Descripción */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-800 mb-4">📝 Descripción del Tratamiento</h3>
+                  <h3 className="text-lg font-medium text-blue-800 mb-4">
+                    📝 Descripción del Tratamiento
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-blue-700 mb-1">
                       Descripción Detallada
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={e => setFormData({ ...formData, description: e.target.value })}
                       rows={4}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Describe los beneficios, procedimientos y resultados esperados del tratamiento..."
@@ -1079,7 +1128,9 @@ const Treatments: React.FC = () => {
 
                 {/* Sección Detalles Comerciales */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-green-800 mb-4">💰 Detalles Comerciales</h3>
+                  <h3 className="text-lg font-medium text-green-800 mb-4">
+                    💰 Detalles Comerciales
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
@@ -1088,7 +1139,9 @@ const Treatments: React.FC = () => {
                       <input
                         type="number"
                         value={formData.duration}
-                        onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
+                        onChange={e =>
+                          setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })
+                        }
                         min="1"
                         max="480"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1104,21 +1157,27 @@ const Treatments: React.FC = () => {
                       <input
                         type="number"
                         value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                        onChange={e =>
+                          setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                        }
                         min="0"
                         step="0.01"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         required
                         placeholder="Ej: 65.00"
                       />
-                      <p className="text-xs text-green-600 mt-1">Precio por sesión del tratamiento</p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Precio por sesión del tratamiento
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Sección Insumos y Materiales */}
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-orange-800 mb-4">🧪 Insumos y Materiales</h3>
+                  <h3 className="text-lg font-medium text-orange-800 mb-4">
+                    🧪 Insumos y Materiales
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-orange-700 mb-2">
                       Insumos Necesarios
@@ -1127,10 +1186,10 @@ const Treatments: React.FC = () => {
                       <input
                         type="text"
                         value={currentSupply}
-                        onChange={(e) => setCurrentSupply(e.target.value)}
+                        onChange={e => setCurrentSupply(e.target.value)}
                         placeholder="Ej: Suero vitaminado, Mascarilla hidratante..."
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        onKeyPress={(e) => {
+                        onKeyPress={e => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             handleAddSupply();
@@ -1146,13 +1205,18 @@ const Treatments: React.FC = () => {
                         Agregar
                       </button>
                     </div>
-                    
+
                     {/* Lista de insumos agregados */}
                     {formData.supplies.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-xs text-orange-600 mb-2">Insumos agregados ({formData.supplies.length}):</p>
+                        <p className="text-xs text-orange-600 mb-2">
+                          Insumos agregados ({formData.supplies.length}):
+                        </p>
                         {formData.supplies.map((supply, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white border border-orange-100 px-3 py-2 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-white border border-orange-100 px-3 py-2 rounded-lg"
+                          >
                             <span className="text-sm text-gray-700 font-medium">{supply}</span>
                             <button
                               type="button"
@@ -1168,7 +1232,9 @@ const Treatments: React.FC = () => {
                     ) : (
                       <div className="text-center py-4 border-2 border-dashed border-orange-200 rounded-lg">
                         <p className="text-sm text-orange-600">No hay insumos agregados</p>
-                        <p className="text-xs text-orange-500">Agrega los materiales necesarios para este tratamiento</p>
+                        <p className="text-xs text-orange-500">
+                          Agrega los materiales necesarios para este tratamiento
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1197,6 +1263,159 @@ const Treatments: React.FC = () => {
         </div>
       )}
 
+      {/* Modal Ver Tratamiento */}
+      {showViewTreatmentModal && selectedTreatment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 from-pink-50 to-purple-50">
+              <div className="flex items-center space-x-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-pink-800">
+                    👁️ Detalles del Tratamiento
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Información completa del tratamiento
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowViewTreatmentModal(false);
+                  setSelectedTreatment(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información Básica */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                  ✨ Información Básica
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">✨ Nombre</span>
+                    <span className="text-sm text-blue-800 font-medium">
+                      {selectedTreatment.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">📋 Categoría</span>
+                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      {selectedTreatment.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">⏱️ Duración</span>
+                    <span className="text-sm text-blue-800">
+                      {selectedTreatment.duration} minutos
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-700">🆔 ID</span>
+                    <span className="text-xs font-mono text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                      {selectedTreatment.id.slice(-8).toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información Comercial */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                  💰 Información Comercial
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-green-700">💰 Precio</span>
+                    <span className="text-lg font-bold text-green-800">
+                      ${formatPrice(selectedTreatment.price)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-green-700">📊 Estado</span>
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      selectedTreatment.status === 'active'
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedTreatment.status === 'active' ? '✅ Activo' : '❌ Inactivo'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Descripción */}
+              {selectedTreatment.description && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+                    📝 Descripción
+                  </h3>
+                  <p className="text-sm text-purple-800 leading-relaxed">
+                    {selectedTreatment.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Insumos */}
+              {selectedTreatment.supplies && Array.isArray(selectedTreatment.supplies) && selectedTreatment.supplies.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-orange-800 mb-4 flex items-center">
+                    🧴 Insumos Necesarios ({selectedTreatment.supplies.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {selectedTreatment.supplies.map((supply, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-white border border-orange-100 px-3 py-2 rounded-lg">
+                        <span className="text-orange-500">•</span>
+                        <span className="text-sm text-orange-800">{supply}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowViewTreatmentModal(false);
+                  setSelectedTreatment(selectedTreatment);
+                  setEditFormData({
+                    name: selectedTreatment.name,
+                    category: selectedTreatment.category,
+                    duration: selectedTreatment.duration,
+                    price: selectedTreatment.price,
+                    description: selectedTreatment.description || '',
+                    supplies: Array.isArray(selectedTreatment.supplies) ? selectedTreatment.supplies : [],
+                  });
+                  setShowEditTreatmentModal(true);
+                }}
+                className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                ✏️ Editar
+              </button>
+              <button
+                onClick={() => {
+                  setShowViewTreatmentModal(false);
+                  setSelectedTreatment(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Editar Tratamiento */}
       {showEditTreatmentModal && selectedTreatment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1204,10 +1423,7 @@ const Treatments: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">✏️ Editar Tratamiento</h2>
-              <button
-                onClick={handleCloseEditModal}
-                className="text-pink-400 hover:text-pink-600"
-              >
+              <button onClick={handleCloseEditModal} className="text-pink-400 hover:text-pink-600">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -1226,7 +1442,7 @@ const Treatments: React.FC = () => {
                       <input
                         type="text"
                         value={editFormData.name}
-                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                        onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         required
                         placeholder="Ej: Hidrafacial Coreano"
@@ -1238,7 +1454,9 @@ const Treatments: React.FC = () => {
                       </label>
                       <select
                         value={editFormData.category}
-                        onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                        onChange={e =>
+                          setEditFormData({ ...editFormData, category: e.target.value })
+                        }
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         required
                       >
@@ -1254,14 +1472,18 @@ const Treatments: React.FC = () => {
 
                 {/* Sección Descripción */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-800 mb-4">📝 Descripción del Tratamiento</h3>
+                  <h3 className="text-lg font-medium text-blue-800 mb-4">
+                    📝 Descripción del Tratamiento
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-blue-700 mb-1">
                       Descripción Detallada
                     </label>
                     <textarea
                       value={editFormData.description}
-                      onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                      onChange={e =>
+                        setEditFormData({ ...editFormData, description: e.target.value })
+                      }
                       rows={4}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Describe los beneficios, procedimientos y resultados esperados del tratamiento..."
@@ -1271,7 +1493,9 @@ const Treatments: React.FC = () => {
 
                 {/* Sección Detalles Comerciales */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-green-800 mb-4">💰 Detalles Comerciales</h3>
+                  <h3 className="text-lg font-medium text-green-800 mb-4">
+                    💰 Detalles Comerciales
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
@@ -1280,7 +1504,12 @@ const Treatments: React.FC = () => {
                       <input
                         type="number"
                         value={editFormData.duration}
-                        onChange={(e) => setEditFormData({ ...editFormData, duration: parseInt(e.target.value) || 0 })}
+                        onChange={e =>
+                          setEditFormData({
+                            ...editFormData,
+                            duration: parseInt(e.target.value) || 0,
+                          })
+                        }
                         min="1"
                         max="480"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1296,21 +1525,30 @@ const Treatments: React.FC = () => {
                       <input
                         type="number"
                         value={editFormData.price}
-                        onChange={(e) => setEditFormData({ ...editFormData, price: parseFloat(e.target.value) || 0 })}
+                        onChange={e =>
+                          setEditFormData({
+                            ...editFormData,
+                            price: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         min="0"
                         step="0.01"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         required
                         placeholder="Ej: 65.00"
                       />
-                      <p className="text-xs text-green-600 mt-1">Precio por sesión del tratamiento</p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Precio por sesión del tratamiento
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Sección Insumos y Materiales */}
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-orange-800 mb-4">🧪 Insumos y Materiales</h3>
+                  <h3 className="text-lg font-medium text-orange-800 mb-4">
+                    🧪 Insumos y Materiales
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-orange-700 mb-2">
                       Insumos Necesarios
@@ -1319,10 +1557,10 @@ const Treatments: React.FC = () => {
                       <input
                         type="text"
                         value={currentEditSupply}
-                        onChange={(e) => setCurrentEditSupply(e.target.value)}
+                        onChange={e => setCurrentEditSupply(e.target.value)}
                         placeholder="Ej: Suero vitaminado, Mascarilla hidratante..."
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        onKeyPress={(e) => {
+                        onKeyPress={e => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             handleAddEditSupply();
@@ -1338,13 +1576,18 @@ const Treatments: React.FC = () => {
                         Agregar
                       </button>
                     </div>
-                    
+
                     {/* Lista de insumos agregados */}
                     {editFormData.supplies.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-xs text-orange-600 mb-2">Insumos agregados ({editFormData.supplies.length}):</p>
+                        <p className="text-xs text-orange-600 mb-2">
+                          Insumos agregados ({editFormData.supplies.length}):
+                        </p>
                         {editFormData.supplies.map((supply, index) => (
-                          <div key={index} className="flex items-center justify-between bg-white border border-orange-100 px-3 py-2 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-white border border-orange-100 px-3 py-2 rounded-lg"
+                          >
                             <span className="text-sm text-gray-700 font-medium">{supply}</span>
                             <button
                               type="button"
@@ -1360,7 +1603,9 @@ const Treatments: React.FC = () => {
                     ) : (
                       <div className="text-center py-4 border-2 border-dashed border-orange-200 rounded-lg">
                         <p className="text-sm text-orange-600">No hay insumos agregados</p>
-                        <p className="text-xs text-orange-500">Agrega los materiales necesarios para este tratamiento</p>
+                        <p className="text-xs text-orange-500">
+                          Agrega los materiales necesarios para este tratamiento
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1396,9 +1641,7 @@ const Treatments: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h2 className="text-xl font-semibold text-pink-800">
-                  📅 Agendar Nueva Cita
-                </h2>
+                <h2 className="text-xl font-semibold text-pink-800">📅 Agendar Nueva Cita</h2>
                 <p className="text-sm text-gray-600 mt-1">Tratamiento: {selectedTreatment.name}</p>
               </div>
               <button
@@ -1414,25 +1657,33 @@ const Treatments: React.FC = () => {
               <div className="space-y-6">
                 {/* Sección Información del Tratamiento */}
                 <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-pink-800 mb-4">💊 Resumen del Tratamiento</h3>
+                  <h3 className="text-lg font-medium text-pink-800 mb-4">
+                    💊 Resumen del Tratamiento
+                  </h3>
                   <div className="bg-white rounded-lg p-4 border border-pink-100">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-pink-600">{selectedTreatment.duration}</div>
+                        <div className="text-2xl font-bold text-pink-600">
+                          {selectedTreatment.duration}
+                        </div>
                         <div className="text-xs text-gray-600">minutos</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">${formatPrice(selectedTreatment.price)}</div>
+                        <div className="text-2xl font-bold text-green-600">
+                          ${formatPrice(selectedTreatment.price)}
+                        </div>
                         <div className="text-xs text-gray-600">precio</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{selectedTreatment.popularity || 0}%</div>
+                        <div className="text-2xl font-bold text-blue-600">
+                          {selectedTreatment.popularity || 0}%
+                        </div>
                         <div className="text-xs text-gray-600">popularidad</div>
                       </div>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-pink-500 h-2 rounded-full transition-all duration-300" 
+                      <div
+                        className="bg-pink-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${selectedTreatment.popularity || 0}%` }}
                       ></div>
                     </div>
@@ -1441,7 +1692,9 @@ const Treatments: React.FC = () => {
 
                 {/* Sección Selección de Cliente */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-blue-800 mb-4">👤 Selección de Cliente</h3>
+                  <h3 className="text-lg font-medium text-blue-800 mb-4">
+                    👤 Selección de Cliente
+                  </h3>
                   <div className="relative">
                     <label className="block text-sm font-medium text-blue-700 mb-2">
                       Buscar Cliente <span className="text-red-500">*</span>
@@ -1449,17 +1702,17 @@ const Treatments: React.FC = () => {
                     <input
                       type="text"
                       value={scheduleFormData.clientSearch}
-                      onChange={(e) => handleClientSearch(e.target.value)}
+                      onChange={e => handleClientSearch(e.target.value)}
                       placeholder="Buscar por nombre o email del cliente..."
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                       autoComplete="off"
                     />
-                    
+
                     {/* Dropdown de clientes filtrados */}
                     {showClientDropdown && filteredClients.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-blue-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {filteredClients.map((client) => (
+                        {filteredClients.map(client => (
                           <div
                             key={client.id}
                             onClick={() => handleSelectClient(client)}
@@ -1471,26 +1724,30 @@ const Treatments: React.FC = () => {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Mensaje cuando no hay resultados */}
-                    {showClientDropdown && filteredClients.length === 0 && scheduleFormData.clientSearch.trim().length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-blue-200 rounded-lg shadow-lg">
-                        <div className="px-4 py-3 text-center">
-                          <div className="text-blue-500 text-sm">
-                            🔍 No se encontraron clientes
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Intenta con otro nombre o email
+                    {showClientDropdown &&
+                      filteredClients.length === 0 &&
+                      scheduleFormData.clientSearch.trim().length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-blue-200 rounded-lg shadow-lg">
+                          <div className="px-4 py-3 text-center">
+                            <div className="text-blue-500 text-sm">
+                              🔍 No se encontraron clientes
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Intenta con otro nombre o email
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 </div>
 
                 {/* Sección Programación */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-green-800 mb-4">📅 Programación de la Cita</h3>
+                  <h3 className="text-lg font-medium text-green-800 mb-4">
+                    📅 Programación de la Cita
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
@@ -1499,7 +1756,9 @@ const Treatments: React.FC = () => {
                       <input
                         type="date"
                         value={scheduleFormData.date}
-                        onChange={(e) => setScheduleFormData({ ...scheduleFormData, date: e.target.value })}
+                        onChange={e =>
+                          setScheduleFormData({ ...scheduleFormData, date: e.target.value })
+                        }
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         required
                         min={new Date().toISOString().split('T')[0]}
@@ -1513,30 +1772,40 @@ const Treatments: React.FC = () => {
                       <input
                         type="time"
                         value={scheduleFormData.time}
-                        onChange={(e) => setScheduleFormData({ ...scheduleFormData, time: e.target.value })}
+                        onChange={e =>
+                          setScheduleFormData({ ...scheduleFormData, time: e.target.value })
+                        }
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         required
                       />
-                      <p className="text-xs text-green-600 mt-1">Duración: {selectedTreatment.duration} minutos</p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Duración: {selectedTreatment.duration} minutos
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Sección Notas y Observaciones */}
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-orange-800 mb-4">📝 Notas y Observaciones</h3>
+                  <h3 className="text-lg font-medium text-orange-800 mb-4">
+                    📝 Notas y Observaciones
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-orange-700 mb-1">
                       Notas Adicionales
                     </label>
                     <textarea
                       value={scheduleFormData.notes}
-                      onChange={(e) => setScheduleFormData({ ...scheduleFormData, notes: e.target.value })}
+                      onChange={e =>
+                        setScheduleFormData({ ...scheduleFormData, notes: e.target.value })
+                      }
                       rows={4}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                       placeholder="Información adicional sobre la cita, preparación especial, alergias, etc..."
                     />
-                    <p className="text-xs text-orange-600 mt-1">Opcional: Agrega cualquier información relevante para la cita</p>
+                    <p className="text-xs text-orange-600 mt-1">
+                      Opcional: Agrega cualquier información relevante para la cita
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1570,10 +1839,7 @@ const Treatments: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-red-200 bg-red-50">
               <h2 className="text-xl font-semibold text-red-800">⚠️ Eliminar Tratamiento</h2>
-              <button
-                onClick={handleCloseDeleteModal}
-                className="text-red-400 hover:text-red-600"
-              >
+              <button onClick={handleCloseDeleteModal} className="text-red-400 hover:text-red-600">
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -1584,7 +1850,9 @@ const Treatments: React.FC = () => {
                 <div>
                   {/* Información del Tratamiento */}
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-medium text-gray-800 mb-3">💊 Información del Tratamiento</h3>
+                    <h3 className="text-sm font-medium text-gray-800 mb-3">
+                      💊 Información del Tratamiento
+                    </h3>
                     <div className="bg-white p-3 rounded-lg border border-gray-100">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -1597,11 +1865,15 @@ const Treatments: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-gray-600">Duración:</span>
-                          <p className="font-medium text-gray-700">{selectedTreatment.duration} min</p>
+                          <p className="font-medium text-gray-700">
+                            {selectedTreatment.duration} min
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-600">Precio:</span>
-                          <p className="font-medium text-green-600">${formatPrice(selectedTreatment.price)}</p>
+                          <p className="font-medium text-green-600">
+                            ${formatPrice(selectedTreatment.price)}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1618,16 +1890,15 @@ const Treatments: React.FC = () => {
                         <p className="text-sm text-red-600">Esta acción no se puede deshacer</p>
                       </div>
                     </div>
-                    
+
                     <div className="bg-white p-3 rounded-lg border border-red-100">
                       <p className="text-gray-700 mb-2">
                         ¿Estás seguro de que deseas eliminar permanentemente:
                       </p>
-                      <p className="font-semibold text-gray-900 mb-2">
-                        {selectedTreatment.name}
-                      </p>
+                      <p className="font-semibold text-gray-900 mb-2">{selectedTreatment.name}</p>
                       <p className="text-sm text-red-700">
-                        ⚠️ Se eliminará toda la información del tratamiento, incluyendo descripción, insumos y configuración.
+                        ⚠️ Se eliminará toda la información del tratamiento, incluyendo descripción,
+                        insumos y configuración.
                       </p>
                     </div>
                   </div>
@@ -1654,7 +1925,9 @@ const Treatments: React.FC = () => {
                 <div>
                   {/* Información del Tratamiento */}
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-medium text-gray-800 mb-3">💊 Información del Tratamiento</h3>
+                    <h3 className="text-sm font-medium text-gray-800 mb-3">
+                      💊 Información del Tratamiento
+                    </h3>
                     <div className="bg-white p-3 rounded-lg border border-gray-100">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -1667,11 +1940,15 @@ const Treatments: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-gray-600">Citas Activas:</span>
-                          <p className="font-medium text-red-600">{selectedTreatment.activeAppointments || 0}</p>
+                          <p className="font-medium text-red-600">
+                            {selectedTreatment.activeAppointments || 0}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-600">Estado:</span>
-                          <p className="font-medium text-orange-600">{selectedTreatment.status === 'active' ? 'Activo' : 'Inactivo'}</p>
+                          <p className="font-medium text-orange-600">
+                            {selectedTreatment.status === 'active' ? 'Activo' : 'Inactivo'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1681,39 +1958,68 @@ const Treatments: React.FC = () => {
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                     <div className="flex items-center mb-3">
                       <div className="bg-red-100 p-2 rounded-full mr-3">
-                        <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        <svg
+                          className="h-5 w-5 text-red-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                          />
                         </svg>
                       </div>
                       <div>
                         <h3 className="text-lg font-medium text-red-800">No se puede eliminar</h3>
-                        <p className="text-sm text-red-600">Este tratamiento tiene dependencias activas</p>
+                        <p className="text-sm text-red-600">
+                          Este tratamiento tiene dependencias activas
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="bg-white p-3 rounded-lg border border-red-100">
                       <p className="text-gray-700 mb-3">
                         No se puede eliminar <strong>{selectedTreatment.name}</strong> porque tiene:
                       </p>
-                      
+
                       <div className="space-y-2">
                         {(selectedTreatment.activeAppointments || 0) > 0 && (
                           <div className="flex items-center text-sm">
                             <div className="bg-red-100 p-1 rounded-full mr-2">
-                              <svg className="h-3 w-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <svg
+                                className="h-3 w-3 text-red-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                             </div>
                             <span className="text-red-700">
-                              <strong>{selectedTreatment.activeAppointments || 0}</strong> cita(s) programada(s) o activa(s)
+                              <strong>{selectedTreatment.activeAppointments || 0}</strong> cita(s)
+                              programada(s) o activa(s)
                             </span>
                           </div>
                         )}
                         {selectedTreatment.hasScheduledAppointments && (
                           <div className="flex items-center text-sm">
                             <div className="bg-red-100 p-1 rounded-full mr-2">
-                              <svg className="h-3 w-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <svg
+                                className="h-3 w-3 text-red-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                             </div>
                             <span className="text-red-700">Citas programadas pendientes</span>
@@ -1722,18 +2028,27 @@ const Treatments: React.FC = () => {
                         {selectedTreatment.hasConfirmedAppointments && (
                           <div className="flex items-center text-sm">
                             <div className="bg-red-100 p-1 rounded-full mr-2">
-                              <svg className="h-3 w-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              <svg
+                                className="h-3 w-3 text-red-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                             </div>
                             <span className="text-red-700">Citas confirmadas activas</span>
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
                         <p className="text-xs text-yellow-800">
-                          💡 <strong>Solución:</strong> Para eliminar este tratamiento, primero cancela o completa todas las citas asociadas.
+                          💡 <strong>Solución:</strong> Para eliminar este tratamiento, primero
+                          cancela o completa todas las citas asociadas.
                         </p>
                       </div>
                     </div>

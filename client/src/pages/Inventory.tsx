@@ -346,10 +346,10 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Header Mejorado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Inventario</h1>
+          <h1 className="text-2xl font-bold text-pink-800">📦 Gestión de Inventario</h1>
           <p className="text-gray-600 mt-1">Administra insumos, stock y movimientos de inventario</p>
         </div>
         
@@ -359,263 +359,218 @@ const Inventory: React.FC = () => {
               setFilters({ search: '', category: '', status: '' });
               loadSupplies();
             }}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
             🔄 Limpiar Filtros
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
             📦 Nuevo Insumo
           </button>
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Inventario</h3>
-          <div className="flex items-center space-x-3">
-            {(filters.search || filters.category || filters.status) && (
-              <button
-                onClick={() => setFilters({ search: '', category: '', status: '' })}
-                className="text-sm text-pink-600 hover:text-pink-800 font-medium"
+      {/* Filtros Mejorados */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Búsqueda */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                🔍 Buscar Insumos
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, descripción, categoría..."
+                  value={filters.search || ''}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
+              </div>
+            </div>
+
+            {/* Filtro por categoría */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📋 Categoría
+              </label>
+              <select
+                value={filters.category || ''}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
-                🗑️ Limpiar filtros
-              </button>
-            )}
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <span>Modo:</span>
-              <button
-                onClick={() => {
-                  setUseLocalFiltering(!useLocalFiltering);
-                  if (!useLocalFiltering) {
-                    loadSupplies(true); // Cargar todos los datos para filtrado local
-                  }
-                }}
-                className={`px-2 py-1 rounded text-xs font-medium ${
-                  useLocalFiltering 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-                title={useLocalFiltering ? 'Filtrado local (más rápido)' : 'Filtrado del servidor'}
+                <option value="">📦 Todas las categorías</option>
+                <option value="Limpieza">🧴 Limpieza</option>
+                <option value="Desinfección">🧽 Desinfección</option>
+                <option value="Material Médico">🩺 Material Médico</option>
+                <option value="Cosmética">💄 Cosmética</option>
+                <option value="Protección">🧿 Protección</option>
+              </select>
+            </div>
+
+            {/* Filtro por estado */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📊 Estado de Stock
+              </label>
+              <select
+                value={filters.status || ''}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
-                {useLocalFiltering ? '💻 Local' : '🌐 Servidor'}
-              </button>
+                <option value="">📋 Todos los estados</option>
+                <option value="normal">✅ Stock Normal</option>
+                <option value="low_stock">⚠️ Stock Bajo</option>
+                <option value="out_of_stock">🚫 Sin Stock</option>
+              </select>
             </div>
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-2">
-              Buscar Insumo
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={filters.search || ''}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Buscar por nombre, descripción..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-2">
-              Categoría
-            </label>
-            <select
-              value={filters.category || ''}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="">📋 Todas las categorías</option>
-              <option value="Limpieza">🧴 Limpieza</option>
-              <option value="Desinfección">🧽 Desinfección</option>
-              <option value="Material Médico">🩺 Material Médico</option>
-              <option value="Cosmética">💄 Cosmética</option>
-              <option value="Protección">🧿 Protección</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-2">
-              Estado de Stock
-            </label>
-            <select
-              value={filters.status || ''}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="">📊 Todos los estados</option>
-              <option value="normal">✅ Stock Normal</option>
-              <option value="low_stock">⚠️ Stock Bajo</option>
-              <option value="out_of_stock">🚫 Sin Stock</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-2">
-              Resultados
-            </label>
-            <div className="bg-pink-50 border border-pink-200 rounded-lg px-3 py-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-pink-700">Mostrando:</span>
-                <span className="font-bold text-pink-800">{supplies.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-pink-600 mt-1">
-                <span>Total:</span>
-                <span>{allSupplies.length}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Filtros activos */}
-        {(filters.search || filters.category || filters.status) && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-gray-500">Filtros activos:</span>
-              {filters.search && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                  🔍 "{filters.search}"
-                  <button
-                    onClick={() => setFilters({ ...filters, search: '' })}
-                    className="ml-1 text-pink-600 hover:text-pink-800"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {filters.category && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  📊 {filters.category}
-                  <button
-                    onClick={() => setFilters({ ...filters, category: '' })}
-                    className="ml-1 text-blue-600 hover:text-blue-800"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {filters.status && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  📦 {filters.status === 'normal' ? 'Normal' : filters.status === 'low_stock' ? 'Stock Bajo' : 'Sin Stock'}
-                  <button
-                    onClick={() => setFilters({ ...filters, status: '' })}
-                    className="ml-1 text-green-600 hover:text-green-800"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Lista de insumos */}
+      {/* Grid de Insumos */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
-          <span className="ml-3 text-gray-600">Cargando inventario...</span>
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => loadSupplies()}
+            className="text-pink-600 hover:text-pink-700 font-medium"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : supplies.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="flex flex-col items-center">
+            <div className="text-gray-400 mb-3">
+              <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error al cargar inventario</h3>
-              <div className="mt-2 text-sm text-red-700">{error}</div>
-            </div>
+            <p className="text-sm font-medium text-gray-600">
+              No hay insumos registrados
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Crea el primer insumo para comenzar
+            </p>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Insumo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unidad</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {supplies.map((supply) => {
-                  const status = getStockStatus(supply);
-                  return (
-                    <tr key={supply.id}>
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{supply.name}</div>
-                          {supply.description && (
-                            <div className="text-sm text-gray-500">{supply.description}</div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{supply.category || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{supply.unit || 'N/A'}</td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{supply.stock || 0}</div>
-                        <div className="text-xs text-gray-500">Min: {supply.minStock || 0}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">${(Number(supply.unitPrice) || 0).toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockColor(status)}`}>
-                          {status === 'out_of_stock' ? 'Sin Stock' : 
-                           status === 'low_stock' ? 'Stock Bajo' : 'Normal'}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {supplies.map((supply) => {
+            const status = getStockStatus(supply);
+            return (
+              <div key={supply.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                {/* Header de la tarjeta con gradiente */}
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                        <span className="text-lg font-medium text-pink-700">
+                          📦
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => openEditModal(supply)}
-                            className="flex items-center px-3 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            title="Editar insumo"
-                          >
-                            <PencilIcon className="h-4 w-4 mr-1" />
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => openStockModal(supply)}
-                            className="flex items-center px-3 py-2 text-sm text-white bg-pink-600 rounded-lg hover:bg-pink-700"
-                            title="Movimiento de stock"
-                          >
-                            <CubeIcon className="h-4 w-4 mr-1" />
-                            Stock
-                          </button>
-                          <button
-                            onClick={() => openMovementsModal(supply)}
-                            className="flex items-center px-3 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            title="Ver historial de movimientos"
-                          >
-                            <ClockIcon className="h-4 w-4 mr-1" />
-                            Historial
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {supply.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Insumo #{supply.id.slice(-6).toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        status === 'out_of_stock' ? 'bg-red-100 text-red-800' :
+                        status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {status === 'out_of_stock' ? '🚫 Sin Stock' : 
+                         status === 'low_stock' ? '⚠️ Stock Bajo' : '✅ Normal'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información del insumo */}
+                <div className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-pink-500">📋</span>
+                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        {supply.category || 'Sin categoría'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-pink-500">📏</span>
+                      <span className="text-sm text-gray-700">{supply.unit || 'Sin unidad'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-pink-500">📊</span>
+                        <span className="text-sm text-gray-700">Stock: <span className="font-semibold">{supply.stock || 0}</span></span>
+                      </div>
+                      <span className="text-xs text-gray-500">Min: {supply.minStock || 0}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-pink-500">💰</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        ${(Number(supply.unitPrice) || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    {supply.description && (
+                      <div className="flex items-start space-x-2">
+                        <span className="text-pink-500">📝</span>
+                        <span className="text-sm text-gray-700 line-clamp-2">
+                          {supply.description.length > 80 
+                            ? `${supply.description.substring(0, 80)}...` 
+                            : supply.description}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="bg-white border-t border-gray-100 p-4">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => openStockModal(supply)}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                    >
+                      📦 Stock
+                    </button>
+                    <button
+                      onClick={() => openEditModal(supply)}
+                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => openMovementsModal(supply)}
+                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                    >
+                      <ClockIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

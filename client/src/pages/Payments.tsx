@@ -433,276 +433,229 @@ const Payments: React.FC = () => {
               });
               setCurrentPage(1);
             }}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
             🔄 Limpiar Filtros
           </button>
         </div>
       </div>
 
-      {/* Estadísticas Mejoradas */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Resumen de Pagos</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center p-4 bg-pink-50 rounded-lg">
-            <div className="flex items-center justify-center mb-2">
-              <ChartBarIcon className="h-8 w-8 text-pink-600" />
-            </div>
-            <p className="text-2xl font-bold text-pink-600">{stats.totalPayments}</p>
-            <p className="text-sm text-gray-600 mt-1">📋 Total de Abonos</p>
-          </div>
-          
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <div className="flex items-center justify-center mb-2">
-              <BanknotesIcon className="h-8 w-8 text-green-600" />
-            </div>
-            <p className="text-2xl font-bold text-green-600">${stats.totalAmount.toFixed(2)}</p>
-            <p className="text-sm text-gray-600 mt-1">💰 Monto Total</p>
-          </div>
-          
-          <div className="text-center p-4 bg-purple-50 rounded-lg">
-            <div className="flex items-center justify-center mb-2">
-              <CreditCardIcon className="h-8 w-8 text-purple-600" />
-            </div>
-            <p className="text-2xl font-bold text-purple-600">{stats.mostUsedMethod}</p>
-            <p className="text-sm text-gray-600 mt-1">💳 Método Preferido</p>
-          </div>
-          
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center justify-center mb-2">
-              <DocumentIcon className="h-8 w-8 text-blue-600" />
-            </div>
-            <p className="text-2xl font-bold text-blue-600">{stats.linkedInvoices}</p>
-            <p className="text-sm text-gray-600 mt-1">🧾 Facturas Vinculadas</p>
-          </div>
-        </div>
-      </div>
-
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
-          <span className="text-sm text-gray-500">
-            {getTotalFilteredCount()} pago(s) encontrado(s)
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Buscar con icono */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Pago</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Búsqueda */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                🔍 Buscar Pagos
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente, transacción..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
               </div>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Buscar por cliente, transacción..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
             </div>
-          </div>
 
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="Todos">📊 Todos los estados</option>
-              <option value="Pagado">✅ Pagado</option>
-            </select>
-          </div>
-
-          {/* Método de Pago */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Método de Pago</label>
-            <select
-              value={filters.method}
-              onChange={(e) => setFilters({ ...filters, method: e.target.value })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="Todos">💳 Todos los métodos</option>
-              <option value="Efectivo">💵 Efectivo</option>
-              <option value="Transferencia">🏦 Transferencia</option>
-              <option value="Tarjeta de Crédito">💳 Tarjeta de Crédito</option>
-              <option value="Tarjeta de Débito">💳 Tarjeta de Débito</option>
-              <option value="Cheque">📄 Cheque</option>
-            </select>
-          </div>
-
-          {/* Fecha Desde */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Fecha Desde</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
+            {/* Filtro por método */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                💳 Método de Pago
+              </label>
+              <select
+                value={filters.method}
+                onChange={(e) => setFilters({ ...filters, method: e.target.value })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              >
+                <option value="Todos">💳 Todos los métodos</option>
+                <option value="Efectivo">💵 Efectivo</option>
+                <option value="Transferencia">🏦 Transferencia</option>
+                <option value="Tarjeta de Crédito">💳 Tarjeta de Crédito</option>
+                <option value="Tarjeta de Débito">💳 Tarjeta de Débito</option>
+                <option value="Cheque">📄 Cheque</option>
+              </select>
             </div>
-          </div>
 
-          {/* Fecha Hasta */}
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Fecha Hasta</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+            {/* Filtro por fecha */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📅 Fecha
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <CalendarDaysIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
               </div>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabla de Pagos */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tratamiento
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Método
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha del Pago
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+        </div>
+      ) : error ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => loadPayments()}
+            className="text-pink-600 hover:text-pink-700 font-medium"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : getCurrentPagePayments().length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="flex flex-col items-center">
+            <div className="text-gray-400 mb-3">
+              <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-600">
+              {payments.length === 0 ? 'No hay pagos registrados' : 'No se encontraron pagos con los filtros aplicados'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Los pagos aparecerán aquí cuando se registren
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
-                      <span className="ml-2 text-gray-600">Cargando pagos...</span>
-                    </div>
-                  </td>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Método
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mx-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-red-800">Error al cargar pagos</h3>
-                          <div className="mt-2 text-sm text-red-700">{error}</div>
-                          <div className="mt-3">
-                            <button
-                              onClick={loadPayments}
-                              className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 transition-colors"
-                            >
-                              🔄 Intentar de nuevo
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ) : getCurrentPagePayments().length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    {payments.length === 0 ? 'No hay pagos registrados' : 'No se encontraron pagos con los filtros aplicados'}
-                  </td>
-                </tr>
-              ) : (
-                getCurrentPagePayments().map((payment) => (
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {getCurrentPagePayments().map((payment) => (
                   <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{payment.clientName}</div>
-                        <div className="text-sm text-gray-500">{payment.clientEmail}</div>
-                      </div>
-                    </td>
+                    {/* Cliente */}
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {payment.treatments.map((treatment, index) => (
-                          <div key={index} className="mb-1 last:mb-0">
-                            {treatment}
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {payment.clientName}
+                        </div>
+                        {payment.clientEmail && (
+                          <div className="text-sm text-gray-500">
+                            {payment.clientEmail}
                           </div>
-                        ))}
+                        )}
+                        <div className="text-xs text-gray-400 mt-1">
+                          Pago #{payment.id.slice(-6).toUpperCase()}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">${payment.amount.toFixed(2)}</div>
+                    
+                    {/* Monto */}
+                    <td className="px-6 py-4">
+                      <div className="text-lg font-bold text-gray-900 mb-1">
+                        ${payment.amount.toFixed(2)}
+                      </div>
+                      {payment.treatments.length > 0 && (
+                        <div className="text-xs text-gray-500">
+                          {payment.treatments.slice(0, 2).map((treatment, index) => (
+                            <div key={index} className="truncate">
+                              {treatment}
+                            </div>
+                          ))}
+                          {payment.treatments.length > 2 && (
+                            <div className="text-xs text-gray-400">
+                              +{payment.treatments.length - 2} más
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    
+                    {/* Método */}
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
-                        {payment.method === 'Efectivo' && <BanknotesIcon className="h-4 w-4 text-green-500 mr-2" />}
-                        {payment.method === 'Transferencia' && <ArrowTopRightOnSquareIcon className="h-4 w-4 text-blue-500 mr-2" />}
-                        {(payment.method === 'Tarjeta de Crédito' || payment.method === 'Tarjeta de Débito') && <CreditCardIcon className="h-4 w-4 text-purple-500 mr-2" />}
+                        {payment.method === 'Efectivo' && <span className="text-green-500 mr-2">💵</span>}
+                        {payment.method === 'Transferencia' && <span className="text-blue-500 mr-2">🏦</span>}
+                        {(payment.method === 'Tarjeta de Crédito' || payment.method === 'Tarjeta de Débito') && <span className="text-purple-500 mr-2">💳</span>}
+                        {payment.method === 'Cheque' && <span className="text-orange-500 mr-2">📄</span>}
                         <span className="text-sm text-gray-900">{payment.method}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        Pagado
+                    
+                    {/* Estado */}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        ✅ Pagado
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{payment.date}</div>
-                      <div className="text-sm text-gray-500">Fecha de pago</div>
+                    
+                    {/* Fecha */}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {payment.date}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    
+                    {/* Acciones */}
+                    <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleViewInvoice(payment)}
-                          className="inline-flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1" />
-                          Ver Factura
-                        </button>
-                        <button
                           onClick={() => handleViewDetails(payment)}
-                          className="inline-flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-700"
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                         >
                           <EyeIcon className="h-4 w-4 mr-1" />
-                          Detalles
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => handleViewInvoice(payment)}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1" />
+                          Factura
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Información de paginación */}
       {!loading && payments.length > 0 && (

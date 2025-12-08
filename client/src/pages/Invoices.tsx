@@ -401,10 +401,10 @@ const Invoices: React.FC = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Header Mejorado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Facturas</h1>
+          <h1 className="text-2xl font-bold text-pink-800">🧾 Gestión de Facturas</h1>
           <p className="text-gray-600 mt-1">Administra facturas, pagos y estados de facturación</p>
         </div>
         
@@ -420,140 +420,98 @@ const Invoices: React.FC = () => {
               });
               loadInvoices();
             }}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
             🔄 Limpiar Filtros
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
             🧾 Nueva Factura
           </button>
         </div>
       </div>
 
-      {/* Estadísticas Mejoradas */}
-      {stats && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">📊 Resumen de Facturas</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-pink-50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <DocumentIcon className="h-8 w-8 text-pink-600" />
-              </div>
-              <p className="text-2xl font-bold text-pink-600">{stats.totalInvoices || 0}</p>
-              <p className="text-sm text-gray-600 mt-1">📋 Total Facturas</p>
-            </div>
-            
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
-              </div>
-              <p className="text-2xl font-bold text-green-600">${formatAmount(stats.totalPaid)}</p>
-              <p className="text-sm text-gray-600 mt-1">💰 Total Pagado</p>
-            </div>
-            
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <ReceiptPercentIcon className="h-8 w-8 text-yellow-600" />
-              </div>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pendingInvoices || 0}</p>
-              <p className="text-sm text-gray-600 mt-1">⏳ Pendientes</p>
-            </div>
-            
-            <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="flex items-center justify-center mb-2">
-                <DocumentIcon className="h-8 w-8 text-red-600" />
-              </div>
-              <p className="text-2xl font-bold text-red-600">{stats.overdueInvoices || 0}</p>
-              <p className="text-sm text-gray-600 mt-1">🚨 Vencidas</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
-          <span className="text-sm text-gray-500">
-            {invoices.length} factura(s) encontrada(s)
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Buscar Factura</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Búsqueda */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                🔍 Buscar Facturas
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente, descripción..."
+                  value={filters.search || ''}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                />
               </div>
-              <input
-                type="text"
-                value={filters.search || ''}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Buscar por cliente, descripción..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-              />
             </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Estado</label>
-            <select
-              value={filters.status || ''}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors"
-            >
-              <option value="">📊 Todos los estados</option>
-              <option value="PENDING">⏳ Pendiente</option>
-              <option value="PAID">✅ Pagada</option>
-              <option value="OVERDUE">🚨 Vencida</option>
-              <option value="PARTIAL">🔄 Parcial</option>
-              <option value="CANCELLED">❌ Cancelada</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-pink-700 mb-1">Acciones Rápidas</label>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setFilters({ ...filters, status: 'PENDING' })}
-                className="flex-1 px-3 py-2 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
+
+            {/* Filtro por estado */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📊 Estado
+              </label>
+              <select
+                value={filters.status || ''}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
-                ⏳ Pendientes
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: 'OVERDUE' })}
-                className="flex-1 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
-              >
-                🚨 Vencidas
-              </button>
+                <option value="">Todos los estados</option>
+                <option value="PENDING">⏳ Pendientes</option>
+                <option value="PAID">✅ Pagadas</option>
+                <option value="OVERDUE">🚨 Vencidas</option>
+                <option value="PARTIAL">🔄 Parciales</option>
+                <option value="CANCELLED">❌ Canceladas</option>
+              </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lista de facturas */}
+      {/* Tabla de Facturas */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
-          <span className="ml-3 text-gray-600">Cargando facturas...</span>
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => loadInvoices()}
+            className="text-pink-600 hover:text-pink-700 font-medium"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : invoices.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="flex flex-col items-center">
+            <div className="text-gray-400 mb-3">
+              <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error al cargar facturas</h3>
-              <div className="mt-2 text-sm text-red-700">{error}</div>
-            </div>
+            <p className="text-sm font-medium text-gray-600">
+              No hay facturas registradas
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Crea la primera factura para comenzar
+            </p>
           </div>
         </div>
       ) : (
@@ -582,26 +540,28 @@ const Invoices: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={invoice.id} className="hover:bg-gray-50">
                     {/* Cliente */}
-                    <td className="px-6 py-6">
+                    <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-gray-900 mb-1">
+                        <div className="text-sm font-medium text-gray-900">
                           {invoice.clientName || 'Cliente no disponible'}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {invoice.clientEmail}
-                        </div>
+                        {invoice.clientEmail && (
+                          <div className="text-sm text-gray-500">
+                            {invoice.clientEmail}
+                          </div>
+                        )}
                         <div className="text-xs text-gray-400 mt-1">
-                          Cita: {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                          Factura #{invoice.id.slice(-6).toUpperCase()}
                         </div>
                       </div>
                     </td>
                     
                     {/* Monto */}
-                    <td className="px-6 py-6">
+                    <td className="px-6 py-4">
                       <div className="text-lg font-bold text-gray-900 mb-1">
                         ${formatAmount(invoice.amount)}
                       </div>
@@ -611,22 +571,17 @@ const Invoices: React.FC = () => {
                       <div className="text-xs text-gray-500">
                         Pendiente: ${formatAmount(calculateRemainingAmount(invoice))}
                       </div>
-                      {(invoice.paymentCount || 0) > 0 && (
-                        <div className="text-xs text-blue-600 mt-1">
-                          {invoice.paymentCount || 0} pago{(invoice.paymentCount || 0) > 1 ? 's' : ''} registrado{(invoice.paymentCount || 0) > 1 ? 's' : ''}
-                        </div>
-                      )}
                     </td>
                     
                     {/* Estado */}
-                    <td className="px-6 py-6">
-                      <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(invoice.status)}`}>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(invoice.status)}`}>
                         {getStatusLabel(invoice.status)}
                       </span>
                     </td>
                     
                     {/* Progreso */}
-                    <td className="px-6 py-6">
+                    <td className="px-6 py-4">
                       {(() => {
                         const percentage = calculatePaymentPercentage(invoice);
                         const progressColor = percentage === 100 ? 'bg-green-500' : percentage > 0 ? 'bg-pink-500' : 'bg-gray-300';
@@ -652,42 +607,36 @@ const Invoices: React.FC = () => {
                     </td>
                     
                     {/* Fecha */}
-                    <td className="px-6 py-6">
-                      <div className="text-sm text-gray-900 mb-1">
-                        {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('es-ES') : 'Sin fecha'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Vence: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('es-ES') : 'N/A'}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}
                       </div>
                     </td>
-                    <td className="px-6 py-6">
-                      {(() => {
-                        const remainingAmount = calculateRemainingAmount(invoice);
-                        const canReceivePayment = remainingAmount > 0 && invoice.status !== 'CANCELLED';
-                        
-                        return (
-                          <div className="flex items-center space-x-2">
-                            {canReceivePayment && (
-                              <button
-                                onClick={() => openPaymentModal(invoice)}
-                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 transition-colors"
-                                title={`Abonar pago - Pendiente: $${formatAmount(remainingAmount)}`}
-                              >
-                                <CurrencyDollarIcon className="h-3 w-3 mr-1" />
-                                Abonar
-                              </button>
-                            )}
-                            <button
-                              onClick={() => openDetailsModal(invoice)}
-                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-pink-600 bg-pink-50 border border-pink-200 rounded-md hover:bg-pink-100 transition-colors"
-                              title="Ver detalles"
-                            >
-                              <EyeIcon className="h-3 w-3 mr-1" />
-                              Detalles
-                            </button>
-                          </div>
-                        );
-                      })()}
+                    
+                    {/* Acciones */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setShowDetailsModal(true);
+                          }}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                        >
+                          <EyeIcon className="h-4 w-4 mr-1" />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setShowPaymentModal(true);
+                          }}
+                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 border border-green-300 rounded-lg hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        >
+                          <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                          Abonar pago
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
