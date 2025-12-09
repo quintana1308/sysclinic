@@ -157,6 +157,15 @@ const Reports: React.FC = () => {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const [clientAnalysis, setClientAnalysis] = useState<ClientAnalysis | null>(null);
   const [performanceIndicators, setPerformanceIndicators] = useState<PerformanceIndicators | null>(null);
+  
+  // Estado para estadísticas de citas
+  const [appointmentsStats, setAppointmentsStats] = useState({
+    totalAppointments: 0,
+    completedAppointments: 0,
+    cancelledAppointments: 0,
+    scheduledAppointments: 0,
+    confirmedAppointments: 0
+  });
 
   // Estados para datos originales (sin filtrar)
   const [originalData, setOriginalData] = useState({
@@ -242,9 +251,19 @@ const Reports: React.FC = () => {
 
       setAvailableMonths(monthsArray);
       
-      // Establecer el primer mes como filtro por defecto
+      // Establecer el mes actual como filtro por defecto (diciembre 2025)
       if (monthsArray.length > 0) {
-        const defaultMonth = monthsArray[0];
+        const currentDate = new Date();
+        const currentMonthKey = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        // Buscar el mes actual en los meses disponibles
+        let defaultMonth = monthsArray.find(m => m.value === currentMonthKey);
+        
+        // Si no existe el mes actual, usar el más reciente
+        if (!defaultMonth) {
+          defaultMonth = monthsArray[0];
+        }
+        
         setFilters({
           period: defaultMonth.label,
           startDate: defaultMonth.startDate,
@@ -281,81 +300,80 @@ const Reports: React.FC = () => {
         endDate: endDate.split('/').reverse().join('-')
       };
 
-      // Cargar datos reales en paralelo (sin revenue API que da 404)
+      console.log('🔄 Cargando datos desde APIs de reportes...', { startDate, endDate, apiFilters });
+
+      // Cargar datos reales usando las nuevas APIs de reportes
       const [
-        appointmentsData,
-        clientsData,
-        treatmentsData,
-        paymentsData
+        revenueReportData,
+        appointmentsReportData,
+        treatmentsReportData,
+        clientsReportData
       ] = await Promise.allSettled([
-        appointmentService.getAppointments({ 
-          limit: 1000 
-        }),
-        clientService.getClients({ limit: 1000 }),
-        treatmentService.getTreatments(),
-        paymentService.getPayments({ 
-          limit: 1000 
-        })
+        reportService.getRevenueReport(apiFilters),
+        reportService.getAppointmentsReport(apiFilters),
+        reportService.getTreatmentsReport(apiFilters),
+        reportService.getClientsReport(apiFilters)
       ]);
 
-      // Procesar datos de pagos para crear ingresos mensuales
+      console.log('📊 Resultados de APIs de reportes:', {
+        revenue: revenueReportData.status,
+        appointments: appointmentsReportData.status,
+        treatments: treatmentsReportData.status,
+        clients: clientsReportData.status
+      });
+
+      // Procesar datos de ingresos desde la API de reportes
       let totalRevenue = 0;
       let monthlyRevenueData: MonthlyRevenue[] = [];
       
-      if (paymentsData.status === 'fulfilled' && paymentsData.value.success) {
-        const payments = paymentsData.value.data || [];
-        const paidPayments = payments.filter((payment: any) => payment.status === 'PAID');
-        totalRevenue = paidPayments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
+      if (revenueReportData.status === 'fulfilled' && revenueReportData.value.success) {
+        const revenueData = revenueReportData.value.data;
+        console.log('💰 Datos de ingresos desde API:', revenueData);
         
-        // Agrupar pagos por mes
-        const paymentsByMonth = new Map<string, { amount: number, count: number }>();
+        totalRevenue = revenueData.summary?.totalRevenue || 0;
         
-        paidPayments.forEach((payment: any) => {
-          const paymentDate = new Date(payment.paidDate || payment.createdAt);
-          const monthKey = paymentDate.toLocaleDateString('es-ES', { 
-            month: 'long', 
-            year: 'numeric' 
-          });
-          
-          if (paymentsByMonth.has(monthKey)) {
-            const existing = paymentsByMonth.get(monthKey)!;
-            paymentsByMonth.set(monthKey, {
-              amount: existing.amount + (payment.amount || 0),
-              count: existing.count + 1
-            });
-          } else {
-            paymentsByMonth.set(monthKey, {
-              amount: payment.amount || 0,
-              count: 1
-            });
-          }
-        });
-        
-        // Convertir a array de MonthlyRevenue
-        monthlyRevenueData = Array.from(paymentsByMonth.entries()).map(([month, data]) => ({
-          month,
-          amount: data.amount,
-          appointments: data.count
-        })).sort((a, b) => {
-          // Ordenar por fecha (más reciente primero)
-          const dateA = new Date(a.month + ' 1');
-          const dateB = new Date(b.month + ' 1');
-          return dateB.getTime() - dateA.getTime();
-        });
+        // Convertir datos de ingresos por período
+        if (revenueData.revenueByPeriod && Array.isArray(revenueData.revenueByPeriod)) {
+          monthlyRevenueData = revenueData.revenueByPeriod.map((item: any) => ({
+            month: item.periodLabel || item.period,
+            amount: Number(item.revenue) || 0,
+            appointments: Number(item.appointments) || 0  // Usar appointments, no payments
+          }));
+        }
+      } else {
+        console.warn('⚠️ Error cargando datos de ingresos:', revenueReportData);
       }
 
-      // Procesar datos de citas
+      // Procesar datos de citas desde la API de reportes
       let totalAppointments = 0;
       let completedAppointments = 0;
-      if (appointmentsData.status === 'fulfilled' && appointmentsData.value.success) {
-        const appointments = appointmentsData.value.data || [];
-        totalAppointments = appointments.length;
-        completedAppointments = appointments.filter((apt: any) => 
-          apt.status === 'COMPLETED'
-        ).length;
+      let cancelledAppointments = 0;
+      let scheduledAppointments = 0;
+      let confirmedAppointments = 0;
+      
+      if (appointmentsReportData.status === 'fulfilled' && appointmentsReportData.value.success) {
+        const appointmentsData = appointmentsReportData.value.data;
+        console.log('📅 Datos de citas desde API:', appointmentsData);
+        
+        totalAppointments = appointmentsData.summary?.totalAppointments || 0;
+        completedAppointments = appointmentsData.summary?.completedAppointments || 0;
+        cancelledAppointments = appointmentsData.summary?.cancelledAppointments || 0;
+        scheduledAppointments = appointmentsData.summary?.scheduledAppointments || 0;
+        confirmedAppointments = appointmentsData.summary?.confirmedAppointments || 0;
+        
+        // Actualizar el estado de citas
+        setAppointmentsStats({
+          totalAppointments,
+          completedAppointments,
+          cancelledAppointments,
+          scheduledAppointments,
+          confirmedAppointments
+        });
+      } else {
+        console.warn('⚠️ Error cargando datos de citas:', appointmentsReportData);
       }
 
-      // Procesar datos de clientes
+      // Procesar datos de clientes desde la API de reportes
       let clientAnalysisData: ClientAnalysis = {
         totalClients: 0,
         newClients: 0,
@@ -363,63 +381,51 @@ const Reports: React.FC = () => {
         averageVisits: 0
       };
       
-      if (clientsData.status === 'fulfilled' && clientsData.value.success) {
-        const clients = clientsData.value.data || [];
-        const currentDate = new Date();
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-
+      // Variables para clientes activos e inactivos
+      let inactiveClients = 0;
+      let activeClients = 0;
+      
+      if (clientsReportData.status === 'fulfilled' && clientsReportData.value.success) {
+        const clientsData = clientsReportData.value.data;
+        console.log('👥 Datos de clientes desde API:', clientsData);
+        
+        // Obtener información de clientes
+        inactiveClients = clientsData.summary?.inactiveClients || 0;
+        activeClients = clientsData.summary?.activeClients || 0;
+        
         clientAnalysisData = {
-          totalClients: clients.length,
-          newClients: clients.filter((client: any) => 
-            new Date(client.createdAt) >= threeMonthsAgo
-          ).length,
-          returningClients: clients.filter((client: any) => 
-            new Date(client.createdAt) < threeMonthsAgo
-          ).length,
-          averageVisits: totalAppointments > 0 ? Number((totalAppointments / Math.max(clients.length, 1)).toFixed(1)) : 0
+          totalClients: clientsData.summary?.totalClients || 0,
+          newClients: clientsData.summary?.newClientsInPeriod || 0,
+          returningClients: clientsData.summary?.returningClients || 0,
+          averageVisits: totalAppointments > 0 && activeClients > 0 ? 
+            Number((totalAppointments / activeClients).toFixed(1)) : 0
         };
+        
+        console.log('👥 Desglose de clientes:', {
+          totalClients: clientAnalysisData.totalClients,
+          activeClients,
+          inactiveClients,
+          newClientsInPeriod: clientAnalysisData.newClients
+        });
+      } else {
+        console.warn('⚠️ Error cargando datos de clientes:', clientsReportData);
       }
 
-      // Procesar datos de tratamientos populares basados en citas reales
+      // Procesar datos de tratamientos desde la API de reportes
       let popularTreatmentsData: PopularTreatment[] = [];
-      if (treatmentsData.status === 'fulfilled' && treatmentsData.value.success && 
-          appointmentsData.status === 'fulfilled' && appointmentsData.value.success) {
+      
+      if (treatmentsReportData.status === 'fulfilled' && treatmentsReportData.value.success) {
+        const treatmentsData = treatmentsReportData.value.data;
+        console.log('💊 Datos de tratamientos desde API:', treatmentsData);
         
-        const treatments = treatmentsData.value.data || [];
-        const appointments = appointmentsData.value.data || [];
-        
-        // Contar tratamientos por cita
-        const treatmentCounts = new Map<string, number>();
-        
-        appointments.forEach((appointment: any) => {
-          if (appointment.treatments && Array.isArray(appointment.treatments)) {
-            appointment.treatments.forEach((treatment: any) => {
-              const treatmentName = treatment.name || treatment.treatmentName || 'Tratamiento sin nombre';
-              treatmentCounts.set(treatmentName, (treatmentCounts.get(treatmentName) || 0) + 1);
-            });
-          }
-        });
-        
-        // Si no hay tratamientos en citas, usar los tratamientos disponibles con conteo 0
-        if (treatmentCounts.size === 0 && treatments.length > 0) {
-          treatments.forEach((treatment: any) => {
-            treatmentCounts.set(treatment.name, 0);
-          });
+        // Convertir datos de tratamientos populares
+        if (treatmentsData.topTreatments && Array.isArray(treatmentsData.topTreatments)) {
+          popularTreatmentsData = treatmentsData.topTreatments.map((treatment: any) => ({
+            name: treatment.name,
+            appointments: Number(treatment.count) || 0,
+            percentage: Number(treatment.percentage) || 0
+          }));
         }
-        
-        // Convertir a array y calcular porcentajes
-        const totalAppointmentsWithTreatments = Array.from(treatmentCounts.values()).reduce((sum, count) => sum + count, 0);
-        
-        popularTreatmentsData = Array.from(treatmentCounts.entries())
-          .map(([name, appointments]) => ({
-            name,
-            appointments,
-            percentage: totalAppointmentsWithTreatments > 0 ? 
-              Math.round((appointments / totalAppointmentsWithTreatments) * 100) : 0
-          }))
-          .sort((a, b) => b.appointments - a.appointments) // Ordenar por más popular
-          .slice(0, 5); // Top 5 tratamientos
       }
 
       // Resumen financiero simplificado (solo ingresos)
@@ -496,27 +502,30 @@ const Reports: React.FC = () => {
         apiFilters
       });
 
-      console.log('💰 DATOS FINANCIEROS (SOLO INGRESOS):', {
+      console.log('💰 DATOS FINANCIEROS (DESDE API DE REPORTES):', {
         totalRevenue: `$${totalRevenue}`,
-        paymentsProcessed: paymentsData.status === 'fulfilled' ? 
-          (paymentsData.value.data?.length || 0) : 0,
-        note: 'Gastos y ganancias eliminados del sistema'
+        revenueAPI: revenueReportData.status,
+        monthlyPeriods: monthlyRevenueData.length,
+        note: 'Datos reales desde API de reportes'
       });
 
-      console.log('📅 DATOS DE CITAS:', {
+      console.log('📅 DATOS DE CITAS (DESDE API DE REPORTES):', {
         totalAppointments,
         completedAppointments,
-        appointmentsInPeriod: appointmentsData.status === 'fulfilled' ? 
-          (appointmentsData.value.data?.length || 0) : 0,
-        occupancyRate: `${performanceIndicatorsData.occupancyRate}%`
+        cancelledAppointments,
+        scheduledAppointments,
+        confirmedAppointments,
+        appointmentsAPI: appointmentsReportData.status
       });
 
-      console.log('👥 ANÁLISIS DE CLIENTES:', {
+      console.log('👥 ANÁLISIS DE CLIENTES (DESDE API DE REPORTES):', {
         totalClients: clientAnalysisData.totalClients,
+        activeClients: activeClients,
+        inactiveClients: inactiveClients,
         newClients: clientAnalysisData.newClients,
         returningClients: clientAnalysisData.returningClients,
         averageVisits: clientAnalysisData.averageVisits,
-        clientRetention: `${performanceIndicatorsData.clientRetention}%`
+        clientsAPI: clientsReportData.status
       });
 
       console.log('📊 INGRESOS MENSUALES:', monthlyRevenueData.map(m => ({
@@ -525,11 +534,9 @@ const Reports: React.FC = () => {
         appointments: m.appointments
       })));
 
-      console.log('🏆 TRATAMIENTOS POPULARES (DATOS REALES):', {
-        totalTratamientosDisponibles: treatmentsData.status === 'fulfilled' ? 
-          (treatmentsData.value.data?.length || 0) : 0,
-        citasConTratamientos: appointmentsData.status === 'fulfilled' ? 
-          (appointmentsData.value.data?.filter((apt: any) => apt.treatments?.length > 0).length || 0) : 0,
+      console.log('🏆 TRATAMIENTOS POPULARES (DESDE API DE REPORTES):', {
+        treatmentsAPI: treatmentsReportData.status,
+        topTreatmentsCount: popularTreatmentsData.length,
         tratamientosPopulares: popularTreatmentsData.map(t => ({
           name: t.name,
           appointments: t.appointments,
@@ -544,23 +551,23 @@ const Reports: React.FC = () => {
         clientRetention: `${performanceIndicatorsData.clientRetention}%`
       });
 
-      console.log('🔄 ESTADO DE APIS:', {
-        appointmentsAPI: appointmentsData.status,
-        clientsAPI: clientsData.status,
-        treatmentsAPI: treatmentsData.status,
-        paymentsAPI: paymentsData.status
+      console.log('🔄 ESTADO DE APIS DE REPORTES:', {
+        revenueAPI: revenueReportData.status,
+        appointmentsAPI: appointmentsReportData.status,
+        treatmentsAPI: treatmentsReportData.status,
+        clientsAPI: clientsReportData.status
       });
-      if (appointmentsData.status === 'rejected') {
-        console.warn('❌ Appointments API Error:', appointmentsData.reason);
+      if (revenueReportData.status === 'rejected') {
+        console.warn('❌ Revenue Report API Error:', revenueReportData.reason);
       }
-      if (clientsData.status === 'rejected') {
-        console.warn('❌ Clients API Error:', clientsData.reason);
+      if (appointmentsReportData.status === 'rejected') {
+        console.warn('❌ Appointments Report API Error:', appointmentsReportData.reason);
       }
-      if (treatmentsData.status === 'rejected') {
-        console.warn('❌ Treatments API Error:', treatmentsData.reason);
+      if (treatmentsReportData.status === 'rejected') {
+        console.warn('❌ Treatments Report API Error:', treatmentsReportData.reason);
       }
-      if (paymentsData.status === 'rejected') {
-        console.warn('❌ Payments API Error:', paymentsData.reason);
+      if (clientsReportData.status === 'rejected') {
+        console.warn('❌ Clients Report API Error:', clientsReportData.reason);
       }
 
       console.groupEnd();
@@ -610,67 +617,18 @@ const Reports: React.FC = () => {
   const handleApplyFilters = async () => {
     console.group('🔄 APLICANDO FILTROS POR MES');
     console.log('Filtros seleccionados:', filters);
-    console.log('Solo se actualizarán: Ingresos Totales y Total de Citas');
+    console.log('Cargando datos usando APIs de reportes...');
     
     try {
       setLoading(true);
       
-      // Preparar filtros para las APIs
-      const apiFilters = {
-        startDate: filters.startDate.split('/').reverse().join('-'),
-        endDate: filters.endDate.split('/').reverse().join('-')
-      };
-
-      // Solo cargar citas y pagos filtrados por mes
-      const [appointmentsData, paymentsData] = await Promise.allSettled([
-        appointmentService.getAppointments({ 
-          startDate: apiFilters.startDate, 
-          endDate: apiFilters.endDate,
-          limit: 1000 
-        }),
-        paymentService.getPayments({ 
-          startDate: apiFilters.startDate, 
-          endDate: apiFilters.endDate,
-          limit: 1000 
-        })
-      ]);
-
-      // Procesar solo ingresos del mes seleccionado
-      let totalRevenue = 0;
-      if (paymentsData.status === 'fulfilled' && paymentsData.value.success) {
-        const payments = paymentsData.value.data || [];
-        const paidPayments = payments.filter((payment: any) => payment.status === 'PAID');
-        totalRevenue = paidPayments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
-      }
-
-      // Procesar solo citas del mes seleccionado
-      let totalAppointments = 0;
-      if (appointmentsData.status === 'fulfilled' && appointmentsData.value.success) {
-        const appointments = appointmentsData.value.data || [];
-        totalAppointments = appointments.length;
-      }
-
-      // Actualizar solo el resumen financiero (ingresos)
-      setFinancialSummary({
-        totalRevenue,
-        totalExpenses: 0,
-        netProfit: totalRevenue,
-        profitMargin: 100
-      });
-
-      console.log('💰 DATOS FILTRADOS POR MES:', {
-        totalRevenue: `$${totalRevenue}`,
-        totalAppointments,
-        period: filters.period,
-        note: 'Solo se actualizaron ingresos y citas del mes seleccionado'
-      });
+      // Cargar datos usando la función unificada
+      await loadRealData(filters.startDate, filters.endDate);
 
       console.log('✅ Filtros aplicados exitosamente');
-      toast.success(`Datos actualizados para ${filters.period}`);
       
     } catch (error) {
       console.error('❌ Error aplicando filtros:', error);
-      toast.error('Error al aplicar filtros');
     } finally {
       setLoading(false);
       console.groupEnd();
@@ -1224,7 +1182,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
 
     return {
       totalRevenue: financialSummary.totalRevenue,
-      totalAppointments: monthlyRevenue.reduce((sum, m) => sum + m.appointments, 0),
+      totalAppointments: appointmentsStats.totalAppointments,  // Usar el estado de citas
       netProfit: financialSummary.netProfit,
       activeClients: clientAnalysis.totalClients
     };
@@ -1248,7 +1206,6 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
             title="Descargar reporte en formato HTML (se puede imprimir como PDF)"
           >
-            <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
             📄 Exportar PDF
           </button>
           <button
@@ -1256,7 +1213,6 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
             title="Descargar reporte en formato CSV (compatible con Excel)"
           >
-            <TableCellsIcon className="h-4 w-4 mr-2" />
             📊 Exportar Excel
           </button>
         </div>
@@ -1279,7 +1235,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
             </label>
             <select
               value={filters.period}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const selectedMonth = availableMonths.find(m => m.label === e.target.value);
                 if (selectedMonth) {
                   setFilters({
@@ -1287,6 +1243,9 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
                     startDate: selectedMonth.startDate,
                     endDate: selectedMonth.endDate
                   });
+                  
+                  // Cargar datos con el nuevo filtro
+                  await loadRealData(selectedMonth.startDate, selectedMonth.endDate);
                 }
               }}
               className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
@@ -1431,6 +1390,44 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
                     <p className="text-2xl font-bold text-orange-600">{mainStats.activeClients}</p>
                     <p className="text-xs text-gray-500">Clientes registrados</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Desglose de Citas por Estado */}
+          {appointmentsStats.totalAppointments > 0 && (
+            <div className="mb-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <CalendarDaysIcon className="h-4 w-4 text-blue-600 mr-2" />
+                  Desglose de Citas por Estado
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {appointmentsStats.scheduledAppointments > 0 && (
+                    <div className="text-center p-2 bg-yellow-50 rounded-md border border-yellow-200">
+                      <p className="text-lg font-bold text-yellow-700">{appointmentsStats.scheduledAppointments}</p>
+                      <p className="text-xs text-yellow-600">Programadas</p>
+                    </div>
+                  )}
+                  {appointmentsStats.confirmedAppointments > 0 && (
+                    <div className="text-center p-2 bg-blue-50 rounded-md border border-blue-200">
+                      <p className="text-lg font-bold text-blue-700">{appointmentsStats.confirmedAppointments}</p>
+                      <p className="text-xs text-blue-600">Confirmadas</p>
+                    </div>
+                  )}
+                  {appointmentsStats.completedAppointments > 0 && (
+                    <div className="text-center p-2 bg-green-50 rounded-md border border-green-200">
+                      <p className="text-lg font-bold text-green-700">{appointmentsStats.completedAppointments}</p>
+                      <p className="text-xs text-green-600">Completadas</p>
+                    </div>
+                  )}
+                  {appointmentsStats.cancelledAppointments > 0 && (
+                    <div className="text-center p-2 bg-red-50 rounded-md border border-red-200">
+                      <p className="text-lg font-bold text-red-700">{appointmentsStats.cancelledAppointments}</p>
+                      <p className="text-xs text-red-600">Canceladas</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

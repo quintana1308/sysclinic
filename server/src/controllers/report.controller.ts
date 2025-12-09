@@ -79,6 +79,8 @@ export const getRevenueReport = async (
     
     const { startDate: formattedStartDate, endDate: formattedEndDate } = validateAndFormatDates(startDate, endDate);
     
+    console.log('📅 Fechas formateadas:', { formattedStartDate, formattedEndDate });
+    
     // Consulta de ingresos totales en el período
     const totalRevenueQuery = `
       SELECT 
@@ -106,20 +108,56 @@ export const getRevenueReport = async (
       GROUP BY DATE_FORMAT(p.paidDate, '%Y-%m')
       ORDER BY period DESC
     `;
+
+    // Consulta de citas por mes para obtener el total correcto
+    const appointmentsByMonthQuery = `
+      SELECT 
+        DATE_FORMAT(a.date, '%Y-%m') as period,
+        DATE_FORMAT(a.date, '%M %Y') as periodLabel,
+        COUNT(*) as appointments
+      FROM appointments a
+      INNER JOIN clients c ON a.clientId = c.id
+      WHERE DATE(a.date) BETWEEN ? AND ?
+        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
+      GROUP BY DATE_FORMAT(a.date, '%Y-%m')
+      ORDER BY period DESC
+    `;
     
     const params = companyId 
       ? [formattedStartDate, formattedEndDate, companyId]
       : [formattedStartDate, formattedEndDate];
     
-    // Ejecutar ambas consultas
-    const [totalRevenueResult, revenueByMonthData] = await Promise.all([
+    console.log('🔧 Parámetros SQL:', params);
+    console.log('📊 Consulta Total Revenue:', totalRevenueQuery.replace(/\s+/g, ' ').trim());
+    console.log('📊 Consulta Revenue By Month:', revenueByMonthQuery.replace(/\s+/g, ' ').trim());
+    console.log('📊 Consulta Appointments By Month:', appointmentsByMonthQuery.replace(/\s+/g, ' ').trim());
+    
+    // Ejecutar todas las consultas
+    const [totalRevenueResult, revenueByMonthData, appointmentsByMonthData] = await Promise.all([
       queryOne<any>(totalRevenueQuery, params),
-      query<any[]>(revenueByMonthQuery, params)
+      query<any[]>(revenueByMonthQuery, params),
+      query<any[]>(appointmentsByMonthQuery, params)
     ]);
+    
+    console.log('🎯 Resultado consulta total:', totalRevenueResult);
+    console.log('🎯 Resultado consulta por mes:', revenueByMonthData);
+    console.log('🎯 Resultado citas por mes:', appointmentsByMonthData);
     
     // Obtener totales de la consulta específica
     const totalRevenue = Number(totalRevenueResult.totalRevenue) || 0;
     const totalPayments = Number(totalRevenueResult.totalPayments) || 0;
+
+    // Combinar datos de ingresos con citas por mes
+    const combinedMonthlyData = revenueByMonthData.map((revenueItem: any) => {
+      const appointmentItem = appointmentsByMonthData.find((apt: any) => apt.period === revenueItem.period);
+      return {
+        period: revenueItem.period,
+        periodLabel: revenueItem.periodLabel,
+        revenue: Number(revenueItem.revenue) || 0,
+        payments: Number(revenueItem.payments) || 0,
+        appointments: appointmentItem ? Number((appointmentItem as any).appointments) : 0
+      };
+    });
     
     console.log('💰 Revenue Report Results:', {
       totalRevenue,
@@ -138,7 +176,7 @@ export const getRevenueReport = async (
           averageRevenue: totalPayments > 0 ? totalRevenue / totalPayments : 0,
           period: `${formattedStartDate} - ${formattedEndDate}`
         },
-        revenueByPeriod: revenueByMonthData,
+        revenueByPeriod: combinedMonthlyData,
         filters: {
           startDate: formattedStartDate,
           endDate: formattedEndDate,
@@ -167,6 +205,8 @@ export const getAppointmentsReport = async (
     console.log('🔍 Appointments Report - Parámetros:', { startDate, endDate, companyId });
     
     const { startDate: formattedStartDate, endDate: formattedEndDate } = validateAndFormatDates(startDate, endDate);
+    
+    console.log('📅 Fechas formateadas (Appointments):', { formattedStartDate, formattedEndDate });
     
     // Consulta de total de citas en el período
     const totalAppointmentsQuery = `
@@ -199,10 +239,17 @@ export const getAppointmentsReport = async (
       ? [formattedStartDate, formattedEndDate, companyId]
       : [formattedStartDate, formattedEndDate];
     
+    console.log('🔧 Parámetros SQL (Appointments):', params);
+    console.log('📊 Consulta Total Appointments:', totalAppointmentsQuery.replace(/\s+/g, ' ').trim());
+    console.log('📊 Consulta Appointments By Status:', appointmentsByStatusQuery.replace(/\s+/g, ' ').trim());
+    
     const [totalAppointmentsResult, appointmentsByStatus] = await Promise.all([
       queryOne<any>(totalAppointmentsQuery, params),
       query<any[]>(appointmentsByStatusQuery, params)
     ]);
+    
+    console.log('🎯 Resultado consulta total appointments:', totalAppointmentsResult);
+    console.log('🎯 Resultado appointments by status:', appointmentsByStatus);
     
     // Consulta de citas por mes
     const appointmentsByMonthQuery = `
@@ -220,7 +267,11 @@ export const getAppointmentsReport = async (
       ORDER BY period DESC
     `;
     
+    console.log('📊 Consulta Appointments By Month:', appointmentsByMonthQuery.replace(/\s+/g, ' ').trim());
+    
     const appointmentsByMonth = await query<any[]>(appointmentsByMonthQuery, params);
+    
+    console.log('🎯 Resultado appointments by month:', appointmentsByMonth);
     
     // Obtener totales de la consulta específica
     const totalAppointments = Number(totalAppointmentsResult.totalAppointments) || 0;
@@ -235,6 +286,15 @@ export const getAppointmentsReport = async (
       count: Number(item.count),
       percentage: totalAppointments > 0 ? Math.round((Number(item.count) / totalAppointments) * 100) : 0
     }));
+    
+    console.log('🧮 Totales calculados (Appointments):', {
+      totalAppointments,
+      completedAppointments,
+      cancelledAppointments,
+      scheduledAppointments,
+      confirmedAppointments
+    });
+    console.log('📊 Appointments by status con porcentajes:', appointmentsByStatusWithPercentages);
     
     console.log('📅 Appointments Report Results:', {
       totalAppointments,
@@ -382,15 +442,17 @@ export const getClientsReport = async (
       ORDER BY period DESC
     `;
     
-    // Consulta de clientes totales
+    // Consulta de clientes totales (activos e inactivos)
     const totalClientsQuery = `
       SELECT 
         COUNT(*) as totalClients,
+        COUNT(CASE WHEN u.isActive = 1 THEN 1 END) as activeClients,
+        COUNT(CASE WHEN u.isActive = 0 THEN 1 END) as inactiveClients,
         COUNT(CASE WHEN DATE(c.createdAt) BETWEEN ? AND ? THEN 1 END) as newClientsInPeriod,
         COUNT(CASE WHEN DATE(c.createdAt) < ? THEN 1 END) as returningClients
       FROM clients c
       INNER JOIN users u ON c.userId = u.id
-      WHERE u.isActive = 1
+      WHERE 1=1
         ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
     `;
     
@@ -409,6 +471,8 @@ export const getClientsReport = async (
     
     console.log('👥 Clients Report Results:', {
       totalClients: totalClientsData.totalClients,
+      activeClients: totalClientsData.activeClients,
+      inactiveClients: totalClientsData.inactiveClients,
       newClientsInPeriod: totalClientsData.newClientsInPeriod,
       returningClients: totalClientsData.returningClients
     });
@@ -419,10 +483,12 @@ export const getClientsReport = async (
       data: {
         summary: {
           totalClients: Number(totalClientsData.totalClients),
+          activeClients: Number(totalClientsData.activeClients),
+          inactiveClients: Number(totalClientsData.inactiveClients),
           newClientsInPeriod: Number(totalClientsData.newClientsInPeriod),
           returningClients: Number(totalClientsData.returningClients),
-          retentionRate: totalClientsData.totalClients > 0 
-            ? Math.round((totalClientsData.returningClients / totalClientsData.totalClients) * 100)
+          retentionRate: totalClientsData.activeClients > 0 
+            ? Math.round((totalClientsData.returningClients / totalClientsData.activeClients) * 100)
             : 0,
           period: `${formattedStartDate} - ${formattedEndDate}`
         },

@@ -62,7 +62,7 @@ const Settings: React.FC = () => {
   const { company, updateCompanySettings } = useCompany();
   const { isMaster, canManageCompanies } = usePermissions();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'company' | 'companies'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'company'>('profile');
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
   
@@ -191,11 +191,13 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-        <p className="text-gray-600">Administra tu perfil y configuración de la cuenta</p>
+    <div className="p-6">
+      {/* Header Mejorado */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-pink-800">⚙️ Configuración</h1>
+          <p className="text-gray-600 mt-1">Administra tu perfil y configuración de la cuenta</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -206,56 +208,38 @@ const Settings: React.FC = () => {
               onClick={() => setActiveTab('profile')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'profile'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-pink-500 text-pink-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center">
-                <UserIcon className="h-5 w-5 mr-2" />
-                Perfil
+                👤 Perfil
               </div>
             </button>
             <button
               onClick={() => setActiveTab('password')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'password'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-pink-500 text-pink-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center">
-                <LockClosedIcon className="h-5 w-5 mr-2" />
-                Contraseña
+                🔒 Contraseña
               </div>
             </button>
             <button
               onClick={() => setActiveTab('company')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'company'
-                  ? 'border-primary-500 text-primary-600'
+                  ? 'border-pink-500 text-pink-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center">
-                <BuildingOfficeIcon className="h-5 w-5 mr-2" />
-                Empresa
+                🏢 Empresa
               </div>
             </button>
-            {isMaster && (
-              <button
-                onClick={() => setActiveTab('companies')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'companies'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <SwatchIcon className="h-5 w-5 mr-2" />
-                  Gestión de Empresas
-                </div>
-              </button>
-            )}
           </nav>
         </div>
       </div>
@@ -263,493 +247,532 @@ const Settings: React.FC = () => {
       {/* Contenido de las tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {activeTab === 'profile' && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Perfil</h3>
-            
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Nombre */}
+          <div>
+            {/* Header de la tarjeta con gradiente */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <span className="text-2xl font-medium text-pink-700">
+                    {user ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}` : '👤'}
+                  </span>
+                </div>
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre *
+                  <h3 className="text-xl font-semibold text-gray-900">👤 Información del Perfil</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Actualiza tu información personal y datos de contacto
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del formulario */}
+            <div className="p-6">
+              <form onSubmit={handleProfileSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Nombre */}
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-pink-700 mb-2">
+                      👤 Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
+                      value={profileData.firstName}
+                      onChange={handleProfileChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Ingresa tu nombre"
+                    />
+                  </div>
+
+                  {/* Apellido */}
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-pink-700 mb-2">
+                      👤 Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
+                      value={profileData.lastName}
+                      onChange={handleProfileChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Ingresa tu apellido"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-pink-700 mb-2">
+                    📧 Correo Electrónico *
                   </label>
                   <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={profileData.firstName}
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={profileData.email}
                     onChange={handleProfileChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ingresa tu nombre"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    placeholder="correo@ejemplo.com"
                   />
                 </div>
 
-                {/* Apellido */}
+                {/* Teléfono */}
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Apellido *
+                  <label htmlFor="phone" className="block text-sm font-medium text-pink-700 mb-2">
+                    📱 Teléfono
                   </label>
                   <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={profileData.lastName}
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={profileData.phone}
                     onChange={handleProfileChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ingresa tu apellido"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    placeholder="Ingresa tu teléfono"
                   />
                 </div>
-              </div>
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Correo Electrónico *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={profileData.email}
-                  onChange={handleProfileChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-
-              {/* Teléfono */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={profileData.phone}
-                  onChange={handleProfileChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Ingresa tu teléfono"
-                />
-              </div>
-
-              {/* Botón de envío */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isLoadingProfile}
-                  className="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoadingProfile ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Guardando...
+                {/* Información adicional */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-blue-500 mt-0.5">ℹ️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900 mb-1">Información importante</h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <p>• Los campos marcados con (*) son obligatorios</p>
+                        <p>• Tu email se usa para iniciar sesión en el sistema</p>
+                        <p>• El teléfono es opcional pero recomendado para contacto</p>
+                      </div>
                     </div>
-                  ) : (
-                    'Guardar Cambios'
-                  )}
-                </button>
-              </div>
-            </form>
+                  </div>
+                </div>
+
+                {/* Botón de envío */}
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <button
+                    type="submit"
+                    disabled={isLoadingProfile}
+                    className="inline-flex items-center px-6 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoadingProfile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        💾 Guardando...
+                      </>
+                    ) : (
+                      <>💾 Guardar Cambios</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {activeTab === 'password' && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar Contraseña</h3>
-            
-            <form onSubmit={handlePasswordSubmit} className="space-y-6">
-              {/* Contraseña actual */}
-              <div>
-                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Contraseña Actual *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    id="currentPassword"
-                    name="currentPassword"
-                    value={passwordData.currentPassword}
-                    onChange={handlePasswordChange}
-                    required
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ingresa tu contraseña actual"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showCurrentPassword ? (
-                      <EyeSlashIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
-                  </button>
+          <div>
+            {/* Header de la tarjeta con gradiente */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <span className="text-2xl">🔒</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🔒 Cambiar Contraseña</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Actualiza tu contraseña para mantener tu cuenta segura
+                  </p>
                 </div>
               </div>
+            </div>
 
-              {/* Nueva contraseña */}
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nueva Contraseña *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    id="newPassword"
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    required
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ingresa tu nueva contraseña"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showNewPassword ? (
-                      <EyeSlashIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
-                  </button>
+            {/* Contenido del formulario */}
+            <div className="p-6">
+              <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                {/* Contraseña actual */}
+                <div>
+                  <label htmlFor="currentPassword" className="block text-sm font-medium text-pink-700 mb-2">
+                    🔑 Contraseña Actual *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      id="currentPassword"
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Ingresa tu contraseña actual"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-pink-600 transition-colors"
+                    >
+                      {showCurrentPassword ? (
+                        <span className="text-lg">🙈</span>
+                      ) : (
+                        <span className="text-lg">👁️</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
-                  La contraseña debe tener al menos 6 caracteres
-                </p>
-              </div>
 
-              {/* Confirmar nueva contraseña */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirmar Nueva Contraseña *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                    required
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Confirma tu nueva contraseña"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeSlashIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
-                  </button>
+                {/* Nueva contraseña */}
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-pink-700 mb-2">
+                    🆕 Nueva Contraseña *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      id="newPassword"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Ingresa tu nueva contraseña"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-pink-600 transition-colors"
+                    >
+                      {showNewPassword ? (
+                        <span className="text-lg">🙈</span>
+                      ) : (
+                        <span className="text-lg">👁️</span>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    💡 La contraseña debe tener al menos 6 caracteres
+                  </p>
                 </div>
-              </div>
 
-              {/* Botón de envío */}
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isLoadingPassword}
-                  className="px-6 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoadingPassword ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Cambiando...
+                {/* Confirmar nueva contraseña */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-pink-700 mb-2">
+                    ✅ Confirmar Nueva Contraseña *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Confirma tu nueva contraseña"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-pink-600 transition-colors"
+                    >
+                      {showConfirmPassword ? (
+                        <span className="text-lg">🙈</span>
+                      ) : (
+                        <span className="text-lg">👁️</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Consejos de seguridad */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-yellow-500 mt-0.5">🛡️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-yellow-900 mb-1">Consejos de Seguridad</h4>
+                      <div className="text-sm text-yellow-800 space-y-1">
+                        <p>• Usa una combinación de letras, números y símbolos</p>
+                        <p>• Evita usar información personal como fechas o nombres</p>
+                        <p>• No reutilices contraseñas de otras cuentas</p>
+                        <p>• Considera usar un gestor de contraseñas</p>
+                      </div>
                     </div>
-                  ) : (
-                    'Cambiar Contraseña'
-                  )}
-                </button>
-              </div>
-            </form>
+                  </div>
+                </div>
+
+                {/* Botón de envío */}
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <button
+                    type="submit"
+                    disabled={isLoadingPassword}
+                    className="inline-flex items-center px-6 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoadingPassword ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        🔄 Cambiando...
+                      </>
+                    ) : (
+                      <>🔒 Cambiar Contraseña</>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
         {activeTab === 'company' && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Configuración de Empresa</h3>
-            
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              // La lógica de actualización se maneja en los handlers individuales
-            }} className="space-y-6">
-              
-              {/* Información de la Empresa */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre de la Empresa
-                  </label>
-                  <input
-                    type="text"
-                    id="companyName"
-                    value={company?.name || ''}
-                    onChange={(e) => updateCompanySettings({ name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Nombre de tu empresa"
-                  />
+          <div>
+            {/* Header de la tarjeta con gradiente */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <span className="text-2xl">🏢</span>
                 </div>
-
                 <div>
-                  <label htmlFor="companyEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email de la Empresa
-                  </label>
-                  <input
-                    type="email"
-                    id="companyEmail"
-                    value={company?.email || ''}
-                    onChange={(e) => updateCompanySettings({ email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="contacto@empresa.com"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="companyPhone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono de la Empresa
-                  </label>
-                  <input
-                    type="tel"
-                    id="companyPhone"
-                    value={company?.phone || ''}
-                    onChange={(e) => updateCompanySettings({ phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="companyWebsite" className="block text-sm font-medium text-gray-700 mb-1">
-                    Sitio Web
-                  </label>
-                  <input
-                    type="url"
-                    id="companyWebsite"
-                    value={company?.website || ''}
-                    onChange={(e) => updateCompanySettings({ website: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="https://www.empresa.com"
-                  />
+                  <h3 className="text-xl font-semibold text-gray-900">🏢 Configuración de Empresa</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Administra la información y personalización de tu empresa
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label htmlFor="companyAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                  Dirección
-                </label>
-                <textarea
-                  id="companyAddress"
-                  rows={3}
-                  value={company?.address || ''}
-                  onChange={(e) => updateCompanySettings({ address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Dirección completa de la empresa"
-                />
-              </div>
-
-              {/* Configuración de Tema */}
-              <div className="border-t pt-6">
-                <div className="flex items-center mb-4">
-                  <SwatchIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <h4 className="text-md font-medium text-gray-900">Personalización del Tema</h4>
-                </div>
+            {/* Contenido del formulario */}
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                // La lógica de actualización se maneja en los handlers individuales
+              }} className="space-y-8">
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Color Principal del Sistema
-                    </label>
-                    <div className="grid grid-cols-6 gap-3">
-                      {[
-                        { name: 'Púrpura', color: '#8B5CF6' },
-                        { name: 'Azul', color: '#3B82F6' },
-                        { name: 'Verde', color: '#10B981' },
-                        { name: 'Rosa', color: '#EC4899' },
-                        { name: 'Índigo', color: '#6366F1' },
-                        { name: 'Rojo', color: '#EF4444' },
-                        { name: 'Amarillo', color: '#F59E0B' },
-                        { name: 'Teal', color: '#14B8A6' },
-                        { name: 'Naranja', color: '#F97316' },
-                        { name: 'Cyan', color: '#06B6D4' },
-                        { name: 'Lime', color: '#84CC16' },
-                        { name: 'Esmeralda', color: '#059669' }
-                      ].map((colorOption) => (
-                        <button
-                          key={colorOption.name}
-                          type="button"
-                          onClick={() => {
-                            updateCompanySettings({ primaryColor: colorOption.color });
-                            toast.success(`Tema cambiado a ${colorOption.name}`);
-                          }}
-                          className={`
-                            w-12 h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110
-                            ${company?.primaryColor === colorOption.color 
-                              ? 'border-gray-900 ring-2 ring-gray-900 ring-offset-2' 
-                              : 'border-gray-300 hover:border-gray-400'
-                            }
-                          `}
-                          style={{ backgroundColor: colorOption.color }}
-                          title={colorOption.name}
-                        />
-                      ))}
-                    </div>
+                {/* Información Básica de la Empresa */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <span className="text-pink-500 mr-2">🏢</span>
+                    <h4 className="text-lg font-medium text-gray-900">Información Básica</h4>
                   </div>
-
-                  <div>
-                    <label htmlFor="customColor" className="block text-sm font-medium text-gray-700 mb-2">
-                      Color Personalizado
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="color"
-                        id="customColor"
-                        value={company?.primaryColor || '#8B5CF6'}
-                        onChange={(e) => {
-                          updateCompanySettings({ primaryColor: e.target.value });
-                          toast.success('Color personalizado aplicado');
-                        }}
-                        className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
-                      />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="companyName" className="block text-sm font-medium text-pink-700 mb-2">
+                        🏷️ Nombre de la Empresa
+                      </label>
                       <input
                         type="text"
-                        value={company?.primaryColor || '#8B5CF6'}
-                        onChange={(e) => {
-                          if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                            updateCompanySettings({ primaryColor: e.target.value });
-                          }
-                        }}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="#8B5CF6"
-                        pattern="^#[0-9A-F]{6}$"
+                        id="companyName"
+                        value={company?.name || ''}
+                        onChange={(e) => updateCompanySettings({ name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="Nombre de tu empresa"
                       />
                     </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Ingresa un código hexadecimal válido (ej: #8B5CF6)
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Vista Previa */}
-              <div className="border-t pt-6">
-                <h4 className="text-md font-medium text-gray-900 mb-4">Vista Previa</h4>
-                <div className="bg-gray-50 rounded-lg p-4 border">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div 
-                      className="w-8 h-8 rounded-lg"
-                      style={{ backgroundColor: company?.primaryColor || '#8B5CF6' }}
-                    />
                     <div>
-                      <h5 className="font-medium text-gray-900">{company?.name || 'Nombre de Empresa'}</h5>
-                      <p className="text-sm text-gray-500">Vista previa del tema</p>
+                      <label htmlFor="companyEmail" className="block text-sm font-medium text-pink-700 mb-2">
+                        📧 Email de la Empresa
+                      </label>
+                      <input
+                        type="email"
+                        id="companyEmail"
+                        value={company?.email || ''}
+                        onChange={(e) => updateCompanySettings({ email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="contacto@empresa.com"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="companyPhone" className="block text-sm font-medium text-pink-700 mb-2">
+                        📱 Teléfono de la Empresa
+                      </label>
+                      <input
+                        type="tel"
+                        id="companyPhone"
+                        value={company?.phone || ''}
+                        onChange={(e) => updateCompanySettings({ phone: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="companyWebsite" className="block text-sm font-medium text-pink-700 mb-2">
+                        🌐 Sitio Web
+                      </label>
+                      <input
+                        type="url"
+                        id="companyWebsite"
+                        value={company?.website || ''}
+                        onChange={(e) => updateCompanySettings({ website: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="https://www.empresa.com"
+                      />
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      type="button"
-                      className="px-3 py-1 text-sm font-medium text-white rounded"
-                      style={{ backgroundColor: company?.primaryColor || '#8B5CF6' }}
-                    >
-                      Botón Principal
-                    </button>
-                    <button 
-                      type="button"
-                      className="px-3 py-1 text-sm font-medium border rounded"
-                      style={{ 
-                        borderColor: company?.primaryColor || '#8B5CF6',
-                        color: company?.primaryColor || '#8B5CF6'
-                      }}
-                    >
-                      Botón Secundario
-                    </button>
+
+                  <div className="mt-6">
+                    <label htmlFor="companyAddress" className="block text-sm font-medium text-pink-700 mb-2">
+                      📍 Dirección
+                    </label>
+                    <textarea
+                      id="companyAddress"
+                      rows={3}
+                      value={company?.address || ''}
+                      onChange={(e) => updateCompanySettings({ address: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Dirección completa de la empresa"
+                    />
                   </div>
                 </div>
-              </div>
-            </form>
+
+                {/* Configuración de Tema */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center mb-6">
+                    <span className="text-pink-500 mr-2">🎨</span>
+                    <h4 className="text-lg font-medium text-gray-900">Personalización del Tema</h4>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-pink-700 mb-3">
+                        🌈 Color Principal del Sistema
+                      </label>
+                      <div className="grid grid-cols-6 gap-3">
+                        {[
+                          { name: 'Púrpura', color: '#8B5CF6' },
+                          { name: 'Azul', color: '#3B82F6' },
+                          { name: 'Verde', color: '#10B981' },
+                          { name: 'Rosa', color: '#EC4899' },
+                          { name: 'Índigo', color: '#6366F1' },
+                          { name: 'Rojo', color: '#EF4444' },
+                          { name: 'Amarillo', color: '#F59E0B' },
+                          { name: 'Teal', color: '#14B8A6' },
+                          { name: 'Naranja', color: '#F97316' },
+                          { name: 'Cyan', color: '#06B6D4' },
+                          { name: 'Lime', color: '#84CC16' },
+                          { name: 'Esmeralda', color: '#059669' }
+                        ].map((colorOption) => (
+                          <button
+                            key={colorOption.name}
+                            type="button"
+                            onClick={() => {
+                              updateCompanySettings({ primaryColor: colorOption.color });
+                              toast.success(`🎨 Tema cambiado a ${colorOption.name}`);
+                            }}
+                            className={`
+                              w-12 h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110
+                              ${company?.primaryColor === colorOption.color 
+                                ? 'border-pink-500 ring-2 ring-pink-500 ring-offset-2' 
+                                : 'border-gray-300 hover:border-gray-400'
+                              }
+                            `}
+                            style={{ backgroundColor: colorOption.color }}
+                            title={colorOption.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="customColor" className="block text-sm font-medium text-pink-700 mb-2">
+                        🎯 Color Personalizado
+                      </label>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="color"
+                          id="customColor"
+                          value={company?.primaryColor || '#8B5CF6'}
+                          onChange={(e) => {
+                            updateCompanySettings({ primaryColor: e.target.value });
+                            toast.success('🎨 Color personalizado aplicado');
+                          }}
+                          className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={company?.primaryColor || '#8B5CF6'}
+                          onChange={(e) => {
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              updateCompanySettings({ primaryColor: e.target.value });
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                          placeholder="#8B5CF6"
+                          pattern="^#[0-9A-F]{6}$"
+                        />
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        💡 Ingresa un código hexadecimal válido (ej: #8B5CF6)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vista Previa */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center mb-4">
+                    <span className="text-pink-500 mr-2">👀</span>
+                    <h4 className="text-lg font-medium text-gray-900">Vista Previa</h4>
+                  </div>
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6 border">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div 
+                        className="w-12 h-12 rounded-lg shadow-sm"
+                        style={{ backgroundColor: company?.primaryColor || '#8B5CF6' }}
+                      />
+                      <div>
+                        <h5 className="text-lg font-semibold text-gray-900">
+                          {company?.name || 'Nombre de Empresa'}
+                        </h5>
+                        <p className="text-sm text-gray-500">Vista previa del tema personalizado</p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-3">
+                      <button 
+                        type="button"
+                        className="px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm"
+                        style={{ backgroundColor: company?.primaryColor || '#8B5CF6' }}
+                      >
+                        🔘 Botón Principal
+                      </button>
+                      <button 
+                        type="button"
+                        className="px-4 py-2 text-sm font-medium border-2 rounded-lg"
+                        style={{ 
+                          borderColor: company?.primaryColor || '#8B5CF6',
+                          color: company?.primaryColor || '#8B5CF6'
+                        }}
+                      >
+                        ⭕ Botón Secundario
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-green-500 mt-0.5">💡</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-green-900 mb-1">Información sobre la configuración</h4>
+                      <div className="text-sm text-green-800 space-y-1">
+                        <p>• Los cambios se guardan automáticamente al modificar cada campo</p>
+                        <p>• El color del tema se aplica inmediatamente en toda la aplicación</p>
+                        <p>• La información de contacto se usa en reportes y comunicaciones</p>
+                        <p>• Puedes cambiar el tema tantas veces como desees</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
-        {activeTab === 'companies' && isMaster && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Gestión de Empresas</h3>
-            <p className="text-gray-600 mb-6">
-              Como usuario master, puedes gestionar todas las empresas del sistema.
-            </p>
-
-            {/* Acciones rápidas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <BuildingOfficeIcon className="h-5 w-5 text-primary-600 mr-2" />
-                  <h4 className="font-medium text-gray-900">Empresas</h4>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Crear y gestionar empresas del sistema
-                </p>
-                <button
-                  onClick={() => navigate('/dashboard/companies')}
-                  className="w-full bg-primary-600 hover:bg-primary-700 text-white px-3 py-2 rounded text-sm font-medium"
-                >
-                  Gestionar Empresas
-                </button>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <UserIcon className="h-5 w-5 text-green-600 mr-2" />
-                  <h4 className="font-medium text-gray-900">Usuarios</h4>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Administrar usuarios y asignaciones
-                </p>
-                <button
-                  onClick={() => navigate('/dashboard/users')}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium"
-                >
-                  Gestionar Usuarios
-                </button>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <SwatchIcon className="h-5 w-5 text-orange-600 mr-2" />
-                  <h4 className="font-medium text-gray-900">Licencias</h4>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Controlar planes y suscripciones
-                </p>
-                <button
-                  onClick={() => navigate('/dashboard/licenses')}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded text-sm font-medium"
-                >
-                  Gestionar Licencias
-                </button>
-              </div>
-            </div>
-
-            {/* Información del sistema */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Información del Sistema</h4>
-              <div className="text-sm text-blue-800 space-y-1">
-                <p>• Acceso completo a todas las empresas</p>
-                <p>• Gestión de usuarios y roles</p>
-                <p>• Control de licencias y planes</p>
-                <p>• Configuración global del sistema</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

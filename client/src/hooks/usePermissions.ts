@@ -123,6 +123,9 @@ export const usePermissions = () => {
       case 'companies':
         return hasPermission({ resource: 'companies', action: 'read' });
 
+      case 'system-management':
+        return isMaster(); // Solo usuarios master pueden acceder a gestión de sistema
+
       default:
         return false;
     }
