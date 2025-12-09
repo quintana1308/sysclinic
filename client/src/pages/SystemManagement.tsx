@@ -4,6 +4,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import userService, { User } from '../services/userService';
+import companyService, { Company } from '../services/companyService';
 
 // Iconos SVG
 const UserIcon = ({ className }: { className?: string }) => (
@@ -70,8 +71,15 @@ const SystemManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+
+  // Estados para empresas
+  const [companiesList, setCompaniesList] = useState<Company[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [companyStatusFilter, setCompanyStatusFilter] = useState('');
   
-  // Estados para modales
+  // Estados para modales de usuarios
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -80,6 +88,16 @@ const SystemManagement: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+
+  // Estados para modales de empresas
+  const [showCompanyViewModal, setShowCompanyViewModal] = useState(false);
+  const [showCompanyEditModal, setShowCompanyEditModal] = useState(false);
+  const [showCompanyCreateModal, setShowCompanyCreateModal] = useState(false);
+  const [showCompanyDeleteModal, setShowCompanyDeleteModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companyDeleteLoading, setCompanyDeleteLoading] = useState(false);
+  const [companyEditLoading, setCompanyEditLoading] = useState(false);
+  const [companyCreateLoading, setCompanyCreateLoading] = useState(false);
   const [roles, setRoles] = useState<Array<{id: string, name: string}>>([]);
   const [companies, setCompanies] = useState<Array<{id: string, name: string}>>([]);
   const [editFormData, setEditFormData] = useState({
@@ -99,6 +117,30 @@ const SystemManagement: React.FC = () => {
     isActive: true,
     roleId: '',
     companyId: ''
+  });
+
+  // Estados para formularios de empresas
+  const [companyEditFormData, setCompanyEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    licenseType: 'basic',
+    maxUsers: 10,
+    maxClients: 100,
+    isActive: true
+  });
+  const [companyCreateFormData, setCompanyCreateFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: '',
+    licenseType: 'basic',
+    maxUsers: 10,
+    maxClients: 100,
+    isActive: true
   });
 
   // Funciones auxiliares
@@ -122,9 +164,27 @@ const SystemManagement: React.FC = () => {
 
   const getRoleNames = (user: User) => {
     if (!user.roles || user.roles.length === 0) {
-      return 'Sin rol asignado';
+      return 'Sin rol';
     }
-    return user.roles.map(role => role.name).join(', ');
+    return user.roles.map(role => role.name.charAt(0).toUpperCase() + role.name.slice(1)).join(', ');
+  };
+
+  const getCompanyInitials = (company: Company) => {
+    const name = company.name || '';
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getLicenseTypeName = (licenseType: string) => {
+    const types = {
+      'basic': 'Básica',
+      'premium': 'Premium',
+      'enterprise': 'Empresarial'
+    };
+    return types[licenseType as keyof typeof types] || licenseType;
   };
 
   // Cargar roles disponibles
@@ -168,6 +228,38 @@ const SystemManagement: React.FC = () => {
       console.error('❌ Error loading companies:', error);
       console.error('❌ Error details:', error?.response?.data || error?.message);
       setCompanies([]); // Establecer array vacío en caso de error
+    }
+  };
+
+  // Cargar empresas desde la API
+  const loadCompaniesList = async () => {
+    try {
+      setCompaniesLoading(true);
+      setCompaniesError(null);
+      
+      console.log('🔄 Cargando empresas desde la API...');
+      
+      const companiesData = await companyService.getCompanies();
+      console.log('✅ Empresas cargadas:', companiesData);
+      
+      if (Array.isArray(companiesData)) {
+        setCompaniesList(companiesData);
+      } else {
+        console.warn('⚠️ Los datos de empresas no son un array:', companiesData);
+        setCompaniesList([]);
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error loading companies:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al cargar empresas';
+      
+      setCompaniesError(errorMessage);
+      setCompaniesList([]);
+    } finally {
+      setCompaniesLoading(false);
     }
   };
 
@@ -423,12 +515,182 @@ const SystemManagement: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES PARA EMPRESAS ====================
+
+  const openCompanyViewModal = (company: Company) => {
+    setSelectedCompany(company);
+    setShowCompanyViewModal(true);
+  };
+
+  const openCompanyEditModal = (company: Company) => {
+    setSelectedCompany(company);
+    
+    // Llenar formulario con datos de la empresa
+    setCompanyEditFormData({
+      name: company.name || '',
+      email: company.email || '',
+      phone: company.phone || '',
+      address: company.address || '',
+      website: company.website || '',
+      licenseType: company.licenseType || 'basic',
+      maxUsers: company.maxUsers || 10,
+      maxClients: company.maxClients || 100,
+      isActive: company.isActive
+    });
+    
+    setShowCompanyEditModal(true);
+  };
+
+  const openCompanyDeleteModal = (company: Company) => {
+    setSelectedCompany(company);
+    setShowCompanyDeleteModal(true);
+  };
+
+  const openCompanyCreateModal = () => {
+    // Limpiar formulario
+    setCompanyCreateFormData({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      website: '',
+      licenseType: 'basic',
+      maxUsers: 10,
+      maxClients: 100,
+      isActive: true
+    });
+    setShowCompanyCreateModal(true);
+  };
+
+  const handleCreateCompany = async () => {
+    try {
+      setCompanyCreateLoading(true);
+      
+      console.log('🚀 FRONTEND - Iniciando creación de empresa:');
+      console.log('   - Datos del formulario:', companyCreateFormData);
+      
+      // Validaciones básicas
+      if (!companyCreateFormData.name.trim()) {
+        toast.error('El nombre de la empresa es requerido');
+        return;
+      }
+      
+      // Llamada a la API para crear empresa
+      const result = await companyService.createCompany(companyCreateFormData);
+      
+      console.log('✅ FRONTEND - Empresa creada exitosamente:', result);
+      
+      toast.success(`Empresa ${companyCreateFormData.name} creada correctamente`);
+      setShowCompanyCreateModal(false);
+      
+      // Limpiar formulario
+      setCompanyCreateFormData({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
+        licenseType: 'basic',
+        maxUsers: 10,
+        maxClients: 100,
+        isActive: true
+      });
+      
+      // Recargar la lista de empresas
+      await loadCompaniesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error creating company:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al crear empresa';
+      
+      toast.error(errorMessage);
+    } finally {
+      setCompanyCreateLoading(false);
+    }
+  };
+
+  const handleUpdateCompany = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      setCompanyEditLoading(true);
+      
+      console.log('🚀 FRONTEND - Iniciando actualización de empresa:');
+      console.log('   - Empresa ID:', selectedCompany.id);
+      console.log('   - Datos del formulario:', companyEditFormData);
+      
+      // Llamada a la API para actualizar empresa
+      const result = await companyService.updateCompany(selectedCompany.id, companyEditFormData);
+      
+      console.log('✅ FRONTEND - Empresa actualizada exitosamente:', result);
+      
+      toast.success(`Empresa ${companyEditFormData.name} actualizada correctamente`);
+      setShowCompanyEditModal(false);
+      setSelectedCompany(null);
+      
+      // Recargar la lista de empresas
+      await loadCompaniesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error updating company:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al actualizar empresa';
+      
+      toast.error(errorMessage);
+    } finally {
+      setCompanyEditLoading(false);
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      setCompanyDeleteLoading(true);
+      
+      console.log('🗑️ Desactivando empresa:', selectedCompany.id);
+      
+      // Llamada a la API para desactivar empresa
+      await companyService.deleteCompany(selectedCompany.id);
+      
+      toast.success(`Empresa ${selectedCompany.name} desactivada correctamente`);
+      setShowCompanyDeleteModal(false);
+      setSelectedCompany(null);
+      
+      // Recargar la lista de empresas
+      await loadCompaniesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error deleting company:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al desactivar empresa';
+      
+      toast.error(errorMessage);
+    } finally {
+      setCompanyDeleteLoading(false);
+    }
+  };
+
   // Cargar usuarios cuando cambien los filtros
   useEffect(() => {
     if (activeSection === 'users') {
       loadUsers();
     }
   }, [activeSection, searchTerm, statusFilter, roleFilter]);
+
+  // Cargar empresas cuando cambien los filtros
+  useEffect(() => {
+    if (activeSection === 'companies') {
+      loadCompaniesList();
+    }
+  }, [activeSection, companySearchTerm, companyStatusFilter]);
 
   // Cargar roles solo una vez cuando se monta la sección de usuarios
   useEffect(() => {
@@ -820,82 +1082,241 @@ const SystemManagement: React.FC = () => {
 
         {activeSection === 'companies' && (
           <div>
-            {/* Header de la tarjeta con gradiente */}
+            {/* Header de la sección */}
             <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                  <span className="text-2xl">🏢</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                    <span className="text-2xl">🏢</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">🏢 Gestión de Empresas</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Crear, editar y administrar empresas del sistema
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={openCompanyCreateModal}
+                  className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Nueva Empresa
+                </button>
+              </div>
+            </div>
+
+            {/* Filtros y búsqueda */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Búsqueda */}
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar empresas..."
+                    value={companySearchTerm}
+                    onChange={(e) => setCompanySearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
+                </div>
+
+                {/* Filtro por estado */}
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">🏢 Gestión de Empresas</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Administra empresas, configuraciones y asignaciones
-                  </p>
+                  <select
+                    value={companyStatusFilter}
+                    onChange={(e) => setCompanyStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="">📊 Todos los estados</option>
+                    <option value="active">✅ Activas</option>
+                    <option value="inactive">❌ Inactivas</option>
+                  </select>
+                </div>
+
+                {/* Estadísticas rápidas */}
+                <div className="flex items-center justify-end space-x-4 text-sm text-gray-600">
+                  <span>Total: {companiesList.length}</span>
+                  <span>Activas: {companiesList.filter(c => c.isActive).length}</span>
+                  <span>Inactivas: {companiesList.filter(c => !c.isActive).length}</span>
                 </div>
               </div>
             </div>
 
-            {/* Contenido */}
+            {/* Contenido principal */}
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Tarjeta de acción */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
-                  <div className="flex items-center mb-4">
-                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
-                      <span className="text-2xl">🏢</span>
-                    </div>
-                    <div className="ml-4">
-                      <h4 className="text-lg font-semibold text-blue-900">Empresas del Sistema</h4>
-                      <p className="text-sm text-blue-700">Gestionar organizaciones</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-blue-800 mb-4">
-                    Crear, editar y administrar empresas del sistema, configurar ajustes específicos.
-                  </p>
+              {companiesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+                  <span className="ml-3 text-gray-600">Cargando empresas...</span>
+                </div>
+              ) : companiesError ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                  <div className="text-red-500 text-4xl mb-4">❌</div>
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">Error al cargar empresas</h3>
+                  <p className="text-red-700 mb-4">{companiesError}</p>
                   <button
-                    onClick={() => navigate('/dashboard/companies')}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    onClick={loadCompaniesList}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                   >
-                    🏢 Gestionar Empresas
+                    Reintentar
                   </button>
                 </div>
+              ) : companiesList.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                  <div className="text-gray-400 text-6xl mb-4">🏢</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay empresas registradas</h3>
+                  <p className="text-gray-600 mb-6">Comienza creando tu primera empresa en el sistema</p>
+                  <button
+                    onClick={openCompanyCreateModal}
+                    className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    <PlusIcon className="h-5 w-5 mr-2 inline" />
+                    Crear Primera Empresa
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Empresa
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Contacto
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Licencia
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Usuarios
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Estado
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Acciones
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {companiesList
+                          .filter(company => {
+                            const matchesSearch = companySearchTerm === '' || 
+                              company.name.toLowerCase().includes(companySearchTerm.toLowerCase()) ||
+                              (company.email && company.email.toLowerCase().includes(companySearchTerm.toLowerCase()));
+                            
+                            const matchesStatus = companyStatusFilter === '' || 
+                              (companyStatusFilter === 'active' && company.isActive) ||
+                              (companyStatusFilter === 'inactive' && !company.isActive);
+                            
+                            return matchesSearch && matchesStatus;
+                          })
+                          .map((company) => (
+                            <tr key={company.id} className="hover:bg-gray-50">
+                              {/* Empresa */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-medium text-sm">
+                                    {getCompanyInitials(company)}
+                                  </div>
+                                  <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                                    <div className="text-sm text-gray-500">{company.slug}</div>
+                                  </div>
+                                </div>
+                              </td>
 
-                {/* Estadísticas */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📊</div>
-                    <h4 className="text-lg font-semibold text-green-900 mb-2">Estadísticas</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-green-700">Empresas Activas:</span>
-                        <span className="font-medium text-green-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-green-700">Empresas Inactivas:</span>
-                        <span className="font-medium text-green-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-green-700">Total:</span>
-                        <span className="font-medium text-green-900">--</span>
-                      </div>
-                    </div>
+                              {/* Contacto */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {company.email && (
+                                    <div className="flex items-center">
+                                      <span className="mr-1">📧</span>
+                                      {company.email}
+                                    </div>
+                                  )}
+                                  {company.phone && (
+                                    <div className="flex items-center mt-1">
+                                      <span className="mr-1">📱</span>
+                                      {company.phone}
+                                    </div>
+                                  )}
+                                  {!company.email && !company.phone && (
+                                    <span className="text-gray-400 italic">Sin contacto</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Licencia */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  <div className="font-medium">{getLicenseTypeName(company.licenseType)}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {company.maxUsers} usuarios • {company.maxClients} clientes
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Usuarios */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  <div className="flex items-center">
+                                    <span className="mr-1">👥</span>
+                                    {company.userCount || 0} / {company.maxUsers}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {company.clientCount || 0} clientes
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Estado */}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  company.isActive
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {company.isActive ? '✅ Activa' : '❌ Inactiva'}
+                                </span>
+                              </td>
+
+                              {/* Acciones */}
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <button
+                                    onClick={() => openCompanyViewModal(company)}
+                                    className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                                    title="Ver detalles"
+                                  >
+                                    <EyeIcon className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => openCompanyEditModal(company)}
+                                    className="text-green-600 hover:text-green-900 p-1 rounded"
+                                    title="Editar empresa"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => openCompanyDeleteModal(company)}
+                                    className="text-red-600 hover:text-red-900 p-1 rounded"
+                                    title="Desactivar empresa"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                {/* Información */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">ℹ️</div>
-                    <h4 className="text-lg font-semibold text-orange-900 mb-2">Información</h4>
-                    <div className="text-sm text-orange-800 space-y-1">
-                      <p>• Gestión completa de empresas</p>
-                      <p>• Configuración de temas</p>
-                      <p>• Asignación de usuarios</p>
-                      <p>• Control de licencias</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -1606,6 +2027,212 @@ const SystemManagement: React.FC = () => {
                   <>
                     <PlusIcon className="h-4 w-4 mr-2" />
                     Crear Usuario
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODALES DE EMPRESAS ==================== */}
+
+      {/* Modal Crear Empresa */}
+      {showCompanyCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <PlusIcon className="h-6 w-6 text-pink-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">➕ Crear Nueva Empresa</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Completa la información para registrar una nueva empresa
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Información Básica */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-pink-700 mb-3">🏢 Información Básica</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de la Empresa *
+                    </label>
+                    <input
+                      type="text"
+                      value={companyCreateFormData.name}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Ingresa el nombre de la empresa"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📧 Email
+                    </label>
+                    <input
+                      type="email"
+                      value={companyCreateFormData.email}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="email@empresa.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📱 Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={companyCreateFormData.phone}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Número de teléfono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📍 Dirección
+                    </label>
+                    <textarea
+                      value={companyCreateFormData.address}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, address: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Dirección completa"
+                    />
+                  </div>
+                </div>
+
+                {/* Configuración y Licencia */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-pink-700 mb-3">⚙️ Configuración y Licencia</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      🌐 Sitio Web
+                    </label>
+                    <input
+                      type="url"
+                      value={companyCreateFormData.website}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, website: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="https://empresa.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📋 Tipo de Licencia
+                    </label>
+                    <select
+                      value={companyCreateFormData.licenseType}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, licenseType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    >
+                      <option value="basic">🥉 Básica</option>
+                      <option value="premium">🥈 Premium</option>
+                      <option value="enterprise">🥇 Empresarial</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👥 Máx. Usuarios
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={companyCreateFormData.maxUsers}
+                        onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, maxUsers: parseInt(e.target.value) || 10})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👤 Máx. Clientes
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10000"
+                        value={companyCreateFormData.maxClients}
+                        onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, maxClients: parseInt(e.target.value) || 100})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="companyCreateIsActive"
+                      checked={companyCreateFormData.isActive}
+                      onChange={(e) => setCompanyCreateFormData({...companyCreateFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="companyCreateIsActive" className="text-sm font-medium text-gray-700">
+                      ✅ Empresa activa
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información adicional */}
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-500 mt-0.5">ℹ️</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Información importante</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p>• El nombre de la empresa es obligatorio</p>
+                      <p>• Se generará automáticamente un slug único</p>
+                      <p>• Los límites de usuarios y clientes dependen del tipo de licencia</p>
+                      <p>• La empresa se puede desactivar posteriormente si es necesario</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCompanyCreateModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={companyCreateLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCompany}
+                disabled={companyCreateLoading}
+                className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50"
+              >
+                {companyCreateLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Crear Empresa
                   </>
                 )}
               </button>

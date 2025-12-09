@@ -162,7 +162,7 @@ class UserService {
     }
   }
 
-  // Obtener empresas disponibles
+  // Obtener empresas disponibles para el usuario
   async getCompanies(): Promise<Array<{ id: string; name: string; }>> {
     try {
       console.log('🌐 SERVICIO - Obteniendo empresas disponibles...');
