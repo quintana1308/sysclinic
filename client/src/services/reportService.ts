@@ -22,14 +22,33 @@ export interface ReportData {
 }
 
 export interface ReportFilters {
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
   type?: 'revenue' | 'appointments' | 'clients' | 'treatments';
   groupBy?: 'day' | 'week' | 'month' | 'year';
 }
 
 class ReportService {
-  async getRevenueReport(filters: ReportFilters) {
+  // Helper para obtener fechas del mes actual
+  getCurrentMonthDates() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    
+    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay}`;
+    
+    return { startDate, endDate };
+  }
+
+  async getRevenueReport(filters: ReportFilters = {}) {
+    // Si no se proporcionan fechas, usar el mes actual
+    if (!filters.startDate || !filters.endDate) {
+      const currentMonth = this.getCurrentMonthDates();
+      filters = { ...filters, ...currentMonth };
+    }
+    
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
@@ -38,7 +57,13 @@ class ReportService {
     return response.data;
   }
 
-  async getAppointmentsReport(filters: ReportFilters) {
+  async getAppointmentsReport(filters: ReportFilters = {}) {
+    // Si no se proporcionan fechas, usar el mes actual
+    if (!filters.startDate || !filters.endDate) {
+      const currentMonth = this.getCurrentMonthDates();
+      filters = { ...filters, ...currentMonth };
+    }
+    
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
@@ -47,7 +72,13 @@ class ReportService {
     return response.data;
   }
 
-  async getClientsReport(filters: ReportFilters) {
+  async getClientsReport(filters: ReportFilters = {}) {
+    // Si no se proporcionan fechas, usar el mes actual
+    if (!filters.startDate || !filters.endDate) {
+      const currentMonth = this.getCurrentMonthDates();
+      filters = { ...filters, ...currentMonth };
+    }
+    
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
@@ -56,7 +87,13 @@ class ReportService {
     return response.data;
   }
 
-  async getTreatmentsReport(filters: ReportFilters) {
+  async getTreatmentsReport(filters: ReportFilters = {}) {
+    // Si no se proporcionan fechas, usar el mes actual
+    if (!filters.startDate || !filters.endDate) {
+      const currentMonth = this.getCurrentMonthDates();
+      filters = { ...filters, ...currentMonth };
+    }
+    
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());
@@ -65,7 +102,13 @@ class ReportService {
     return response.data;
   }
 
-  async getDashboardReport(filters: ReportFilters) {
+  async getDashboardReport(filters: ReportFilters = {}) {
+    // Si no se proporcionan fechas, usar el mes actual
+    if (!filters.startDate || !filters.endDate) {
+      const currentMonth = this.getCurrentMonthDates();
+      filters = { ...filters, ...currentMonth };
+    }
+    
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, value.toString());

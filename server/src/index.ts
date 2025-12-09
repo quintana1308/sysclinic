@@ -21,6 +21,7 @@ import paymentRoutes from './routes/payment.routes';
 import invoiceRoutes from './routes/invoice.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import companyRoutes from './routes/company.routes';
+import reportRoutes from './routes/report.routes';
 
 // Configurar variables de entorno
 dotenv.config();
@@ -74,6 +75,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Middleware para rutas API no encontradas (debe ir después de todas las rutas)
 app.use('/api/*', notFound);
