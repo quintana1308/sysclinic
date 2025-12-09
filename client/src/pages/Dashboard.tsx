@@ -158,15 +158,69 @@ const formatPrice = (price: number | string): string => {
   return isNaN(numPrice) ? '0' : numPrice.toLocaleString();
 };
 
+// Helper function para formatear fecha correctamente
+const formatDate = (dateString: string): string => {
+  try {
+    // Crear fecha desde el string ISO
+    const date = new Date(dateString);
+    
+    // Verificar si es una fecha válida
+    if (isNaN(date.getTime())) {
+      return 'Fecha no válida';
+    }
+    
+    // Para fechas que vienen como "2025-12-09T00:00:00.000Z", 
+    // extraer solo la parte de fecha sin conversión de zona horaria
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    
+    return `${day}/${month}/${year}`;
+  } catch (error) {
+    console.error('Error formateando fecha:', error, dateString);
+    return 'Error en fecha';
+  }
+};
+
+// Helper function para formatear hora correctamente
+const formatTime = (timeString: string): string => {
+  try {
+    // Crear fecha desde el string ISO
+    const date = new Date(timeString);
+    
+    // Verificar si es una fecha válida
+    if (isNaN(date.getTime())) {
+      return 'Hora no válida';
+    }
+    
+    // Las horas vienen como "2025-12-09T14:00:00.000Z" donde 14:00 UTC es la hora real
+    // Extraer la hora UTC y formatearla directamente sin conversión
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    
+    // Convertir a formato 12h
+    const period = hours >= 12 ? 'p. m.' : 'a. m.';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = String(minutes).padStart(2, '0');
+    
+    return `${displayHours}:${displayMinutes} ${period}`;
+  } catch (error) {
+    console.error('Error formateando hora:', error, timeString);
+    return 'Error en hora';
+  }
+};
+
 const DashboardHome: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalClients: 0,
+    inactiveClients: 0,
+    totalFutureAppointments: 0,
+    scheduledAppointments: 0,
+    confirmedAppointments: 0,
     todayAppointments: 0,
     monthlyRevenue: 0,
-    lowStockItems: 0,
-    newClientsThisMonth: 0,
-    outOfStockItems: 0
+    newClientsThisMonth: 0
   });
   const [recentAppointments, setRecentAppointments] = useState<RecentAppointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,11 +252,13 @@ const DashboardHome: React.FC = () => {
         // Usar datos por defecto en caso de error
         setStats({
           totalClients: 0,
+          inactiveClients: 0,
+          totalFutureAppointments: 0,
+          scheduledAppointments: 0,
+          confirmedAppointments: 0,
           todayAppointments: 0,
           monthlyRevenue: 0,
-          lowStockItems: 0,
-          newClientsThisMonth: 0,
-          outOfStockItems: 0
+          newClientsThisMonth: 0
         });
         setRecentAppointments([]);
       } finally {
@@ -261,27 +317,25 @@ const DashboardHome: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Citas Hoy */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Citas Futuras */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-xl">
               <CalendarIcon className="h-7 w-7 text-blue-600" />
             </div>
             <div className="ml-4 flex-1">
-              <p className="text-sm font-medium text-gray-600">Citas Hoy</p>
+              <p className="text-sm font-medium text-gray-600">Citas Futuras</p>
               <p className="text-3xl font-bold text-gray-900">
                 {loading ? (
                   <span className="animate-pulse bg-gray-200 rounded h-8 w-12 block"></span>
                 ) : (
-                  stats.todayAppointments
+                  stats.totalFutureAppointments
                 )}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {loading ? '...' : (
-                  stats.todayAppointments === 0 ? 'No hay citas programadas' :
-                  stats.todayAppointments === 1 ? '1 cita programada' :
-                  `${stats.todayAppointments} citas programadas`
+                  `${stats.scheduledAppointments} programadas • ${stats.confirmedAppointments} confirmadas`
                 )}
               </p>
             </div>
@@ -305,9 +359,9 @@ const DashboardHome: React.FC = () => {
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {loading ? '...' : (
-                  stats.newClientsThisMonth === 0 ? 'Sin nuevos clientes este mes' :
-                  stats.newClientsThisMonth === 1 ? '1 nuevo este mes' :
-                  `${stats.newClientsThisMonth} nuevos este mes`
+                  stats.inactiveClients > 0 
+                    ? `${stats.inactiveClients} inactivos de ${stats.totalClients + stats.inactiveClients} total`
+                    : 'Todos los clientes están activos'
                 )}
               </p>
             </div>
@@ -318,7 +372,7 @@ const DashboardHome: React.FC = () => {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-3 bg-purple-100 rounded-xl">
-              <DocumentTextIcon className="h-7 w-7 text-purple-600" />
+              <CreditCardIcon className="h-7 w-7 text-purple-600" />
             </div>
             <div className="ml-4 flex-1">
               <p className="text-sm font-medium text-gray-600">Ingresos del Mes</p>
@@ -330,43 +384,16 @@ const DashboardHome: React.FC = () => {
                 )}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                Suma total de pagos recibidos en {new Date().toLocaleDateString('es-ES', { 
+                  month: 'long', 
+                  year: 'numeric',
+                  timeZone: 'America/Caracas'
+                })}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Stock Bajo */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center">
-            <div className={`p-3 rounded-xl ${
-              loading ? 'bg-gray-100' : 
-              stats.lowStockItems > 0 ? 'bg-red-100' : 'bg-green-100'
-            }`}>
-              <CubeIcon className={`h-7 w-7 ${
-                loading ? 'text-gray-400' :
-                stats.lowStockItems > 0 ? 'text-red-600' : 'text-green-600'
-              }`} />
-            </div>
-            <div className="ml-4 flex-1">
-              <p className="text-sm font-medium text-gray-600">Inventario</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {loading ? (
-                  <span className="animate-pulse bg-gray-200 rounded h-8 w-12 block"></span>
-                ) : (
-                  stats.lowStockItems
-                )}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {loading ? '...' : (
-                  stats.lowStockItems === 0 && stats.outOfStockItems === 0 ? 'Stock en buen estado' :
-                  stats.outOfStockItems > 0 ? `${stats.outOfStockItems} productos agotados` :
-                  'productos con stock bajo'
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Main Content Grid */}
@@ -375,7 +402,7 @@ const DashboardHome: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Citas Más Recientes</h3>
+              <h3 className="text-lg font-medium text-gray-900">Próximas Citas</h3>
               <button
                 onClick={() => handleNavigation('/appointments')}
                 className="text-primary-600 hover:text-primary-700 text-sm font-medium"
@@ -406,7 +433,7 @@ const DashboardHome: React.FC = () => {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <CalendarIcon className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500">No hay citas recientes</p>
+                    <p className="text-gray-500">No hay próximas citas programadas</p>
                   </div>
                 );
               })()
@@ -442,14 +469,11 @@ const DashboardHome: React.FC = () => {
                               <div className="text-sm text-gray-600">
                                 <div className="flex items-center">
                                   <CalendarIcon className="h-3 w-3 mr-1" />
-                                  {new Date(appointment.date).toLocaleDateString('es-ES')}
+                                  {formatDate(appointment.date)}
                                 </div>
                                 <div className="flex items-center">
                                   <ClockIcon className="h-3 w-3 mr-1" />
-                                  {new Date(appointment.startTime).toLocaleTimeString('es-ES', {
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {formatTime(appointment.startTime)}
                                 </div>
                               </div>
                               

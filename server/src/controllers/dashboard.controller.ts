@@ -19,10 +19,62 @@ export const getDashboardStats = async (
       SELECT 
         (SELECT COUNT(*) FROM clients) as totalClientsAll,
         (SELECT COUNT(*) FROM appointments) as totalAppointmentsAll,
-        (SELECT COUNT(*) FROM users WHERE isActive = 1) as totalActiveUsers
+        (SELECT COUNT(*) FROM appointments WHERE DATE(date) = CURDATE()) as appointmentsToday,
+        (SELECT COUNT(*) FROM clients c INNER JOIN users u ON c.userId = u.id WHERE c.createdAt >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND u.isActive = 1) as clientsThisMonth,
+        (SELECT COUNT(*) FROM users WHERE isActive = 1) as totalActiveUsers,
+        CURDATE() as currentDate,
+        DATE_FORMAT(CURDATE(), '%Y-%m-01') as firstDayOfMonth
     `);
     
     console.log('🔍 Basic data check:', basicCheck);
+    
+    // Verificar usuarios inactivos
+    const userCheck = await queryOne<any>(`
+      SELECT 
+        (SELECT COUNT(*) FROM users WHERE isActive = 1) as activeUsers,
+        (SELECT COUNT(*) FROM users WHERE isActive = 0) as inactiveUsers,
+        (SELECT COUNT(*) FROM clients c INNER JOIN users u ON c.userId = u.id WHERE u.isActive = 0) as clientsWithInactiveUsers
+    `);
+    
+    console.log('🔍 User check:', userCheck);
+    
+    // Verificar citas específicamente
+    const appointmentCheck = await query<any>(`
+      SELECT 
+        a.id,
+        a.date,
+        a.status,
+        a.companyId,
+        DATE(a.date) as dateOnly,
+        CURDATE() as today,
+        CASE WHEN DATE(a.date) = CURDATE() THEN 'TODAY' ELSE 'OTHER' END as isToday
+      FROM appointments a
+      WHERE a.status != 'CANCELLED'
+      ORDER BY a.date DESC
+      LIMIT 10
+    `);
+    
+    console.log('🔍 Appointment check (últimas 10 citas no canceladas):', appointmentCheck);
+    
+    // Verificar citas específicamente para hoy
+    const todayCheck = await query<any>(`
+      SELECT 
+        a.id,
+        a.date,
+        a.status,
+        a.companyId,
+        DATE(a.date) as dateOnly,
+        CURDATE() as today,
+        u.firstName as clientFirstName,
+        u.lastName as clientLastName
+      FROM appointments a
+      INNER JOIN clients c ON a.clientId = c.id
+      INNER JOIN users u ON c.userId = u.id
+      WHERE DATE(a.date) = CURDATE()
+      ORDER BY a.startTime ASC
+    `);
+    
+    console.log('🔍 Citas específicamente para HOY (9 de diciembre):', todayCheck);
     
     // Estadísticas generales - temporalmente sin filtro de empresa para debugging
     let stats;
@@ -34,8 +86,15 @@ export const getDashboardStats = async (
           COALESCE((SELECT COUNT(*) FROM clients c 
            INNER JOIN users u ON c.userId = u.id 
            WHERE u.isActive = 1), 0) as totalClients,
+          COALESCE((SELECT COUNT(*) FROM clients c 
+           INNER JOIN users u ON c.userId = u.id 
+           WHERE u.isActive = 0), 0) as inactiveClients,
           COALESCE((SELECT COUNT(*) FROM appointments a
-           WHERE a.status != 'CANCELLED'), 0) as totalAppointments,
+           WHERE a.status != 'CANCELLED' AND a.date >= CURDATE()), 0) as totalFutureAppointments,
+          COALESCE((SELECT COUNT(*) FROM appointments a
+           WHERE a.status = 'SCHEDULED' AND a.date >= CURDATE()), 0) as scheduledAppointments,
+          COALESCE((SELECT COUNT(*) FROM appointments a
+           WHERE a.status = 'CONFIRMED' AND a.date >= CURDATE()), 0) as confirmedAppointments,
           COALESCE((SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.date) = CURDATE() AND a.status != 'CANCELLED'), 0) as todayAppointments,
           COALESCE((SELECT SUM(p.amount) FROM payments p
@@ -43,7 +102,8 @@ export const getDashboardStats = async (
            AND MONTH(p.paidDate) = MONTH(CURDATE()) 
            AND YEAR(p.paidDate) = YEAR(CURDATE())), 0) as monthlyRevenue,
           COALESCE((SELECT COUNT(*) FROM clients c 
-           WHERE c.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)), 0) as newClientsThisMonth,
+           INNER JOIN users u ON c.userId = u.id 
+           WHERE c.createdAt >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND u.isActive = 1), 0) as newClientsThisMonth,
           COALESCE((SELECT COUNT(*) FROM supplies s
            WHERE s.stock <= s.minStock AND s.stock > 0), 0) as lowStockItems,
           COALESCE((SELECT COUNT(*) FROM supplies s
@@ -56,8 +116,15 @@ export const getDashboardStats = async (
           COALESCE((SELECT COUNT(*) FROM clients c 
            INNER JOIN users u ON c.userId = u.id 
            WHERE u.isActive = 1 AND (? IS NULL OR c.companyId = ?)), 0) as totalClients,
+          COALESCE((SELECT COUNT(*) FROM clients c 
+           INNER JOIN users u ON c.userId = u.id 
+           WHERE u.isActive = 0 AND (? IS NULL OR c.companyId = ?)), 0) as inactiveClients,
           COALESCE((SELECT COUNT(*) FROM appointments a
-           WHERE a.status != 'CANCELLED' AND (? IS NULL OR a.companyId = ?)), 0) as totalAppointments,
+           WHERE a.status != 'CANCELLED' AND a.date >= CURDATE() AND (? IS NULL OR a.companyId = ?)), 0) as totalFutureAppointments,
+          COALESCE((SELECT COUNT(*) FROM appointments a
+           WHERE a.status = 'SCHEDULED' AND a.date >= CURDATE() AND (? IS NULL OR a.companyId = ?)), 0) as scheduledAppointments,
+          COALESCE((SELECT COUNT(*) FROM appointments a
+           WHERE a.status = 'CONFIRMED' AND a.date >= CURDATE() AND (? IS NULL OR a.companyId = ?)), 0) as confirmedAppointments,
           COALESCE((SELECT COUNT(*) FROM appointments a
            WHERE DATE(a.date) = CURDATE() AND a.status != 'CANCELLED' AND (? IS NULL OR a.companyId = ?)), 0) as todayAppointments,
           COALESCE((SELECT SUM(p.amount) FROM payments p
@@ -67,21 +134,32 @@ export const getDashboardStats = async (
            AND YEAR(p.paidDate) = YEAR(CURDATE())
            AND (? IS NULL OR c.companyId = ?)), 0) as monthlyRevenue,
           COALESCE((SELECT COUNT(*) FROM clients c 
-           WHERE c.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
-           AND (? IS NULL OR c.companyId = ?)), 0) as newClientsThisMonth,
+           INNER JOIN users u ON c.userId = u.id 
+           WHERE c.createdAt >= DATE_FORMAT(CURDATE(), '%Y-%m-01') 
+           AND u.isActive = 1 AND (? IS NULL OR c.companyId = ?)), 0) as newClientsThisMonth,
           COALESCE((SELECT COUNT(*) FROM supplies s
            WHERE s.stock <= s.minStock AND s.stock > 0), 0) as lowStockItems,
           COALESCE((SELECT COUNT(*) FROM supplies s
            WHERE s.stock = 0), 0) as outOfStockItems
-      `, [companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId]);
+      `, [companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId, companyId]);
     }
 
     console.log('🔍 Raw stats from DB:', stats);
 
+    // Verificar inconsistencias
+    if (parseInt(stats.newClientsThisMonth) > parseInt(stats.totalClients)) {
+      console.log('🚨 INCONSISTENCIA DETECTADA: newClientsThisMonth > totalClients');
+      console.log('🔍 newClientsThisMonth:', stats.newClientsThisMonth);
+      console.log('🔍 totalClients:', stats.totalClients);
+    }
+
     // Asegurar que todos los valores sean números
     const processedStats = {
       totalClients: parseInt(stats.totalClients) || 0,
-      totalAppointments: parseInt(stats.totalAppointments) || 0,
+      inactiveClients: parseInt(stats.inactiveClients) || 0,
+      totalFutureAppointments: parseInt(stats.totalFutureAppointments) || 0,
+      scheduledAppointments: parseInt(stats.scheduledAppointments) || 0,
+      confirmedAppointments: parseInt(stats.confirmedAppointments) || 0,
       todayAppointments: parseInt(stats.todayAppointments) || 0,
       monthlyRevenue: parseFloat(stats.monthlyRevenue) || 0,
       newClientsThisMonth: parseInt(stats.newClientsThisMonth) || 0,
@@ -90,6 +168,11 @@ export const getDashboardStats = async (
     };
 
     console.log('🔍 Processed stats:', processedStats);
+    
+    // Verificar inconsistencias después del procesamiento
+    if (processedStats.newClientsThisMonth > processedStats.totalClients) {
+      console.log('🚨 INCONSISTENCIA PERSISTE después del procesamiento');
+    }
 
     const response: ApiResponse = {
       success: true,
@@ -141,7 +224,7 @@ export const getDashboardData = async (
         (SELECT COUNT(*) FROM clients c 
          INNER JOIN users u ON c.userId = u.id 
          INNER JOIN user_companies uc ON u.id = uc.userId 
-         WHERE c.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
+         WHERE c.createdAt >= DATE_FORMAT(CURDATE(), '%Y-%m-01') 
          AND uc.companyId = ?) as newClientsThisMonth,
         (SELECT COUNT(*) FROM supplies WHERE stock <= minStock AND stock > 0) as lowStockItems,
         (SELECT COUNT(*) FROM supplies WHERE stock = 0) as outOfStockItems
@@ -217,7 +300,7 @@ export const getRecentAppointments = async (
     const companyId = req.user?.currentCompanyId;
     console.log('🔍 Backend - Usuario completo:', req.user);
 
-    // Consulta simplificada para debugging
+    // Consulta para obtener citas futuras (desde ahora en adelante)
     const appointments = await query<any>(`
       SELECT 
         a.id,
@@ -241,8 +324,13 @@ export const getRecentAppointments = async (
       INNER JOIN users u ON c.userId = u.id
       LEFT JOIN employees emp ON a.employeeId = emp.id
       LEFT JOIN users emp_u ON emp.userId = emp_u.id
-      WHERE (? IS NULL OR a.companyId = ?) AND a.status != 'CANCELLED'
-      ORDER BY a.createdAt DESC
+      WHERE (? IS NULL OR a.companyId = ?) 
+        AND a.status != 'CANCELLED'
+        AND (
+          a.date > CURDATE() 
+          OR (a.date = CURDATE() AND a.startTime >= NOW())
+        )
+      ORDER BY a.date ASC, a.startTime ASC
       LIMIT ?
     `, [companyId, companyId, limit]);
 
@@ -261,11 +349,13 @@ export const getRecentAppointments = async (
     
     console.log('🔍 Backend - Verificación básica de appointments:', basicAppointmentCheck);
 
-    // Si no hay citas para la empresa, probar sin filtro de empresa
+    // Si no hay citas para la empresa, probar sin filtro de empresa (también futuras)
     if (appointments.length === 0) {
       const allAppointments = await query<any>(`
         SELECT 
           a.id,
+          a.date,
+          a.startTime,
           a.companyId,
           a.status,
           a.createdAt,
@@ -275,11 +365,15 @@ export const getRecentAppointments = async (
         INNER JOIN clients c ON a.clientId = c.id
         INNER JOIN users u ON c.userId = u.id
         WHERE a.status != 'CANCELLED'
-        ORDER BY a.createdAt DESC
+          AND (
+            a.date > CURDATE() 
+            OR (a.date = CURDATE() AND a.startTime >= NOW())
+          )
+        ORDER BY a.date ASC, a.startTime ASC
         LIMIT 3
       `);
       
-      console.log('🔍 Backend - Todas las citas (sin filtro de empresa):', allAppointments);
+      console.log('🔍 Backend - Todas las citas futuras (sin filtro de empresa):', allAppointments);
     }
 
     // Procesar tratamientos y datos
@@ -492,7 +586,7 @@ export const getClientStats = async (
         COUNT(DISTINCT c.id) as totalClients,
         COUNT(DISTINCT CASE WHEN u.isActive = 1 THEN c.id END) as activeClients,
         COUNT(DISTINCT CASE WHEN u.isActive = 0 THEN c.id END) as inactiveClients,
-        COUNT(DISTINCT CASE WHEN c.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN c.id END) as newClientsThisMonth
+        COUNT(DISTINCT CASE WHEN c.createdAt >= DATE_FORMAT(CURDATE(), '%Y-%m-01') THEN c.id END) as newClientsThisMonth
       FROM clients c
       INNER JOIN users u ON c.userId = u.id
     `);

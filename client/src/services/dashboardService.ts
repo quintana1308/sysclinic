@@ -3,11 +3,14 @@ import api from './api';
 // Interfaces para las respuestas del dashboard
 export interface DashboardStats {
   totalClients: number;
-  totalAppointments: number;
-  monthlyRevenue: number;
-  lowStockItems: number;
+  inactiveClients: number;
+  totalFutureAppointments: number;
+  scheduledAppointments: number;
+  confirmedAppointments: number;
   todayAppointments: number;
+  monthlyRevenue: number;
   newClientsThisMonth: number;
+  lowStockItems: number;
   outOfStockItems: number;
 }
 
