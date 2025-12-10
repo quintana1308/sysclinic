@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { requireCompanyAccess } from '../middleware/permissions';
+import { validateLicense } from '../middleware/licenseValidation';
 import * as dashboardController from '../controllers/dashboard.controller';
 
 const router = Router();
 
-// Aplicar middleware de autenticación y empresa a todas las rutas
+// Aplicar middleware de autenticación, empresa y validación de licencia a todas las rutas
 router.use(authenticate);
 router.use(requireCompanyAccess);
+router.use(validateLicense);
 
 // Rutas del dashboard
 router.get('/', dashboardController.getDashboardData);

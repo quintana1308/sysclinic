@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import toast from 'react-hot-toast';
 
 // Configuración base de la API
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -32,8 +33,36 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Manejar errores de autenticación
-    if (error.response?.status === 401) {
+    const errorCode = error.response?.data?.code;
+    const errorMessage = error.response?.data?.message;
+    const status = error.response?.status;
+    
+    // Manejar errores de licencia (403 con códigos específicos)
+    if (status === 403 && errorCode && errorCode.includes('LICENSE')) {
+      console.log('🚫 Error de licencia en request:', {
+        code: errorCode,
+        message: errorMessage,
+        url: error.config?.url
+      });
+      
+      // Guardar datos para la página de estado de licencia
+      const licenseStatusData = {
+        code: errorCode,
+        message: errorMessage,
+        licenseInfo: error.response?.data?.licenseInfo
+      };
+      
+      localStorage.setItem('licenseStatusData', JSON.stringify(licenseStatusData));
+      
+      // Limpiar token y redirigir a la página de estado de licencia
+      localStorage.removeItem('token');
+      window.location.href = '/license-status';
+      
+      return Promise.reject(error);
+    }
+    
+    // Manejar errores de autenticación normales
+    if (status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/';
     }

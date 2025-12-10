@@ -238,6 +238,18 @@ export interface AuthenticatedRequest extends Request {
     [key: string]: any;
   };
   companyId?: string;
+  licenseInfo?: {
+    id: string;
+    licenseKey: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    companyName: string;
+    licenseName: string;
+    licenseType: string;
+    daysRemaining?: number;
+  };
+  licenseValid?: boolean;
   body: any;
   params: any;
   query: any;

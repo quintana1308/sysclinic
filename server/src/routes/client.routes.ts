@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { requireCompanyAccess, requirePermission } from '../middleware/permissions';
+import { validateLicense } from '../middleware/licenseValidation';
 import {
   getClients,
   getClientById,
@@ -16,9 +17,10 @@ const router = Router();
 // Endpoint temporal para verificar datos (sin restricciones)
 router.get('/check-data', authenticate, checkDatabaseData);
 
-// Todas las rutas requieren autenticación y acceso a empresa
+// Todas las rutas requieren autenticación, acceso a empresa y licencia válida
 router.use(authenticate);
 router.use(requireCompanyAccess);
+router.use(validateLicense);
 
 // Obtener todos los clientes
 router.get('/', 

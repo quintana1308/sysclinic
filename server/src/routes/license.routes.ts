@@ -13,7 +13,8 @@ import {
   createLicenseTemplate,
   updateLicenseTemplate,
   deleteLicenseTemplate,
-  insertDefaultLicenses
+  insertDefaultLicenses,
+  getCurrentLicenseStatus
 } from '../controllers/license.controller';
 import { authenticate, authorize } from '../middleware/auth';
 
@@ -23,6 +24,9 @@ const router = express.Router();
 router.use(authenticate);
 
 // ==================== RUTAS ESPECÍFICAS (DEBEN IR ANTES DE /:id) ====================
+
+// Obtener estado de licencia de la empresa actual (usuarios autenticados)
+router.get('/status', getCurrentLicenseStatus);
 
 // Obtener estadísticas de licencias (solo master)
 router.get('/stats', authorize('master'), getLicenseStats);

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { query, queryOne } from '../config/database';
 import { v4 as generateId } from 'uuid';
+import { AuthenticatedRequest } from '../types';
+import { checkCompanyLicense } from '../middleware/licenseValidation';
 
 // Interfaces para las nuevas tablas
 interface LicenseTemplate {
@@ -351,16 +353,49 @@ export const createLicense = async (req: Request, res: Response, next: NextFunct
 
     console.log('📄 Plantilla encontrada:', licenseTemplate.name, '- ID:', licenseTemplate.id);
 
-    // Verificar que no tenga ya una licencia activa
-    const existingLicense = await queryOne(
-      'SELECT id FROM company_licenses WHERE companyId = ? AND isActive = 1', 
-      [companyId]
-    );
+    // Verificar que no tenga ya una licencia vigente (activa y no expirada)
+    const existingLicense = await queryOne(`
+      SELECT id, licenseKey, startDate, endDate, isActive 
+      FROM company_licenses 
+      WHERE companyId = ? AND isActive = 1 AND endDate >= CURDATE()
+    `, [companyId]);
 
     if (existingLicense) {
+      const daysRemaining = Math.ceil((new Date(existingLicense.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log('⚠️ Empresa ya tiene licencia vigente:', {
+        licenseId: existingLicense.id,
+        licenseKey: existingLicense.licenseKey,
+        endDate: existingLicense.endDate,
+        daysRemaining: daysRemaining
+      });
+      
       return res.status(400).json({
         success: false,
-        message: 'La empresa ya tiene una licencia activa. Desactive la licencia actual antes de crear una nueva.'
+        message: `La empresa ya tiene una licencia vigente que expira el ${new Date(existingLicense.endDate).toLocaleDateString('es-ES')} (${daysRemaining} días restantes). No se puede crear una nueva licencia hasta que la actual expire.`,
+        data: {
+          existingLicense: {
+            id: existingLicense.id,
+            licenseKey: existingLicense.licenseKey,
+            endDate: existingLicense.endDate,
+            daysRemaining: daysRemaining
+          }
+        }
+      });
+    }
+
+    // Verificar si tiene licencias expiradas para mostrar información
+    const expiredLicenses = await query(`
+      SELECT id, licenseKey, endDate 
+      FROM company_licenses 
+      WHERE companyId = ? AND (isActive = 0 OR endDate < CURDATE())
+      ORDER BY endDate DESC
+    `, [companyId]);
+
+    if (expiredLicenses.length > 0) {
+      console.log('📋 Empresa tiene licencias expiradas/inactivas:', {
+        count: expiredLicenses.length,
+        lastExpired: expiredLicenses[0].endDate
       });
     }
 
@@ -473,9 +508,10 @@ export const createLicense = async (req: Request, res: Response, next: NextFunct
 export const updateLicense = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
+    const { companyId, licenseId, startDate, endDate, isActive } = req.body;
     
-    console.log('✏️ Actualizando estado de licencia:', id);
+    console.log('✏️ Actualizando licencia asignada:', id);
+    console.log('📋 Datos recibidos:', { companyId, licenseId, startDate, endDate, isActive });
     
     // Verificar que la licencia existe
     const existingLicense = await queryOne('SELECT * FROM company_licenses WHERE id = ?', [id]);
@@ -486,15 +522,83 @@ export const updateLicense = async (req: Request, res: Response, next: NextFunct
       });
     }
     
-    // Solo permitir actualizar el estado activo/inactivo
-    if (isActive !== undefined) {
-      await query('UPDATE company_licenses SET isActive = ?, updatedAt = NOW() WHERE id = ?', [
-        isActive ? 1 : 0,
-        id
-      ]);
-      
-      console.log('✅ Estado de licencia actualizado:', isActive ? 'Activada' : 'Desactivada');
+    // Construir la consulta de actualización dinámicamente
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (companyId !== undefined) {
+      // Verificar que la empresa existe
+      const companyExists = await queryOne('SELECT id FROM companies WHERE id = ?', [companyId]);
+      if (!companyExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'La empresa especificada no existe'
+        });
+      }
+      updateFields.push('companyId = ?');
+      updateValues.push(companyId);
     }
+    
+    if (licenseId !== undefined) {
+      // Verificar que la plantilla de licencia existe
+      const licenseExists = await queryOne('SELECT id FROM licenses WHERE id = ?', [licenseId]);
+      if (!licenseExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'La plantilla de licencia especificada no existe'
+        });
+      }
+      updateFields.push('licenseId = ?');
+      updateValues.push(licenseId);
+    }
+    
+    if (startDate !== undefined) {
+      updateFields.push('startDate = ?');
+      updateValues.push(startDate);
+    }
+    
+    if (endDate !== undefined) {
+      updateFields.push('endDate = ?');
+      updateValues.push(endDate);
+    }
+    
+    if (isActive !== undefined) {
+      updateFields.push('isActive = ?');
+      updateValues.push(isActive ? 1 : 0);
+    }
+    
+    // Validar fechas si ambas están presentes
+    if (startDate && endDate) {
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+      
+      if (endDateObj <= startDateObj) {
+        return res.status(400).json({
+          success: false,
+          message: 'La fecha de fin debe ser posterior a la fecha de inicio'
+        });
+      }
+    }
+    
+    // Si no hay campos para actualizar
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se proporcionaron campos para actualizar'
+      });
+    }
+    
+    // Agregar updatedAt
+    updateFields.push('updatedAt = NOW()');
+    updateValues.push(id);
+    
+    // Ejecutar la actualización
+    const updateQuery = `UPDATE company_licenses SET ${updateFields.join(', ')} WHERE id = ?`;
+    await query(updateQuery, updateValues);
+    
+    console.log('✅ Licencia actualizada correctamente');
+    console.log('📝 Campos actualizados:', updateFields.map(field => field.split(' = ')[0]));
+    
     
     // Obtener la licencia actualizada con el mismo procesamiento que getLicenseById
     const licenseQuery = `
@@ -520,9 +624,9 @@ export const updateLicense = async (req: Request, res: Response, next: NextFunct
       enterprise: 'Plan completo para grandes organizaciones'
     };
     
-    const startDate = new Date(license.startDate);
-    const endDate = new Date(license.endDate);
-    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+    const licenseStartDate = new Date(license.startDate);
+    const licenseEndDate = new Date(license.endDate);
+    const daysDiff = Math.ceil((licenseEndDate.getTime() - licenseStartDate.getTime()) / (1000 * 3600 * 24));
     const billingCycle = daysDiff > 300 ? 'yearly' : 'monthly';
     
     const processedLicense = {
@@ -1288,6 +1392,79 @@ export const insertDefaultLicenses = async (req: Request, res: Response, next: N
     
   } catch (error) {
     console.error('❌ Error insertando licencias:', error);
+    return next(error);
+  }
+};
+
+/**
+ * Obtener estado de la licencia de la empresa actual
+ */
+export const getCurrentLicenseStatus = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log('🔍 Obteniendo estado de licencia para empresa...');
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Usuario no autenticado'
+      });
+    }
+
+    // Obtener la empresa actual del usuario
+    const companyId = req.user.currentCompanyId || req.user.companies?.current?.id;
+    
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Usuario no tiene empresa asignada',
+        data: {
+          hasCompany: false,
+          isValid: false,
+          reason: 'NO_COMPANY'
+        }
+      });
+    }
+
+    console.log(`🏢 Verificando licencia para empresa: ${companyId}`);
+
+    // Verificar licencia de la empresa
+    const licenseCheck = await checkCompanyLicense(companyId);
+
+    // Obtener información adicional de la empresa
+    const companyInfo = await queryOne(`
+      SELECT name, email, phone
+      FROM companies 
+      WHERE id = ?
+    `, [companyId]);
+
+    const responseData = {
+      hasCompany: true,
+      companyId,
+      companyInfo,
+      isValid: licenseCheck.isValid,
+      reason: licenseCheck.reason,
+      licenseInfo: licenseCheck.licenseInfo
+    };
+
+    console.log('📊 Estado de licencia:', {
+      companyId,
+      isValid: licenseCheck.isValid,
+      reason: licenseCheck.reason,
+      hasLicenseInfo: !!licenseCheck.licenseInfo
+    });
+
+    return res.json({
+      success: true,
+      message: licenseCheck.isValid ? 'Licencia válida' : 'Problema con la licencia',
+      data: responseData
+    });
+
+  } catch (error) {
+    console.error('❌ Error obteniendo estado de licencia:', error);
     return next(error);
   }
 };

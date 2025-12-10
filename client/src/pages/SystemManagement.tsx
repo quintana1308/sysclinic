@@ -207,6 +207,7 @@ const SystemManagement: React.FC = () => {
     licenseId: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+    durationMonths: 12, // Duración por defecto de 12 meses
     isActive: true
   });
   
@@ -704,6 +705,17 @@ const SystemManagement: React.FC = () => {
       });
       
       console.log('✅ Licencias asignadas cargadas:', assignedData);
+      console.log('📋 Estructura de la primera licencia:', assignedData[0]);
+      console.log('🏢 Campos de empresa disponibles:', {
+        companyName: assignedData[0]?.companyName,
+        companyEmail: assignedData[0]?.companyEmail,
+        company: assignedData[0]?.company
+      });
+      console.log('📄 Campos de licencia disponibles:', {
+        name: assignedData[0]?.name,
+        type: assignedData[0]?.type,
+        license: assignedData[0]?.license
+      });
       setCompanyLicenses(assignedData);
       
     } catch (error: any) {
@@ -729,6 +741,114 @@ const SystemManagement: React.FC = () => {
       setLicenseStats(statsData);
     } catch (error: any) {
       console.error('❌ Error loading license stats:', error);
+    }
+  };
+
+  // ==================== FUNCIONES AUXILIARES ====================
+
+  // Formatear fecha para inputs de tipo date (YYYY-MM-DD)
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      // Verificar que la fecha es válida
+      if (isNaN(date.getTime())) {
+        console.warn('⚠️ Fecha inválida recibida:', dateString);
+        return '';
+      }
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('❌ Error formateando fecha:', dateString, error);
+      return '';
+    }
+  };
+
+  // Verificar si una empresa tiene licencia vigente
+  const hasValidLicense = (companyId: string) => {
+    if (!companyId) return false;
+    
+    const companyLicense = companyLicenses.find(license => 
+      license.companyId === companyId && 
+      license.isActive && 
+      new Date(license.endDate) >= new Date()
+    );
+    
+    return !!companyLicense;
+  };
+
+  // Obtener información de licencia vigente de una empresa
+  const getValidLicenseInfo = (companyId: string) => {
+    if (!companyId) return null;
+    
+    const companyLicense = companyLicenses.find(license => 
+      license.companyId === companyId && 
+      license.isActive && 
+      new Date(license.endDate) >= new Date()
+    );
+    
+    if (!companyLicense) return null;
+    
+    const daysRemaining = Math.ceil((new Date(companyLicense.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      ...companyLicense,
+      daysRemaining
+    };
+  };
+
+  // Calcular fecha de fin basándose en fecha de inicio y duración en meses
+  const calculateEndDate = (startDate: string, durationMonths: number): string => {
+    if (!startDate || !durationMonths || durationMonths <= 0) return '';
+    
+    try {
+      const start = new Date(startDate);
+      // Agregar los meses especificados
+      const end = new Date(start);
+      end.setMonth(start.getMonth() + durationMonths);
+      
+      // Formatear para input date (YYYY-MM-DD)
+      return end.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('❌ Error calculando fecha de fin:', error);
+      return '';
+    }
+  };
+
+  // Calcular duración en meses entre dos fechas
+  const calculateDurationMonths = (startDate: string, endDate: string): number => {
+    if (!startDate || !endDate) return 1;
+    
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Calcular diferencia en meses
+      const yearDiff = end.getFullYear() - start.getFullYear();
+      const monthDiff = end.getMonth() - start.getMonth();
+      
+      return Math.max(1, yearDiff * 12 + monthDiff);
+    } catch (error) {
+      console.error('❌ Error calculando duración en meses:', error);
+      return 1;
+    }
+  };
+
+  // Verificar si una licencia está expirada
+  const isLicenseExpired = (license: CompanyLicense): boolean => {
+    if (!license.endDate) return false;
+    
+    try {
+      const today = new Date();
+      const endDate = new Date(license.endDate);
+      
+      // Comparar solo las fechas (sin horas)
+      today.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      
+      return endDate < today;
+    } catch (error) {
+      console.error('❌ Error verificando expiración de licencia:', error);
+      return false;
     }
   };
 
@@ -1101,6 +1221,7 @@ const SystemManagement: React.FC = () => {
         licenseId: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+        durationMonths: 12, // Duración por defecto de 12 meses
         isActive: true
       });
       
@@ -1217,6 +1338,7 @@ const SystemManagement: React.FC = () => {
         licenseId: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+        durationMonths: 12, // Duración por defecto de 12 meses
         isActive: true
       });
       
@@ -1225,6 +1347,21 @@ const SystemManagement: React.FC = () => {
       
     } catch (error: any) {
       console.error('❌ Error creating assigned license:', error);
+      
+      // Manejar error específico de licencia vigente
+      if (error?.response?.status === 400 && error?.response?.data?.data?.existingLicense) {
+        const existingLicense = error.response.data.data.existingLicense;
+        const endDate = new Date(existingLicense.endDate).toLocaleDateString('es-ES');
+        
+        console.log('⚠️ Empresa ya tiene licencia vigente:', existingLicense);
+        
+        toast.error(
+          `No se puede crear la licencia. La empresa ya tiene una licencia vigente (${existingLicense.licenseKey}) que expira el ${endDate} (${existingLicense.daysRemaining} días restantes).`,
+          { duration: 6000 }
+        );
+        
+        return;
+      }
       
       const errorMessage = error?.response?.data?.message || 
                           error?.message || 
@@ -1352,7 +1489,26 @@ const SystemManagement: React.FC = () => {
     }
   }, [activeSection]);
 
-  // Cargar datos de licencias cuando se monta la sección
+  // ==================== EFECTOS ====================
+
+  // Debug: Verificar datos del formulario cuando se abre el modal de edición
+  useEffect(() => {
+    if (showAssignedEditModal && selectedAssigned) {
+      console.log('🔍 Modal de edición abierto:');
+      console.log('   - selectedAssigned:', selectedAssigned);
+      console.log('   - assignedFormData:', assignedFormData);
+      console.log('   - Fechas originales:', {
+        startDate: selectedAssigned.startDate,
+        endDate: selectedAssigned.endDate
+      });
+      console.log('   - Fechas formateadas:', {
+        startDate: assignedFormData.startDate,
+        endDate: assignedFormData.endDate
+      });
+    }
+  }, [showAssignedEditModal, selectedAssigned, assignedFormData]);
+
+  // Cargar datos según la sección activa
   useEffect(() => {
     if (activeSection === 'licenses') {
       if (licenseSubSection === 'templates') {
@@ -2526,18 +2682,34 @@ const SystemManagement: React.FC = () => {
                                     </button>
                                     <button
                                       onClick={() => {
+                                        if (isLicenseExpired(assigned)) {
+                                          console.log('⚠️ No se puede editar licencia expirada:', assigned);
+                                          return;
+                                        }
+                                        
+                                        console.log('🔧 Abriendo modal de edición para licencia:', assigned);
                                         setSelectedAssigned(assigned);
-                                        setAssignedFormData({
+                                        
+                                        const formData = {
                                           companyId: assigned.companyId,
                                           licenseId: assigned.licenseId,
-                                          startDate: assigned.startDate,
-                                          endDate: assigned.endDate,
+                                          startDate: formatDateForInput(assigned.startDate),
+                                          endDate: formatDateForInput(assigned.endDate),
+                                          durationMonths: calculateDurationMonths(assigned.startDate, assigned.endDate),
                                           isActive: assigned.isActive
-                                        });
+                                        };
+                                        
+                                        console.log('📋 Datos del formulario preparados:', formData);
+                                        setAssignedFormData(formData);
                                         setShowAssignedEditModal(true);
                                       }}
-                                      className="text-green-600 hover:text-green-900 hover:bg-green-50 p-1 rounded transition-colors"
-                                      title="Editar licencia"
+                                      disabled={isLicenseExpired(assigned)}
+                                      className={`p-1 rounded transition-colors ${
+                                        isLicenseExpired(assigned)
+                                          ? 'text-gray-400 cursor-not-allowed'
+                                          : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                                      }`}
+                                      title={isLicenseExpired(assigned) ? "No se puede editar una licencia expirada" : "Editar licencia"}
                                     >
                                       <PencilIcon className="h-4 w-4" />
                                     </button>
@@ -2555,11 +2727,21 @@ const SystemManagement: React.FC = () => {
                                     )}
                                     <button
                                       onClick={() => {
+                                        if (isLicenseExpired(assigned)) {
+                                          console.log('⚠️ No se puede eliminar licencia expirada:', assigned);
+                                          return;
+                                        }
+                                        
                                         setSelectedAssigned(assigned);
                                         setShowAssignedDeleteModal(true);
                                       }}
-                                      className="text-red-600 hover:text-red-900 hover:bg-red-50 p-1 rounded transition-colors"
-                                      title="Eliminar licencia"
+                                      disabled={isLicenseExpired(assigned)}
+                                      className={`p-1 rounded transition-colors ${
+                                        isLicenseExpired(assigned)
+                                          ? 'text-gray-400 cursor-not-allowed'
+                                          : 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                                      }`}
+                                      title={isLicenseExpired(assigned) ? "No se puede eliminar una licencia expirada" : "Eliminar licencia"}
                                     >
                                       <TrashIcon className="h-4 w-4" />
                                     </button>
@@ -4678,7 +4860,7 @@ const SystemManagement: React.FC = () => {
       {/* Modal Crear Licencia Asignada */}
       {showAssignedCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
               <div className="flex items-center space-x-4">
@@ -4734,6 +4916,33 @@ const SystemManagement: React.FC = () => {
                           ⚠️ No hay empresas activas disponibles.
                         </p>
                       )}
+                      
+                      {/* Advertencia si la empresa seleccionada ya tiene licencia vigente */}
+                      {assignedFormData.companyId !== '' && hasValidLicense(assignedFormData.companyId) && (
+                        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <div className="text-yellow-500 mt-0.5">⚠️</div>
+                            <div>
+                              <h5 className="text-sm font-medium text-yellow-800 mb-1">
+                                Empresa ya tiene licencia vigente
+                              </h5>
+                              {(() => {
+                                const licenseInfo = getValidLicenseInfo(assignedFormData.companyId);
+                                return licenseInfo ? (
+                                  <div className="text-xs text-yellow-700 space-y-1">
+                                    <p><strong>Licencia:</strong> {licenseInfo.name} ({licenseInfo.licenseKey})</p>
+                                    <p><strong>Expira:</strong> {new Date(licenseInfo.endDate).toLocaleDateString('es-ES')} ({licenseInfo.daysRemaining} días restantes)</p>
+                                    <p><strong>Estado:</strong> {licenseInfo.isActive ? 'Activa' : 'Inactiva'}</p>
+                                    <p className="mt-2 font-medium">
+                                      No podrás crear una nueva licencia hasta que la actual expire.
+                                    </p>
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-blue-700 mb-1">
@@ -4772,7 +4981,7 @@ const SystemManagement: React.FC = () => {
                 {/* Período de Vigencia */}
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h4 className="text-sm font-medium text-green-900 mb-4">📅 Período de Vigencia</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
                         Fecha de Inicio *
@@ -4780,10 +4989,47 @@ const SystemManagement: React.FC = () => {
                       <input
                         type="date"
                         value={assignedFormData.startDate}
-                        onChange={(e) => setAssignedFormData({...assignedFormData, startDate: e.target.value})}
+                        onChange={(e) => {
+                          const newStartDate = e.target.value;
+                          const newEndDate = calculateEndDate(newStartDate, assignedFormData.durationMonths);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            startDate: newStartDate,
+                            endDate: newEndDate
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Duración (Meses) *
+                      </label>
+                      <select
+                        value={assignedFormData.durationMonths}
+                        onChange={(e) => {
+                          const newDuration = parseInt(e.target.value);
+                          const newEndDate = calculateEndDate(assignedFormData.startDate, newDuration);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            durationMonths: newDuration,
+                            endDate: newEndDate
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value={1}>1 mes</option>
+                        <option value={3}>3 meses</option>
+                        <option value={6}>6 meses</option>
+                        <option value={12}>12 meses (1 año)</option>
+                        <option value={24}>24 meses (2 años)</option>
+                        <option value={36}>36 meses (3 años)</option>
+                      </select>
+                      <p className="text-xs text-green-600 mt-1">
+                        💡 La fecha de fin se calcula automáticamente
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
@@ -4792,10 +5038,21 @@ const SystemManagement: React.FC = () => {
                       <input
                         type="date"
                         value={assignedFormData.endDate}
-                        onChange={(e) => setAssignedFormData({...assignedFormData, endDate: e.target.value})}
+                        onChange={(e) => {
+                          const newEndDate = e.target.value;
+                          const newDuration = calculateDurationMonths(assignedFormData.startDate, newEndDate);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            endDate: newEndDate,
+                            durationMonths: newDuration
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
+                      <p className="text-xs text-green-600 mt-1">
+                        🔄 También puedes editarla manualmente
+                      </p>
                     </div>
                   </div>
                   
@@ -4803,7 +5060,7 @@ const SystemManagement: React.FC = () => {
                   {assignedFormData.startDate && assignedFormData.endDate && (
                     <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
                       <div className="text-sm text-green-800">
-                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días
+                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días ({assignedFormData.durationMonths} meses)
                       </div>
                     </div>
                   )}
@@ -4857,8 +5114,8 @@ const SystemManagement: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateAssigned}
-                disabled={assignedCreateLoading}
-                className="inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                disabled={assignedCreateLoading || (assignedFormData.companyId !== '' && hasValidLicense(assignedFormData.companyId))}
+                className="inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {assignedCreateLoading ? (
                   <>
@@ -4880,7 +5137,7 @@ const SystemManagement: React.FC = () => {
       {/* Modal Editar Licencia Asignada */}
       {showAssignedEditModal && selectedAssigned && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
               <div className="flex items-center space-x-4">
@@ -4890,7 +5147,7 @@ const SystemManagement: React.FC = () => {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">✏️ Editar Licencia Asignada</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Modifica los datos de la licencia asignada a "{selectedAssigned.company?.name}"
+                    Modifica los datos de la licencia asignada a "{selectedAssigned.companyName || 'empresa'}"
                   </p>
                 </div>
               </div>
@@ -4911,7 +5168,7 @@ const SystemManagement: React.FC = () => {
                         Empresa
                       </label>
                       <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
-                        🏢 {selectedAssigned.company?.name || 'Empresa no encontrada'}
+                        🏢 {selectedAssigned.companyName || 'Empresa no encontrada'}
                       </div>
                       <p className="text-xs text-gray-500 mt-1">La empresa no se puede modificar</p>
                     </div>
@@ -4920,9 +5177,9 @@ const SystemManagement: React.FC = () => {
                         Licencia
                       </label>
                       <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
-                        {selectedAssigned.license ? (
+                        {selectedAssigned.name ? (
                           <>
-                            {selectedAssigned.license.type === 'basic' ? '🥉' : selectedAssigned.license.type === 'premium' ? '🥈' : '🥇'} {selectedAssigned.license.name}
+                            {selectedAssigned.type === 'basic' ? '🥉' : selectedAssigned.type === 'premium' ? '🥈' : '🥇'} {selectedAssigned.name}
                           </>
                         ) : (
                           'Licencia no encontrada'
@@ -4936,7 +5193,7 @@ const SystemManagement: React.FC = () => {
                 {/* Período de Vigencia */}
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h4 className="text-sm font-medium text-green-900 mb-4">📅 Período de Vigencia</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
                         Fecha de Inicio *
@@ -4944,10 +5201,47 @@ const SystemManagement: React.FC = () => {
                       <input
                         type="date"
                         value={assignedFormData.startDate}
-                        onChange={(e) => setAssignedFormData({...assignedFormData, startDate: e.target.value})}
+                        onChange={(e) => {
+                          const newStartDate = e.target.value;
+                          const newEndDate = calculateEndDate(newStartDate, assignedFormData.durationMonths);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            startDate: newStartDate,
+                            endDate: newEndDate
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Duración (Meses) *
+                      </label>
+                      <select
+                        value={assignedFormData.durationMonths}
+                        onChange={(e) => {
+                          const newDuration = parseInt(e.target.value);
+                          const newEndDate = calculateEndDate(assignedFormData.startDate, newDuration);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            durationMonths: newDuration,
+                            endDate: newEndDate
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value={1}>1 mes</option>
+                        <option value={3}>3 meses</option>
+                        <option value={6}>6 meses</option>
+                        <option value={12}>12 meses (1 año)</option>
+                        <option value={24}>24 meses (2 años)</option>
+                        <option value={36}>36 meses (3 años)</option>
+                      </select>
+                      <p className="text-xs text-green-600 mt-1">
+                        💡 La fecha de fin se calcula automáticamente
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-green-700 mb-1">
@@ -4956,10 +5250,21 @@ const SystemManagement: React.FC = () => {
                       <input
                         type="date"
                         value={assignedFormData.endDate}
-                        onChange={(e) => setAssignedFormData({...assignedFormData, endDate: e.target.value})}
+                        onChange={(e) => {
+                          const newEndDate = e.target.value;
+                          const newDuration = calculateDurationMonths(assignedFormData.startDate, newEndDate);
+                          setAssignedFormData({
+                            ...assignedFormData, 
+                            endDate: newEndDate,
+                            durationMonths: newDuration
+                          });
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       />
+                      <p className="text-xs text-green-600 mt-1">
+                        🔄 También puedes editarla manualmente
+                      </p>
                     </div>
                   </div>
                   
@@ -4967,7 +5272,7 @@ const SystemManagement: React.FC = () => {
                   {assignedFormData.startDate && assignedFormData.endDate && (
                     <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
                       <div className="text-sm text-green-800">
-                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días
+                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días ({assignedFormData.durationMonths} meses)
                       </div>
                     </div>
                   )}
@@ -5064,6 +5369,22 @@ const SystemManagement: React.FC = () => {
 
             {/* Contenido */}
             <div className="p-6 space-y-6">
+              {/* Advertencia para licencias expiradas */}
+              {isLicenseExpired(selectedAssigned) && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-red-500 mt-0.5">🚫</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-900 mb-1">Licencia Expirada</h4>
+                      <p className="text-sm text-red-700">
+                        Esta licencia expiró el {new Date(selectedAssigned.endDate).toLocaleDateString('es-ES')} y no puede ser editada ni eliminada.
+                        Para renovar la licencia, debe crear una nueva asignación.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Información de la Empresa */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
@@ -5269,20 +5590,36 @@ const SystemManagement: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => {
-                    // Abrir modal de edición
-                    setAssignedFormData({
+                    if (isLicenseExpired(selectedAssigned)) {
+                      console.log('⚠️ No se puede editar licencia expirada desde vista:', selectedAssigned);
+                      return;
+                    }
+                    
+                    console.log('🔧 Abriendo modal de edición desde vista para licencia:', selectedAssigned);
+                    
+                    const formData = {
                       companyId: selectedAssigned.companyId,
                       licenseId: selectedAssigned.licenseId,
-                      startDate: selectedAssigned.startDate,
-                      endDate: selectedAssigned.endDate,
+                      startDate: formatDateForInput(selectedAssigned.startDate),
+                      endDate: formatDateForInput(selectedAssigned.endDate),
+                      durationMonths: calculateDurationMonths(selectedAssigned.startDate, selectedAssigned.endDate),
                       isActive: selectedAssigned.isActive
-                    });
+                    };
+                    
+                    console.log('📋 Datos del formulario preparados desde vista:', formData);
+                    setAssignedFormData(formData);
                     setShowAssignedViewModal(false);
                     setShowAssignedEditModal(true);
                   }}
-                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                  disabled={isLicenseExpired(selectedAssigned)}
+                  className={`px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                    isLicenseExpired(selectedAssigned)
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed focus:ring-gray-500'
+                      : 'bg-pink-600 text-white hover:bg-pink-700 focus:ring-pink-500'
+                  }`}
+                  title={isLicenseExpired(selectedAssigned) ? "No se puede editar una licencia expirada" : "Editar licencia"}
                 >
-                  ✏️ Editar Licencia
+                  {isLicenseExpired(selectedAssigned) ? '🚫 Licencia Expirada' : '✏️ Editar Licencia'}
                 </button>
               </div>
             </div>

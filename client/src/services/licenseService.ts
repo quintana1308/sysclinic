@@ -1,5 +1,29 @@
 import api from './api';
 
+// Interface para el estado de licencia
+export interface LicenseStatus {
+  hasCompany: boolean;
+  companyId?: string;
+  companyInfo?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  isValid: boolean;
+  reason?: string;
+  licenseInfo?: {
+    id: string;
+    licenseKey: string;
+    startDate: string;
+    endDate: string;
+    isActive: boolean;
+    companyName: string;
+    licenseName: string;
+    licenseType: string;
+    daysRemaining?: number;
+  };
+}
+
 // Interface para Plantilla de Licencia (tabla licenses)
 export interface LicenseTemplate {
   id: string;
@@ -88,6 +112,7 @@ export interface CompanyLicenseFormData {
   licenseId: string;
   startDate: string;
   endDate: string;
+  durationMonths: number; // Duración en meses para calcular automáticamente la fecha de fin
   isActive: boolean;
 }
 
@@ -422,6 +447,19 @@ class LicenseService {
     const now = new Date();
     const diffTime = end.getTime() - now.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  // Obtener estado de la licencia de la empresa actual
+  async getCurrentLicenseStatus(): Promise<LicenseStatus> {
+    try {
+      console.log('🔍 Obteniendo estado de licencia actual...');
+      const response = await api.get('/licenses/status');
+      console.log('✅ Estado de licencia obtenido:', response.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error('❌ Error obteniendo estado de licencia:', error);
+      throw error;
+    }
   }
 }
 

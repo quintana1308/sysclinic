@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { requireCompanyAccess, requirePermission } from '../middleware/permissions';
+import { validateLicense } from '../middleware/licenseValidation';
 import {
   getEmployees,
   getEmployeeById,
@@ -12,9 +13,10 @@ import {
 
 const router = Router();
 
-// Todas las rutas requieren autenticación y acceso a empresa
+// Todas las rutas requieren autenticación, acceso a empresa y licencia válida
 router.use(authenticate);
 router.use(requireCompanyAccess);
+router.use(validateLicense);
 
 // Obtener todos los empleados
 router.get('/', 

@@ -3,6 +3,7 @@ import { query, queryOne } from '../config/database';
 import { AuthenticatedRequest, LoginCredentials, RegisterData, ApiResponse } from '../types';
 import { hashPassword, comparePassword, generateToken, generateClientCode, validatePassword, sanitizeUser, generateId } from '../utils/auth';
 import { AppError } from '../middleware/errorHandler';
+import { checkCompanyLicense } from '../middleware/licenseValidation';
 
 export const login = async (
   req: AuthenticatedRequest,
@@ -65,6 +66,56 @@ export const login = async (
     
     if (!isValidPassword) {
       throw new AppError('Credenciales inválidas', 401);
+    }
+
+    // Validar licencia de la empresa (solo para usuarios no master)
+    if (!user.isMaster && user.currentCompanyId) {
+      console.log(`🔐 Validando licencia para empresa: ${user.currentCompanyId}`);
+      
+      const licenseCheck = await checkCompanyLicense(user.currentCompanyId);
+      
+      if (!licenseCheck.isValid) {
+        let errorMessage = 'Acceso denegado - Problema con la licencia de su empresa';
+        let errorCode = 'LICENSE_INVALID';
+
+        switch (licenseCheck.reason) {
+          case 'NO_LICENSE':
+            errorMessage = 'Su empresa no tiene una licencia activa. Contacte al administrador del sistema.';
+            errorCode = 'NO_LICENSE';
+            break;
+          case 'EXPIRED':
+            const expiredDate = new Date(licenseCheck.licenseInfo.endDate).toLocaleDateString('es-ES');
+            errorMessage = `La licencia de su empresa venció el ${expiredDate}. Contacte al administrador para renovar.`;
+            errorCode = 'LICENSE_EXPIRED';
+            break;
+          case 'NOT_STARTED':
+            const startDate = new Date(licenseCheck.licenseInfo.startDate).toLocaleDateString('es-ES');
+            errorMessage = `La licencia de su empresa iniciará el ${startDate}.`;
+            errorCode = 'LICENSE_NOT_STARTED';
+            break;
+          default:
+            errorMessage = 'Error verificando la licencia de su empresa. Contacte al administrador.';
+            errorCode = 'LICENSE_ERROR';
+        }
+
+        console.log(`🚫 Acceso denegado en login para usuario ${email} de empresa ${user.currentCompanyId}:`, {
+          reason: licenseCheck.reason,
+          licenseInfo: licenseCheck.licenseInfo
+        });
+
+        // Crear error personalizado con información adicional
+        const error = new AppError(errorMessage, 403);
+        (error as any).code = errorCode;
+        (error as any).licenseInfo = licenseCheck.licenseInfo;
+        
+        throw error;
+      }
+
+      console.log(`✅ Licencia válida para empresa ${user.currentCompanyId} - Login permitido`);
+    } else if (user.isMaster) {
+      console.log(`🔑 Usuario master detectado: ${email} - Login permitido sin validación de licencia`);
+    } else {
+      console.log(`⚠️ Usuario ${email} no tiene empresa asignada - Login permitido`);
     }
 
     // Procesar roles

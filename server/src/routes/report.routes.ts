@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { requireCompanyAccess } from '../middleware/permissions';
+import { validateLicense } from '../middleware/licenseValidation';
 import {
   getRevenueReport,
   getAppointmentsReport,
@@ -11,14 +12,16 @@ import {
 
 const router = Router();
 
-// Middleware de autenticación para todas las rutas
+// Middleware de autenticación y validación de licencia para todas las rutas
 router.use(authenticate);
+router.use(requireCompanyAccess);
+router.use(validateLicense);
 
 // Rutas de reportes
-router.get('/revenue', requireCompanyAccess, getRevenueReport);
-router.get('/appointments', requireCompanyAccess, getAppointmentsReport);
-router.get('/treatments', requireCompanyAccess, getTreatmentsReport);
-router.get('/clients', requireCompanyAccess, getClientsReport);
-router.get('/dashboard', requireCompanyAccess, getDashboardReport);
+router.get('/revenue', getRevenueReport);
+router.get('/appointments', getAppointmentsReport);
+router.get('/treatments', getTreatmentsReport);
+router.get('/clients', getClientsReport);
+router.get('/dashboard', getDashboardReport);
 
 export default router;

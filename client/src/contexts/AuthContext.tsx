@@ -100,8 +100,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.success('Inicio de sesión exitoso');
     } catch (error: any) {
       console.error('Error en login:', error);
-      const message = error.response?.data?.message || 'Error al iniciar sesión';
-      toast.error(message);
+      
+      // Manejar errores específicos de licencia
+      const errorCode = error.response?.data?.code;
+      const errorMessage = error.response?.data?.message;
+      const licenseInfo = error.response?.data?.licenseInfo;
+      
+      if (errorCode && errorCode.includes('LICENSE')) {
+        console.log('🚫 Error de licencia detectado:', {
+          code: errorCode,
+          message: errorMessage,
+          licenseInfo
+        });
+        
+        // Guardar datos para la página de estado de licencia
+        const licenseStatusData = {
+          code: errorCode,
+          message: errorMessage,
+          licenseInfo
+        };
+        
+        localStorage.setItem('licenseStatusData', JSON.stringify(licenseStatusData));
+        
+        // Redirigir a la página de estado de licencia
+        window.location.href = '/license-status';
+        return; // No continuar con el error normal
+      } else {
+        // Error de login normal (credenciales, etc.)
+        const message = errorMessage || 'Error al iniciar sesión';
+        toast.error(message);
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);

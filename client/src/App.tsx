@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import LicenseStatus from './pages/LicenseStatus';
 import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
 
@@ -27,8 +28,9 @@ function App() {
           <Router>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Ruta pública */}
+              {/* Rutas públicas */}
               <Route path="/" element={<Login />} />
+              <Route path="/license-status" element={<LicenseStatus />} />
               
               {/* Rutas protegidas */}
               <Route 
