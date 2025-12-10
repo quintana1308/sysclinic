@@ -804,7 +804,7 @@ const SystemManagement: React.FC = () => {
                     <span className="text-2xl">👥</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">👥 Gestión de Usuarios</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">Gestión de Usuarios</h3>
                     <p className="text-sm text-gray-600 mt-1">
                       Administra empleados, administradores y clientes del sistema
                     </p>
@@ -1090,7 +1090,7 @@ const SystemManagement: React.FC = () => {
                     <span className="text-2xl">🏢</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">🏢 Gestión de Empresas</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">Gestión de Empresas</h3>
                     <p className="text-sm text-gray-600 mt-1">
                       Crear, editar y administrar empresas del sistema
                     </p>
@@ -1845,7 +1845,7 @@ const SystemManagement: React.FC = () => {
                   <PlusIcon className="h-6 w-6 text-pink-700" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">➕ Crear Nuevo Usuario</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">👤 Crear Nuevo Usuario</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Completa la información para crear un nuevo usuario en el sistema
                   </p>
@@ -2048,7 +2048,7 @@ const SystemManagement: React.FC = () => {
                   <PlusIcon className="h-6 w-6 text-pink-700" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">➕ Crear Nueva Empresa</h3>
+                  <h3 className="text-xl font-semibold text-gray-900">🏢 Crear Nueva Empresa</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Completa la información para registrar una nueva empresa
                   </p>
@@ -2233,6 +2233,562 @@ const SystemManagement: React.FC = () => {
                   <>
                     <PlusIcon className="h-4 w-4 mr-2" />
                     Crear Empresa
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Detalles de Empresa */}
+      {showCompanyViewModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium text-lg">
+                  {getCompanyInitials(selectedCompany)}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">👁️ Detalles de la Empresa</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Información completa de {selectedCompany.name}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Información Básica */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3">🏢 Información Básica</h4>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de la Empresa
+                    </label>
+                    <p className="text-sm text-gray-900 font-medium">{selectedCompany.name}</p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug/Identificador
+                    </label>
+                    <p className="text-sm text-gray-900 font-mono">{selectedCompany.slug}</p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📧 Email
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.email || <span className="text-gray-400 italic">No especificado</span>}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📱 Teléfono
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.phone || <span className="text-gray-400 italic">No especificado</span>}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📍 Dirección
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.address || <span className="text-gray-400 italic">No especificada</span>}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      🌐 Sitio Web
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.website ? (
+                        <a 
+                          href={selectedCompany.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {selectedCompany.website}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic">No especificado</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Configuración y Estadísticas */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3">⚙️ Configuración y Estadísticas</h4>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📋 Tipo de Licencia
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">
+                        {selectedCompany.licenseType === 'basic' ? '🥉' : 
+                         selectedCompany.licenseType === 'premium' ? '🥈' : '🥇'}
+                      </span>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {getLicenseTypeName(selectedCompany.licenseType)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👥 Usuarios
+                      </label>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {selectedCompany.userCount || 0} / {selectedCompany.maxUsers}
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ 
+                            width: `${Math.min(((selectedCompany.userCount || 0) / selectedCompany.maxUsers) * 100, 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👤 Clientes
+                      </label>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {selectedCompany.clientCount || 0} / {selectedCompany.maxClients}
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-green-600 h-2 rounded-full" 
+                          style={{ 
+                            width: `${Math.min(((selectedCompany.clientCount || 0) / selectedCompany.maxClients) * 100, 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📊 Estado
+                    </label>
+                    <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                      selectedCompany.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedCompany.isActive ? '✅ Activa' : '❌ Inactiva'}
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📅 Fecha de Creación
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.createdAt ? 
+                        new Date(selectedCompany.createdAt).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : 
+                        'No disponible'
+                      }
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      🔄 Última Actualización
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedCompany.updatedAt ? 
+                        new Date(selectedCompany.updatedAt).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : 
+                        'No disponible'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información de uso */}
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-500 mt-0.5">📊</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Resumen de Uso</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p>• Capacidad de usuarios: {Math.round(((selectedCompany.userCount || 0) / selectedCompany.maxUsers) * 100)}% utilizada</p>
+                      <p>• Capacidad de clientes: {Math.round(((selectedCompany.clientCount || 0) / selectedCompany.maxClients) * 100)}% utilizada</p>
+                      <p>• Licencia: {getLicenseTypeName(selectedCompany.licenseType)}</p>
+                      <p>• Estado: {selectedCompany.isActive ? 'Empresa activa y operativa' : 'Empresa inactiva'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCompanyViewModal(false);
+                    openCompanyEditModal(selectedCompany);
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Editar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCompanyViewModal(false);
+                    openCompanyDeleteModal(selectedCompany);
+                  }}
+                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <TrashIcon className="h-4 w-4 mr-2" />
+                  Desactivar
+                </button>
+              </div>
+              <button
+                onClick={() => setShowCompanyViewModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Empresa */}
+      {showCompanyEditModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-medium text-lg">
+                  {getCompanyInitials(selectedCompany)}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">✏️ Editar Empresa</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Modificar información de {selectedCompany.name}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Información Básica */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-green-700 mb-3">🏢 Información Básica</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nombre de la Empresa *
+                    </label>
+                    <input
+                      type="text"
+                      value={companyEditFormData.name}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Ingresa el nombre de la empresa"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📧 Email
+                    </label>
+                    <input
+                      type="email"
+                      value={companyEditFormData.email}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="email@empresa.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📱 Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={companyEditFormData.phone}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Número de teléfono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📍 Dirección
+                    </label>
+                    <textarea
+                      value={companyEditFormData.address}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, address: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="Dirección completa"
+                    />
+                  </div>
+                </div>
+
+                {/* Configuración y Licencia */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-green-700 mb-3">⚙️ Configuración y Licencia</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      🌐 Sitio Web
+                    </label>
+                    <input
+                      type="url"
+                      value={companyEditFormData.website}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, website: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      placeholder="https://empresa.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📋 Tipo de Licencia
+                    </label>
+                    <select
+                      value={companyEditFormData.licenseType}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, licenseType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="basic">🥉 Básica</option>
+                      <option value="premium">🥈 Premium</option>
+                      <option value="enterprise">🥇 Empresarial</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👥 Máx. Usuarios
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={companyEditFormData.maxUsers}
+                        onChange={(e) => setCompanyEditFormData({...companyEditFormData, maxUsers: parseInt(e.target.value) || 10})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        👤 Máx. Clientes
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10000"
+                        value={companyEditFormData.maxClients}
+                        onChange={(e) => setCompanyEditFormData({...companyEditFormData, maxClients: parseInt(e.target.value) || 100})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="companyEditIsActive"
+                      checked={companyEditFormData.isActive}
+                      onChange={(e) => setCompanyEditFormData({...companyEditFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="companyEditIsActive" className="text-sm font-medium text-gray-700">
+                      ✅ Empresa activa
+                    </label>
+                  </div>
+
+                  {/* Información actual */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">📊 Uso Actual</h5>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>• Usuarios actuales: {selectedCompany.userCount || 0}</p>
+                      <p>• Clientes actuales: {selectedCompany.clientCount || 0}</p>
+                      <p>• Slug: {selectedCompany.slug}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información adicional */}
+              <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-yellow-500 mt-0.5">⚠️</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-900 mb-1">Consideraciones importantes</h4>
+                    <div className="text-sm text-yellow-800 space-y-1">
+                      <p>• Los cambios en los límites de usuarios/clientes afectarán la capacidad de la empresa</p>
+                      <p>• Reducir límites por debajo del uso actual puede causar problemas</p>
+                      <p>• El slug de la empresa no se puede modificar</p>
+                      <p>• Desactivar la empresa impedirá el acceso a todos sus usuarios</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCompanyEditModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={companyEditLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateCompany}
+                disabled={companyEditLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50"
+              >
+                {companyEditLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Guardar Cambios
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminación de Empresa */}
+      {showCompanyDeleteModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrashIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🗑️ Confirmar Desactivación</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Esta acción desactivará la empresa
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="mb-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-medium">
+                    {getCompanyInitials(selectedCompany)}
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900">{selectedCompany.name}</h4>
+                    <p className="text-sm text-gray-500">{selectedCompany.slug}</p>
+                  </div>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-red-500 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-900 mb-1">¿Estás seguro de desactivar esta empresa?</h4>
+                      <div className="text-sm text-red-800 space-y-1">
+                        <p>• Los usuarios de esta empresa no podrán acceder al sistema</p>
+                        <p>• Se mantendrán todos los datos históricos</p>
+                        <p>• La empresa se puede reactivar posteriormente</p>
+                        <p>• Esta acción no elimina permanentemente la información</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Información de la empresa */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">📊 Información de la Empresa</h5>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>• <strong>Usuarios:</strong> {selectedCompany.userCount || 0} de {selectedCompany.maxUsers}</p>
+                    <p>• <strong>Clientes:</strong> {selectedCompany.clientCount || 0} de {selectedCompany.maxClients}</p>
+                    <p>• <strong>Licencia:</strong> {getLicenseTypeName(selectedCompany.licenseType)}</p>
+                    <p>• <strong>Estado actual:</strong> {selectedCompany.isActive ? '✅ Activa' : '❌ Inactiva'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-500 mb-4">
+                <p>💡 <strong>Nota:</strong> Esta es una desactivación, no una eliminación permanente. 
+                Los datos se conservan y la empresa puede ser reactivada en cualquier momento.</p>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-6 bg-gray-50 border-t border-gray-100 flex justify-end items-center space-x-3">
+              <button
+                onClick={() => setShowCompanyDeleteModal(false)}
+                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+                disabled={companyDeleteLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteCompany}
+                disabled={companyDeleteLoading}
+                className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50"
+              >
+                {companyDeleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Desactivando...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Desactivar Empresa
                   </>
                 )}
               </button>

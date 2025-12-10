@@ -2,6 +2,11 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { AppError } from './errorHandler';
 
+// Función auxiliar para verificar si un usuario es master
+const isMasterUser = (user: any): boolean => {
+  return user && (user.isMaster === true || user.isMaster === 1);
+};
+
 // Definición de permisos por acción
 export interface Permission {
   resource: string;
@@ -14,7 +19,7 @@ export const hasPermission = (user: any, permission: Permission): boolean => {
   if (!user || !user.roles) return false;
 
   // Usuario master tiene todos los permisos
-  if (user.isMaster) return true;
+  if (isMasterUser(user)) return true;
 
   // Verificar permisos en cada rol
   for (const userRole of user.roles) {
@@ -85,7 +90,7 @@ export const requireCompanyAccess = (req: AuthenticatedRequest, res: Response, n
   }
 
   // Usuario master tiene acceso a todas las empresas
-  if (req.user.isMaster) {
+  if (isMasterUser(req.user)) {
     return next();
   }
 
@@ -126,7 +131,7 @@ export const requireOwnDataAccess = (userIdField: string = 'userId') => {
     }
 
     // Usuario master y admin pueden acceder a todos los datos
-    if (req.user.isMaster) return next();
+    if (isMasterUser(req.user)) return next();
     
     const userRoles = req.user.roles.map((r: any) => r.role.name.toLowerCase());
     if (userRoles.includes('administrador') || userRoles.includes('admin')) {
@@ -146,7 +151,7 @@ export const requireOwnDataAccess = (userIdField: string = 'userId') => {
 // Verificar si el usuario puede gestionar otros usuarios
 export const canManageUsers = (user: any): boolean => {
   if (!user || !user.roles) return false;
-  if (user.isMaster) return true;
+  if (isMasterUser(user)) return true;
   
   const userRoles = user.roles.map((r: any) => r.role.name.toLowerCase());
   return userRoles.includes('administrador') || userRoles.includes('admin');
@@ -155,7 +160,7 @@ export const canManageUsers = (user: any): boolean => {
 // Verificar si el usuario puede ver reportes
 export const canViewReports = (user: any): boolean => {
   if (!user || !user.roles) return false;
-  if (user.isMaster) return true;
+  if (isMasterUser(user)) return true;
   
   const userRoles = user.roles.map((r: any) => r.role.name.toLowerCase());
   return userRoles.includes('administrador') || userRoles.includes('admin');
@@ -164,7 +169,7 @@ export const canViewReports = (user: any): boolean => {
 // Verificar si el usuario puede eliminar clientes
 export const canDeleteClients = (user: any): boolean => {
   if (!user || !user.roles) return false;
-  if (user.isMaster) return true;
+  if (isMasterUser(user)) return true;
   
   const userRoles = user.roles.map((r: any) => r.role.name.toLowerCase());
   // Solo admin puede eliminar clientes, empleados no
@@ -174,7 +179,7 @@ export const canDeleteClients = (user: any): boolean => {
 // Verificar si el usuario puede gestionar configuración de empresa
 export const canManageCompanySettings = (user: any): boolean => {
   if (!user || !user.roles) return false;
-  if (user.isMaster) return true;
+  if (isMasterUser(user)) return true;
   
   const userRoles = user.roles.map((r: any) => r.role.name.toLowerCase());
   return userRoles.includes('administrador') || userRoles.includes('admin');
@@ -182,7 +187,7 @@ export const canManageCompanySettings = (user: any): boolean => {
 
 // Verificar si el usuario puede gestionar empresas (solo master)
 export const canManageCompanies = (user: any): boolean => {
-  return user && user.isMaster === true;
+  return isMasterUser(user);
 };
 
 export default {
