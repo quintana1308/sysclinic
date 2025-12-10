@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import userService, { User } from '../services/userService';
 import companyService, { Company } from '../services/companyService';
+import licenseService, { License, LicenseFormData } from '../services/licenseService';
 
 // Iconos SVG
 const UserIcon = ({ className }: { className?: string }) => (
@@ -143,6 +144,60 @@ const SystemManagement: React.FC = () => {
     isActive: true
   });
 
+  // Estados para licencias
+  const [licensesList, setLicensesList] = useState<License[]>([]);
+  const [licensesLoading, setLicensesLoading] = useState(false);
+  const [licensesError, setLicensesError] = useState<string | null>(null);
+  const [licenseSearchTerm, setLicenseSearchTerm] = useState('');
+  const [licenseTypeFilter, setLicenseTypeFilter] = useState('');
+  const [licenseStatusFilter, setLicenseStatusFilter] = useState('');
+  const [licenseBillingFilter, setLicenseBillingFilter] = useState('');
+
+  // Estados para modales de licencias
+  const [showLicenseViewModal, setShowLicenseViewModal] = useState(false);
+  const [showLicenseEditModal, setShowLicenseEditModal] = useState(false);
+  const [showLicenseCreateModal, setShowLicenseCreateModal] = useState(false);
+  const [showLicenseDeleteModal, setShowLicenseDeleteModal] = useState(false);
+  const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
+  const [licenseDeleteLoading, setLicenseDeleteLoading] = useState(false);
+  const [licenseEditLoading, setLicenseEditLoading] = useState(false);
+  const [licenseCreateLoading, setLicenseCreateLoading] = useState(false);
+
+  // Estados para formularios de licencias
+  const [licenseEditFormData, setLicenseEditFormData] = useState<LicenseFormData>({
+    companyId: '',
+    name: '',
+    type: 'basic',
+    description: '',
+    maxUsers: 10,
+    maxClients: 100,
+    maxStorage: 5,
+    features: [],
+    price: 0,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    isActive: true,
+    startDate: '',
+    endDate: ''
+  });
+
+  const [licenseCreateFormData, setLicenseCreateFormData] = useState<LicenseFormData>({
+    companyId: '',
+    name: '',
+    type: 'basic',
+    description: '',
+    maxUsers: 10,
+    maxClients: 100,
+    maxStorage: 5,
+    features: [],
+    price: 0,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    isActive: true,
+    startDate: '',
+    endDate: ''
+  });
+
   // Funciones auxiliares
   const getUserInitials = (user: User) => {
     const firstName = user.firstName || '';
@@ -185,6 +240,39 @@ const SystemManagement: React.FC = () => {
       'enterprise': 'Empresarial'
     };
     return types[licenseType as keyof typeof types] || licenseType;
+  };
+
+  // Funciones auxiliares para licencias
+  const getLicenseInitials = (license: License) => {
+    const name = license.name || '';
+    if (name.length === 0) return 'LL';
+    if (name.length === 1) return name.toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getLicenseTypeIcon = (type: string) => {
+    const icons = {
+      'basic': '🥉',
+      'premium': '🥈',
+      'enterprise': '🥇'
+    };
+    return icons[type as keyof typeof icons] || '📄';
+  };
+
+  const getBillingCycleName = (cycle: string) => {
+    const cycles = {
+      'monthly': 'Mensual',
+      'yearly': 'Anual'
+    };
+    return cycles[cycle as keyof typeof cycles] || cycle;
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    const formatter = new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: currency || 'USD',
+    });
+    return formatter.format(price);
   };
 
   // Cargar roles disponibles
@@ -678,6 +766,235 @@ const SystemManagement: React.FC = () => {
     }
   };
 
+  // ===== FUNCIONES PARA LICENCIAS =====
+
+  // Cargar licencias
+  const loadLicensesList = async () => {
+    try {
+      setLicensesLoading(true);
+      setLicensesError(null);
+      
+      console.log('🔄 Cargando licencias...');
+      
+      const filters = {
+        search: licenseSearchTerm || undefined,
+        type: licenseTypeFilter || undefined,
+        status: licenseStatusFilter || undefined,
+        billingCycle: licenseBillingFilter || undefined
+      };
+      
+      const licensesData = await licenseService.getLicenses(filters);
+      console.log('✅ Licencias cargadas:', licensesData);
+      
+      setLicensesList(licensesData || []);
+      
+    } catch (error: any) {
+      console.error('❌ Error loading licenses:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al cargar licencias';
+      setLicensesError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLicensesLoading(false);
+    }
+  };
+
+  // Abrir modales de licencias
+  const openLicenseViewModal = (license: License) => {
+    setSelectedLicense(license);
+    setShowLicenseViewModal(true);
+  };
+
+  const openLicenseEditModal = (license: License) => {
+    setSelectedLicense(license);
+    setLicenseEditFormData({
+      companyId: license.companyId,
+      name: license.name,
+      type: license.type,
+      description: license.description || '',
+      maxUsers: license.maxUsers,
+      maxClients: license.maxClients,
+      maxStorage: license.maxStorage,
+      features: license.features,
+      price: license.price,
+      currency: license.currency,
+      billingCycle: license.billingCycle,
+      isActive: license.isActive,
+      startDate: license.startDate,
+      endDate: license.endDate
+    });
+    setShowLicenseEditModal(true);
+  };
+
+  const openLicenseCreateModal = () => {
+    // Establecer fechas por defecto (hoy y un año después)
+    const today = new Date();
+    const nextYear = new Date();
+    nextYear.setFullYear(today.getFullYear() + 1);
+    
+    setLicenseCreateFormData({
+      companyId: '',
+      name: '',
+      type: 'basic',
+      description: '',
+      maxUsers: 10,
+      maxClients: 100,
+      maxStorage: 5,
+      features: [],
+      price: 0,
+      currency: 'USD',
+      billingCycle: 'monthly',
+      isActive: true,
+      startDate: today.toISOString().split('T')[0],
+      endDate: nextYear.toISOString().split('T')[0]
+    });
+    setShowLicenseCreateModal(true);
+  };
+
+  const openLicenseDeleteModal = (license: License) => {
+    setSelectedLicense(license);
+    setShowLicenseDeleteModal(true);
+  };
+
+  // Crear licencia
+  const handleCreateLicense = async () => {
+    try {
+      // Validaciones
+      if (!licenseCreateFormData.companyId) {
+        toast.error('Debe seleccionar una empresa');
+        return;
+      }
+      
+      if (!licenseCreateFormData.startDate) {
+        toast.error('La fecha de inicio es requerida');
+        return;
+      }
+      
+      if (!licenseCreateFormData.endDate) {
+        toast.error('La fecha de fin es requerida');
+        return;
+      }
+      
+      if (new Date(licenseCreateFormData.startDate) >= new Date(licenseCreateFormData.endDate)) {
+        toast.error('La fecha de fin debe ser posterior a la fecha de inicio');
+        return;
+      }
+      
+      if (licenseCreateFormData.maxUsers < 1) {
+        toast.error('El número máximo de usuarios debe ser mayor a 0');
+        return;
+      }
+      
+      if (licenseCreateFormData.maxClients < 1) {
+        toast.error('El número máximo de clientes debe ser mayor a 0');
+        return;
+      }
+
+      setLicenseCreateLoading(true);
+      
+      console.log('➕ Creando licencia:', licenseCreateFormData);
+      
+      // Preparar datos para el backend (convertir GB a bytes)
+      const licenseData = {
+        ...licenseCreateFormData,
+        maxStorage: licenseCreateFormData.maxStorage * 1024 * 1024 * 1024 // Convertir GB a bytes
+      };
+      
+      const newLicense = await licenseService.createLicense(licenseData);
+      
+      toast.success('Licencia creada correctamente');
+      setShowLicenseCreateModal(false);
+      
+      // Recargar la lista de licencias
+      await loadLicensesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error creating license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al crear licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setLicenseCreateLoading(false);
+    }
+  };
+
+  // Actualizar licencia
+  const handleUpdateLicense = async () => {
+    if (!selectedLicense) return;
+
+    try {
+      // Validaciones
+      if (!licenseEditFormData.name.trim()) {
+        toast.error('El nombre de la licencia es requerido');
+        return;
+      }
+      
+      if (licenseEditFormData.price < 0) {
+        toast.error('El precio no puede ser negativo');
+        return;
+      }
+
+      setLicenseEditLoading(true);
+      
+      console.log('✏️ Actualizando licencia:', selectedLicense.id, licenseEditFormData);
+      
+      await licenseService.updateLicense(selectedLicense.id, licenseEditFormData);
+      
+      toast.success(`Licencia ${licenseEditFormData.name} actualizada correctamente`);
+      setShowLicenseEditModal(false);
+      setSelectedLicense(null);
+      
+      // Recargar la lista de licencias
+      await loadLicensesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error updating license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al actualizar licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setLicenseEditLoading(false);
+    }
+  };
+
+  // Eliminar licencia
+  const handleDeleteLicense = async () => {
+    if (!selectedLicense) return;
+
+    try {
+      setLicenseDeleteLoading(true);
+      
+      console.log('🗑️ Eliminando licencia:', selectedLicense.id);
+      
+      await licenseService.deleteLicense(selectedLicense.id);
+      
+      toast.success(`Licencia ${selectedLicense.name} eliminada correctamente`);
+      setShowLicenseDeleteModal(false);
+      setSelectedLicense(null);
+      
+      // Recargar la lista de licencias
+      await loadLicensesList();
+      
+    } catch (error: any) {
+      console.error('❌ Error deleting license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al eliminar licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setLicenseDeleteLoading(false);
+    }
+  };
+
   // Cargar usuarios cuando cambien los filtros
   useEffect(() => {
     if (activeSection === 'users') {
@@ -705,6 +1022,13 @@ const SystemManagement: React.FC = () => {
       loadCompanies();
     }
   }, [activeSection]);
+
+  // Cargar licencias cuando cambien los filtros
+  useEffect(() => {
+    if (activeSection === 'licenses') {
+      loadLicensesList();
+    }
+  }, [activeSection, licenseSearchTerm, licenseTypeFilter, licenseStatusFilter, licenseBillingFilter]);
 
   // Filtrar usuarios
   const filteredUsers = users.filter(user => {
@@ -1323,83 +1647,238 @@ const SystemManagement: React.FC = () => {
 
         {activeSection === 'licenses' && (
           <div>
-            {/* Header de la tarjeta con gradiente */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                  <span className="text-2xl">📄</span>
-                </div>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-pink-800">Gestión de Licencias</h2>
+                <p className="text-gray-600 mt-1">Administra planes, suscripciones y licencias del sistema</p>
+              </div>
+              <button
+                onClick={openLicenseCreateModal}
+                className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Nueva Licencia
+              </button>
+            </div>
+
+            {/* Filtros */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">📄 Gestión de Licencias</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Administra planes, suscripciones y licencias del sistema
-                  </p>
+                  <label className="block text-sm font-medium text-pink-700 mb-1">
+                    🔍 Buscar licencias
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Buscar por empresa o clave..."
+                    value={licenseSearchTerm}
+                    onChange={(e) => setLicenseSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
                 </div>
-              </div>
-            </div>
 
-            {/* Contenido */}
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Tarjeta de acción */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
-                  <div className="flex items-center mb-4">
-                    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center shadow-sm">
-                      <span className="text-2xl">📄</span>
-                    </div>
-                    <div className="ml-4">
-                      <h4 className="text-lg font-semibold text-orange-900">Licencias del Sistema</h4>
-                      <p className="text-sm text-orange-700">Gestionar suscripciones</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-orange-800 mb-4">
-                    Controlar planes, suscripciones y licencias de uso del sistema.
-                  </p>
-                  <button
-                    onClick={() => navigate('/dashboard/licenses')}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                <div>
+                  <label className="block text-sm font-medium text-pink-700 mb-1">
+                    📋 Tipo de licencia
+                  </label>
+                  <select
+                    value={licenseTypeFilter}
+                    onChange={(e) => setLicenseTypeFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                   >
-                    📄 Gestionar Licencias
-                  </button>
+                    <option value="">Todos los tipos</option>
+                    <option value="basic">🥉 Básica</option>
+                    <option value="premium">🥈 Premium</option>
+                    <option value="enterprise">🥇 Empresarial</option>
+                  </select>
                 </div>
 
-                {/* Estadísticas */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📊</div>
-                    <h4 className="text-lg font-semibold text-purple-900 mb-2">Estadísticas</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Licencias Activas:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Licencias Vencidas:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Total:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-pink-700 mb-1">
+                    ⚡ Estado
+                  </label>
+                  <select
+                    value={licenseStatusFilter}
+                    onChange={(e) => setLicenseStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="active">✅ Activas</option>
+                    <option value="inactive">❌ Inactivas</option>
+                  </select>
                 </div>
 
-                {/* Información */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg border border-red-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">ℹ️</div>
-                    <h4 className="text-lg font-semibold text-red-900 mb-2">Información</h4>
-                    <div className="text-sm text-red-800 space-y-1">
-                      <p>• Control de planes y suscripciones</p>
-                      <p>• Gestión de vencimientos</p>
-                      <p>• Límites de uso por empresa</p>
-                      <p>• Facturación y pagos</p>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-pink-700 mb-1">
+                    💰 Facturación
+                  </label>
+                  <select
+                    value={licenseBillingFilter}
+                    onChange={(e) => setLicenseBillingFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  >
+                    <option value="">Todos los ciclos</option>
+                    <option value="monthly">📅 Mensual</option>
+                    <option value="yearly">📆 Anual</option>
+                  </select>
                 </div>
               </div>
             </div>
+
+            {/* Lista de licencias */}
+            {licensesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+                <span className="ml-2 text-gray-600">Cargando licencias...</span>
+              </div>
+            ) : licensesError ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <div className="text-red-500 text-4xl mb-4">❌</div>
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Error al cargar licencias</h3>
+                <p className="text-red-700 mb-4">{licensesError}</p>
+                <button
+                  onClick={loadLicensesList}
+                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  🔄 Reintentar
+                </button>
+              </div>
+            ) : licensesList.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                <div className="text-gray-400 text-6xl mb-4">📄</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay licencias</h3>
+                <p className="text-gray-600 mb-6">
+                  {licenseSearchTerm || licenseTypeFilter || licenseStatusFilter || licenseBillingFilter
+                    ? 'No se encontraron licencias con los filtros aplicados.'
+                    : 'Aún no hay licencias registradas en el sistema.'}
+                </p>
+                <button
+                  onClick={openLicenseCreateModal}
+                  className="inline-flex items-center px-6 py-3 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Crear Primera Licencia
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {licensesList.map((license) => (
+                  <div key={license.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Header de la tarjeta */}
+                    <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center text-pink-700 font-medium text-lg">
+                            {getLicenseTypeIcon(license.type)}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{license.name}</h3>
+                            <p className="text-sm text-gray-600">{getLicenseTypeName(license.type)}</p>
+                            <p className="text-xs text-gray-500">🔑 {license.licenseKey}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          license.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {license.isActive ? '✅ Activa' : '❌ Inactiva'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3 mb-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">🏢 Empresa:</span>
+                          <span className="font-medium text-gray-900">{license.companyName || 'Sin asignar'}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">📅 Vigencia:</span>
+                          <span className="font-medium text-gray-900">
+                            {new Date(license.startDate).toLocaleDateString('es-ES')} - {new Date(license.endDate).toLocaleDateString('es-ES')}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">👥 Máx. Usuarios:</span>
+                          <span className="font-medium text-gray-900">{license.maxUsers}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">👤 Máx. Clientes:</span>
+                          <span className="font-medium text-gray-900">{license.maxClients}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">💾 Almacenamiento:</span>
+                          <span className="font-medium text-gray-900">{license.maxStorage} GB</span>
+                        </div>
+                      </div>
+
+                      {license.features && license.features.length > 0 && (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">✨ Características principales:</h4>
+                          <div className="space-y-1">
+                            {license.features.slice(0, 3).map((feature, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <span className="text-green-500 text-xs">✓</span>
+                                <span className="text-xs text-gray-600">{feature}</span>
+                              </div>
+                            ))}
+                            {license.features.length > 3 && (
+                              <div className="text-xs text-gray-500">
+                                +{license.features.length - 3} características más...
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Estado de la licencia */}
+                      <div className="mb-4 bg-blue-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-blue-700">📊 Estado:</span>
+                          <span className="font-medium text-blue-900">
+                            {license.isActive ? 'Licencia Activa' : 'Licencia Inactiva'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm text-blue-700">💰 Valor estimado:</span>
+                          <span className="font-medium text-blue-900">
+                            {formatPrice(license.price, license.currency)} / {getBillingCycleName(license.billingCycle)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => openLicenseViewModal(license)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                        >
+                          <EyeIcon className="h-4 w-4 mr-1" />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => openLicenseEditModal(license)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => openLicenseDeleteModal(license)}
+                          className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                          title="Desactivar licencia"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1602,7 +2081,7 @@ const SystemManagement: React.FC = () => {
                     <PencilIcon className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">✏️ Editar Usuario</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">✏️ Editar Estado de Usuario</h3>
                     <p className="text-sm text-gray-600">{getUserName(selectedUser)}</p>
                   </div>
                 </div>
@@ -2789,6 +3268,678 @@ const SystemManagement: React.FC = () => {
                   <>
                     <TrashIcon className="h-4 w-4 mr-2" />
                     Desactivar Empresa
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Licencia */}
+      {showLicenseCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <PlusIcon className="h-6 w-6 text-pink-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">📄 Crear Nueva Licencia</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Asignar licencia a una empresa
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleCreateLicense(); }} className="space-y-6">
+                {/* Selección de Empresa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    🏢 Empresa *
+                  </label>
+                  <select
+                    value={licenseCreateFormData.companyId}
+                    onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, companyId: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    required
+                  >
+                    <option value="">Seleccionar empresa</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tipo de Licencia */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📋 Tipo de Licencia *
+                  </label>
+                  <select
+                    value={licenseCreateFormData.type}
+                    onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, type: e.target.value as 'basic' | 'premium' | 'enterprise'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    required
+                  >
+                    <option value="basic">🥉 Básica - $29.99/mes</option>
+                    <option value="premium">🥈 Premium - $79.99/mes</option>
+                    <option value="enterprise">🥇 Empresarial - $199.99/mes</option>
+                  </select>
+                </div>
+
+                {/* Límites */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      👥 Máx. Usuarios
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={licenseCreateFormData.maxUsers}
+                      onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, maxUsers: parseInt(e.target.value) || 1})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      👤 Máx. Clientes
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10000"
+                      value={licenseCreateFormData.maxClients}
+                      onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, maxClients: parseInt(e.target.value) || 1})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      💾 Almacenamiento (GB)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={licenseCreateFormData.maxStorage}
+                      onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, maxStorage: parseInt(e.target.value) || 1})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Fechas de Vigencia */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📅 Fecha de Inicio *
+                    </label>
+                    <input
+                      type="date"
+                      value={licenseCreateFormData.startDate}
+                      onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, startDate: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📅 Fecha de Fin *
+                    </label>
+                    <input
+                      type="date"
+                      value={licenseCreateFormData.endDate}
+                      onChange={(e) => setLicenseCreateFormData({...licenseCreateFormData, endDate: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Información */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h5 className="text-sm font-medium text-blue-900 mb-2">ℹ️ Información</h5>
+                  <div className="text-sm text-blue-800 space-y-1">
+                    <p>• La clave de licencia se generará automáticamente</p>
+                    <p>• Las características se asignarán según el tipo de licencia</p>
+                    <p>• Solo se puede tener una licencia activa por empresa</p>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLicenseCreateModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={licenseCreateLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateLicense}
+                disabled={licenseCreateLoading}
+                className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50"
+              >
+                {licenseCreateLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Crear Licencia
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Detalles de Licencia */}
+      {showLicenseViewModal && selectedLicense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium text-lg">
+                  {getLicenseTypeIcon(selectedLicense.type)}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">👁️ Detalles de la Licencia</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Información completa de {selectedLicense.name}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Información Básica */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3 flex items-center">
+                    <span className="mr-2">📋</span>
+                    Información Básica
+                  </h4>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">🏢 Empresa:</span>
+                      <span className="font-medium text-gray-900">{selectedLicense.companyName || 'Sin asignar'}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">🔑 Clave de Licencia:</span>
+                      <span className="font-medium text-gray-900 font-mono text-sm">{selectedLicense.licenseKey}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Tipo:</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{getLicenseTypeIcon(selectedLicense.type)}</span>
+                        <span className="font-medium text-gray-900">{getLicenseTypeName(selectedLicense.type)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Estado:</span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        selectedLicense.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedLicense.isActive ? '✅ Activa' : '❌ Inactiva'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">📅 Vigencia:</span>
+                      <span className="text-gray-900 text-sm">
+                        {new Date(selectedLicense.startDate).toLocaleDateString('es-ES')} - {new Date(selectedLicense.endDate).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Creada:</span>
+                      <span className="text-gray-900">
+                        {new Date(selectedLicense.createdAt).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {selectedLicense.description && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2">📝 Descripción</h5>
+                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                        {selectedLicense.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Precios y Límites */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3 flex items-center">
+                    <span className="mr-2">💰</span>
+                    Precios y Límites
+                  </h4>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="text-center mb-3">
+                      <div className="text-2xl font-bold text-green-900">
+                        {formatPrice(selectedLicense.price, selectedLicense.currency)}
+                      </div>
+                      <div className="text-sm text-green-700">
+                        por {getBillingCycleName(selectedLicense.billingCycle).toLowerCase()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-1">👥</span>
+                        Máx. Usuarios:
+                      </span>
+                      <span className="font-medium text-gray-900">{selectedLicense.maxUsers}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-1">👤</span>
+                        Máx. Clientes:
+                      </span>
+                      <span className="font-medium text-gray-900">{selectedLicense.maxClients}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-1">💾</span>
+                        Almacenamiento:
+                      </span>
+                      <span className="font-medium text-gray-900">{selectedLicense.maxStorage} GB</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center">
+                        <span className="mr-1">💱</span>
+                        Moneda:
+                      </span>
+                      <span className="font-medium text-gray-900">{selectedLicense.currency}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Características */}
+              {selectedLicense.features && selectedLicense.features.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3 flex items-center">
+                    <span className="mr-2">✨</span>
+                    Características Incluidas ({selectedLicense.features.length})
+                  </h4>
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {selectedLicense.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-purple-600">✓</span>
+                          <span className="text-sm text-purple-800">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Información de la Empresa */}
+              {selectedLicense.companyName && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium text-blue-700 mb-3 flex items-center">
+                    <span className="mr-2">🏢</span>
+                    Información de la Empresa
+                  </h4>
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-orange-700">Nombre de la empresa:</span>
+                        <span className="font-medium text-orange-900">{selectedLicense.companyName}</span>
+                      </div>
+                      {selectedLicense.companyEmail && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-orange-700">Email de contacto:</span>
+                          <span className="font-medium text-orange-900">{selectedLicense.companyEmail}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-orange-700">Estado de la licencia:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedLicense.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {selectedLicense.isActive ? 'Licencia Activa' : 'Licencia Inactiva'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Información Técnica */}
+              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h5 className="text-sm font-medium text-gray-700 mb-2">🔧 Información Técnica</h5>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>• <strong>ID:</strong> {selectedLicense.id}</p>
+                  <p>• <strong>Creada:</strong> {new Date(selectedLicense.createdAt).toLocaleString('es-ES')}</p>
+                  <p>• <strong>Actualizada:</strong> {new Date(selectedLicense.updatedAt).toLocaleString('es-ES')}</p>
+                  <p>• <strong>Facturación:</strong> {getBillingCycleName(selectedLicense.billingCycle)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLicenseViewModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setShowLicenseViewModal(false);
+                  openLicenseEditModal(selectedLicense);
+                }}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  setShowLicenseViewModal(false);
+                  openLicenseDeleteModal(selectedLicense);
+                }}
+                className="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              >
+                <TrashIcon className="h-4 w-4 mr-2" />
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Licencia */}
+      {showLicenseEditModal && selectedLicense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-medium text-lg">
+                  {getLicenseTypeIcon(selectedLicense.type)}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">✏️ Editar Estado de Licencia</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedLicense.companyName} - {selectedLicense.licenseKey}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              {/* Información de la licencia */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">🏢 Empresa:</span>
+                    <span className="font-medium text-gray-900">{selectedLicense.companyName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">🔑 Clave:</span>
+                    <span className="font-medium text-gray-900 font-mono text-sm">{selectedLicense.licenseKey}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">📋 Tipo:</span>
+                    <span className="font-medium text-gray-900">{getLicenseTypeName(selectedLicense.type)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Control de estado */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-green-700 mb-3">⚡ Estado de la Licencia</h4>
+                
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="licenseEditIsActive"
+                    checked={licenseEditFormData.isActive}
+                    onChange={(e) => setLicenseEditFormData({...licenseEditFormData, isActive: e.target.checked})}
+                    className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="licenseEditIsActive" className="text-sm font-medium text-gray-700">
+                    {licenseEditFormData.isActive ? '✅ Licencia Activa' : '❌ Licencia Inactiva'}
+                  </label>
+                </div>
+                
+                <p className="text-sm text-gray-600">
+                  {licenseEditFormData.isActive 
+                    ? 'La licencia está activa y la empresa puede usar todas las funcionalidades.'
+                    : 'La licencia está inactiva. La empresa tendrá acceso limitado al sistema.'}
+                </p>
+              </div>
+
+              {/* Información adicional */}
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h5 className="text-sm font-medium text-blue-900 mb-2">ℹ️ Información</h5>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <p>• Solo se puede cambiar el estado activo/inactivo de la licencia</p>
+                  <p>• Para modificar límites y características, contacte al administrador del sistema</p>
+                  <p>• Los cambios se aplicarán inmediatamente</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLicenseEditModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={licenseEditLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateLicense}
+                disabled={licenseEditLoading}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50"
+              >
+                {licenseEditLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Guardar Cambios
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Licencia */}
+      {showLicenseDeleteModal && selectedLicense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrashIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🗑️ Confirmar Eliminación</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Esta acción eliminará la licencia permanentemente
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6">
+              {/* Información de la licencia */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="text-2xl">{getLicenseTypeIcon(selectedLicense.type)}</div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{selectedLicense.name}</h4>
+                    <p className="text-sm text-gray-600">{getLicenseTypeName(selectedLicense.type)}</p>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>• <strong>Precio:</strong> {formatPrice(selectedLicense.price, selectedLicense.currency)} / {getBillingCycleName(selectedLicense.billingCycle)}</p>
+                  <p>• <strong>Límites:</strong> {selectedLicense.maxUsers} usuarios, {selectedLicense.maxClients} clientes</p>
+                  <p>• <strong>Almacenamiento:</strong> {selectedLicense.maxStorage} GB</p>
+                  <p>• <strong>Estado:</strong> {selectedLicense.isActive ? '✅ Activa' : '❌ Inactiva'}</p>
+                </div>
+              </div>
+
+              {/* Advertencia principal */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-red-500 mt-0.5">⚠️</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-red-900 mb-1">¿Estás seguro de eliminar esta licencia?</h4>
+                    <div className="text-sm text-red-800 space-y-1">
+                      <p>• Esta acción no se puede deshacer</p>
+                      <p>• Se eliminará permanentemente del sistema</p>
+                      <p>• Las empresas que usen esta licencia se verán afectadas</p>
+                      <p>• Se perderán todas las configuraciones asociadas</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información de uso */}
+              {selectedLicense.companiesCount !== undefined && selectedLicense.companiesCount > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-yellow-500 mt-0.5">🏢</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-yellow-900 mb-1">Licencia en uso</h4>
+                      <div className="text-sm text-yellow-800 space-y-1">
+                        <p>• <strong>{selectedLicense.companiesCount}</strong> empresa(s) están usando esta licencia</p>
+                        <p>• <strong>{selectedLicense.activeCompaniesCount || 0}</strong> empresa(s) activa(s)</p>
+                        <p>• Eliminar esta licencia puede afectar el funcionamiento de estas empresas</p>
+                        <p>• Considera desactivar la licencia en lugar de eliminarla</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Características que se perderán */}
+              {selectedLicense.features && selectedLicense.features.length > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <h5 className="text-sm font-medium text-purple-900 mb-2">✨ Características que se perderán:</h5>
+                  <div className="grid grid-cols-2 gap-1">
+                    {selectedLicense.features.slice(0, 6).map((feature, index) => (
+                      <div key={index} className="text-xs text-purple-800">
+                        • {feature}
+                      </div>
+                    ))}
+                    {selectedLicense.features.length > 6 && (
+                      <div className="text-xs text-purple-600 font-medium">
+                        +{selectedLicense.features.length - 6} más...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Alternativas */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-500 mt-0.5">💡</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Alternativas recomendadas</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p>• <strong>Desactivar:</strong> La licencia no estará disponible para nuevas empresas</p>
+                      <p>• <strong>Modificar:</strong> Cambiar límites o características en lugar de eliminar</p>
+                      <p>• <strong>Archivar:</strong> Mantener para referencia histórica</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-6 bg-gray-50 border-t border-gray-100 flex justify-end items-center space-x-3">
+              <button
+                onClick={() => setShowLicenseDeleteModal(false)}
+                className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+                disabled={licenseDeleteLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setShowLicenseDeleteModal(false);
+                  openLicenseEditModal(selectedLicense);
+                }}
+                className="px-6 py-3 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center"
+                disabled={licenseDeleteLoading}
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Editar en su lugar
+              </button>
+              <button
+                onClick={handleDeleteLicense}
+                disabled={licenseDeleteLoading}
+                className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50"
+              >
+                {licenseDeleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Eliminar Licencia
                   </>
                 )}
               </button>
