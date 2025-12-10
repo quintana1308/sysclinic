@@ -32,7 +32,33 @@ export interface CompanyLicense {
   endDate: string;
   createdAt: string;
   updatedAt: string;
-  // Datos relacionados
+  
+  // Datos de la empresa (directos del backend)
+  companyName: string;
+  companyEmail: string;
+  
+  // Datos de la plantilla (directos del backend)
+  name: string;
+  type: 'basic' | 'premium' | 'enterprise';
+  description: string;
+  features: string[];
+  maxUsers: number;
+  maxClients: number;
+  maxStorage: number;
+  price: number;
+  currency: string;
+  billingCycle: 'monthly' | 'yearly';
+  
+  // Metadatos
+  companiesCount: number;
+  activeCompaniesCount: number;
+  
+  // Campos calculados (opcionales)
+  daysRemaining?: number;
+  isExpired?: boolean;
+  isExpiringSoon?: boolean; // Menos de 30 días
+  
+  // Datos relacionados (para compatibilidad)
   company?: {
     id: string;
     name: string;
@@ -40,10 +66,6 @@ export interface CompanyLicense {
     slug: string;
   };
   license?: LicenseTemplate;
-  // Campos calculados
-  daysRemaining?: number;
-  isExpired?: boolean;
-  isExpiringSoon?: boolean; // Menos de 30 días
 }
 
 // Interface para formularios de plantilla de licencia
@@ -163,7 +185,7 @@ class LicenseService {
       if (filters?.type) params.append('type', filters.type);
       if (filters?.status) params.append('status', filters.status);
       
-      const response = await api.get(`/licenses/company-licenses?${params.toString()}`);
+      const response = await api.get(`/licenses?${params.toString()}`);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching company licenses:', error);
@@ -174,7 +196,7 @@ class LicenseService {
   // Obtener licencias de una empresa específica
   async getCompanyLicensesByCompany(companyId: string): Promise<CompanyLicense[]> {
     try {
-      const response = await api.get(`/licenses/company-licenses/company/${companyId}`);
+      const response = await api.get(`/licenses?companyId=${companyId}`);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching company licenses by company:', error);
@@ -185,7 +207,7 @@ class LicenseService {
   // Obtener licencia asignada por ID
   async getCompanyLicenseById(id: string): Promise<CompanyLicense> {
     try {
-      const response = await api.get(`/licenses/company-licenses/${id}`);
+      const response = await api.get(`/licenses/${id}`);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error fetching company license:', error);
@@ -196,7 +218,23 @@ class LicenseService {
   // Asignar licencia a empresa
   async assignLicenseToCompany(licenseData: CompanyLicenseFormData): Promise<CompanyLicense> {
     try {
-      const response = await api.post('/licenses/company-licenses', licenseData);
+      // Obtener la plantilla de licencia para obtener el tipo
+      const template = await this.getLicenseTemplateById(licenseData.licenseId);
+      
+      // Transformar datos para el backend
+      const backendData = {
+        companyId: licenseData.companyId,
+        licenseType: template.type, // Usar el tipo de la plantilla
+        maxUsers: template.maxUsers,
+        maxClients: template.maxClients,
+        startDate: licenseData.startDate,
+        endDate: licenseData.endDate,
+        features: template.features
+      };
+      
+      console.log('🚀 SERVICIO - Enviando datos al backend:', backendData);
+      
+      const response = await api.post('/licenses', backendData);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error assigning license to company:', error);
@@ -207,7 +245,7 @@ class LicenseService {
   // Actualizar licencia asignada
   async updateCompanyLicense(id: string, licenseData: Partial<CompanyLicenseFormData>): Promise<CompanyLicense> {
     try {
-      const response = await api.put(`/licenses/company-licenses/${id}`, licenseData);
+      const response = await api.put(`/licenses/${id}`, licenseData);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error updating company license:', error);
@@ -218,7 +256,7 @@ class LicenseService {
   // Renovar licencia de empresa
   async renewCompanyLicense(id: string, months: number = 12): Promise<CompanyLicense> {
     try {
-      const response = await api.patch(`/licenses/company-licenses/${id}/renew`, { months });
+      const response = await api.patch(`/licenses/${id}/renew`, { months });
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error renewing company license:', error);
@@ -229,7 +267,7 @@ class LicenseService {
   // Desactivar/Activar licencia asignada
   async toggleCompanyLicense(id: string): Promise<CompanyLicense> {
     try {
-      const response = await api.patch(`/licenses/company-licenses/${id}/toggle`);
+      const response = await api.patch(`/licenses/${id}/toggle`);
       return response.data.data || response.data;
     } catch (error) {
       console.error('Error toggling company license:', error);
@@ -240,7 +278,7 @@ class LicenseService {
   // Eliminar licencia asignada
   async deleteCompanyLicense(id: string): Promise<void> {
     try {
-      await api.delete(`/licenses/company-licenses/${id}`);
+      await api.delete(`/licenses/${id}`);
     } catch (error) {
       console.error('Error deleting company license:', error);
       throw error;
@@ -366,6 +404,17 @@ class LicenseService {
     ];
   }
 
+
+  // Crear plantillas por defecto
+  async createDefaultTemplates(): Promise<any> {
+    try {
+      const response = await api.post('/licenses/seed/default');
+      return response.data;
+    } catch (error) {
+      console.error('Error creating default templates:', error);
+      throw error;
+    }
+  }
 
   // Calcular días restantes de una licencia
   calculateDaysRemaining(endDate: string): number {

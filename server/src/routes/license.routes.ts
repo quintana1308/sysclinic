@@ -9,6 +9,7 @@ import {
   toggleLicense,
   renewLicense,
   getLicenseTemplates,
+  getLicenseTemplateById,
   createLicenseTemplate,
   updateLicenseTemplate,
   deleteLicenseTemplate,
@@ -28,6 +29,9 @@ router.get('/stats', authorize('master'), getLicenseStats);
 
 // Obtener todas las plantillas de licencias (solo master)
 router.get('/templates', authorize('master'), getLicenseTemplates);
+
+// Obtener plantilla de licencia por ID (solo master)
+router.get('/templates/:id', authorize('master'), getLicenseTemplateById);
 
 // Crear nueva plantilla de licencia (solo master)
 router.post('/templates', authorize('master'), createLicenseTemplate);

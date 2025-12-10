@@ -134,14 +134,22 @@ export const getLicenses = async (req: Request, res: Response, next: NextFunctio
     
     const whereClause = whereConditions.join(' AND ');
     
-    // Consulta principal con datos de empresa
+    // Consulta principal con datos de empresa y plantilla (columnas básicas)
     const licensesQuery = `
       SELECT 
         cl.*,
         c.name as companyName,
-        c.email as companyEmail
+        c.email as companyEmail,
+        l.name as licenseName,
+        l.type as licenseType,
+        l.description as licenseDescription,
+        l.features as templateFeatures,
+        l.price as licensePrice,
+        l.currency as licenseCurrency,
+        l.billingCycle as licenseBillingCycle
       FROM company_licenses cl
       LEFT JOIN companies c ON cl.companyId = c.id
+      LEFT JOIN licenses l ON cl.licenseId = l.id
       WHERE ${whereClause}
       ORDER BY cl.createdAt DESC
     `;
@@ -153,35 +161,52 @@ export const getLicenses = async (req: Request, res: Response, next: NextFunctio
     
     // Procesar características (JSON string a array) y agregar campos de compatibilidad
     const processedLicenses = licenses.map((license: any) => {
-      const storageGB = Math.round((license.maxStorage || 0) / (1024 * 1024 * 1024));
       const isActive = Boolean(license.isActive);
       
-      // Calcular precio basado en tipo de licencia
-      const prices = { basic: 29.99, premium: 79.99, enterprise: 199.99 };
-      const descriptions = {
-        basic: 'Plan básico para clínicas pequeñas',
-        premium: 'Plan avanzado para clínicas medianas', 
-        enterprise: 'Plan completo para grandes organizaciones'
+      // Valores por defecto basados en el tipo de licencia
+      const getDefaultValuesByType = (type: string) => {
+        switch (type) {
+          case 'basic':
+            return { maxUsers: 10, maxClients: 100, maxStorage: 5 }; // 5GB
+          case 'premium':
+            return { maxUsers: 50, maxClients: 500, maxStorage: 25 }; // 25GB
+          case 'enterprise':
+            return { maxUsers: -1, maxClients: -1, maxStorage: 100 }; // 100GB, -1 = ilimitado
+          default:
+            return { maxUsers: 10, maxClients: 100, maxStorage: 5 };
+        }
       };
       
-      // Calcular ciclo de facturación basado en fechas
-      const startDate = new Date(license.startDate);
-      const endDate = new Date(license.endDate);
-      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
-      const billingCycle = daysDiff > 300 ? 'yearly' : 'monthly';
+      const defaults = getDefaultValuesByType(license.licenseType || 'basic');
       
       return {
         ...license,
-        features: license.features ? JSON.parse(license.features) : [],
+        // Datos de la licencia asignada
+        id: license.id,
+        companyId: license.companyId,
+        licenseId: license.licenseId,
+        licenseKey: license.licenseKey,
         isActive,
-        maxStorage: storageGB,
-        // Campos de compatibilidad
-        name: license.companyName || `Licencia ${license.licenseKey}`,
-        type: license.licenseType,
-        description: descriptions[license.licenseType as keyof typeof descriptions],
-        price: prices[license.licenseType as keyof typeof prices],
-        currency: 'USD',
-        billingCycle,
+        startDate: license.startDate,
+        endDate: license.endDate,
+        
+        // Datos de la plantilla (con valores por defecto)
+        features: license.templateFeatures ? JSON.parse(license.templateFeatures) : [],
+        maxUsers: defaults.maxUsers,
+        maxClients: defaults.maxClients,
+        maxStorage: defaults.maxStorage,
+        name: license.licenseName || `Licencia ${license.licenseKey}`,
+        type: license.licenseType || 'basic',
+        description: license.licenseDescription || `Plan ${license.licenseType || 'básico'}`,
+        price: license.licensePrice || 0,
+        currency: license.licenseCurrency || 'USD',
+        billingCycle: license.licenseBillingCycle || 'monthly',
+        
+        // Datos de la empresa
+        companyName: license.companyName || 'Empresa no encontrada',
+        companyEmail: license.companyEmail || 'Sin email',
+        
+        // Metadatos
         companiesCount: 1, // Siempre 1 para company_licenses
         activeCompaniesCount: isActive ? 1 : 0
       };
@@ -315,6 +340,17 @@ export const createLicense = async (req: Request, res: Response, next: NextFunct
       });
     }
 
+    // Buscar la plantilla de licencia por tipo
+    const licenseTemplate = await queryOne('SELECT * FROM licenses WHERE type = ? AND isActive = 1', [licenseType]);
+    if (!licenseTemplate) {
+      return res.status(404).json({
+        success: false,
+        message: `No se encontró una plantilla de licencia activa para el tipo: ${licenseType}`
+      });
+    }
+
+    console.log('📄 Plantilla encontrada:', licenseTemplate.name, '- ID:', licenseTemplate.id);
+
     // Verificar que no tenga ya una licencia activa
     const existingLicense = await queryOne(
       'SELECT id FROM company_licenses WHERE companyId = ? AND isActive = 1', 
@@ -329,70 +365,94 @@ export const createLicense = async (req: Request, res: Response, next: NextFunct
     }
 
     // Generar ID y clave de licencia únicos
-    const licenseId = generateId();
+    const companyLicenseId = generateId();
     const licenseKey = `LIC-${company.name.substring(0, 3).toUpperCase()}-${Date.now()}`;
 
-    // Definir características por tipo de licencia
-    const defaultFeatures = getDefaultFeaturesByType(licenseType);
-    const finalFeatures = features.length > 0 ? features : defaultFeatures;
+    // Usar características de la plantilla o las proporcionadas
+    const templateFeatures = licenseTemplate.features ? JSON.parse(licenseTemplate.features) : [];
+    const finalFeatures = features.length > 0 ? features : templateFeatures;
+    
+    // Usar límites de la plantilla o los proporcionados
+    const finalMaxUsers = maxUsers || licenseTemplate.maxUsers || 10;
+    const finalMaxClients = maxClients || licenseTemplate.maxClients || 100;
+    const finalMaxStorage = maxStorage || licenseTemplate.maxStorage || 5368709120;
 
-    // Crear la licencia
+    console.log('📋 Datos finales para la licencia:');
+    console.log('   - Plantilla ID:', licenseTemplate.id);
+    console.log('   - Max Users:', finalMaxUsers);
+    console.log('   - Max Clients:', finalMaxClients);
+    console.log('   - Features:', finalFeatures);
+
+    // Crear la licencia (estructura básica de company_licenses)
     await query(`
       INSERT INTO company_licenses (
-        id, companyId, licenseKey, licenseType, features, 
-        maxUsers, maxClients, maxStorage, isActive, 
-        startDate, endDate, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NOW(), NOW())
+        id, companyId, licenseId, licenseKey, 
+        isActive, startDate, endDate, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, 1, ?, ?, NOW(), NOW())
     `, [
-      licenseId, companyId, licenseKey, licenseType, JSON.stringify(finalFeatures),
-      maxUsers, maxClients, maxStorage, startDate, endDate
+      companyLicenseId, companyId, licenseTemplate.id, licenseKey, startDate, endDate
     ]);
 
-    console.log(` Licencia creada exitosamente:`);
-    console.log(`   - ID: ${licenseId}`);
+    console.log(`✅ Licencia creada exitosamente:`);
+    console.log(`   - ID: ${companyLicenseId}`);
     console.log(`   - Empresa: ${company.name}`);
     console.log(`   - Clave: ${licenseKey}`);
     console.log(`   - Tipo: ${licenseType}`);
+    console.log(`   - Plantilla: ${licenseTemplate.name}`);
     console.log(`   - Vigencia: ${startDate} - ${endDate}`);
 
-    // Obtener la licencia creada con información de la empresa
+    // Obtener la licencia creada con información de la empresa y plantilla
     const newLicense = await queryOne(`
       SELECT 
         cl.*,
         c.name as companyName,
-        c.email as companyEmail
+        c.email as companyEmail,
+        l.name as licenseName,
+        l.type as licenseType,
+        l.price as licensePrice,
+        l.currency as licenseCurrency,
+        l.billingCycle as licenseBillingCycle
       FROM company_licenses cl
       LEFT JOIN companies c ON cl.companyId = c.id
+      LEFT JOIN licenses l ON cl.licenseId = l.id
       WHERE cl.id = ?
-    `, [licenseId]);
+    `, [companyLicenseId]);
 
-    // Procesar datos para el frontend (usar el mismo procesamiento que getLicenseById)
-    const storageGB = Math.round((newLicense.maxStorage || 0) / (1024 * 1024 * 1024));
+    // Procesar datos para el frontend usando información de la plantilla
+    const storageGB = Math.round((licenseTemplate.maxStorage || 5368709120) / (1024 * 1024 * 1024));
     const isActive = Boolean(newLicense.isActive);
-    
-    const prices = { basic: 29.99, premium: 79.99, enterprise: 199.99 };
-    const descriptions = {
-      basic: 'Plan básico para clínicas pequeñas',
-      premium: 'Plan avanzado para clínicas medianas', 
-      enterprise: 'Plan completo para grandes organizaciones'
-    };
     
     const startDateObj = new Date(newLicense.startDate);
     const endDateObj = new Date(newLicense.endDate);
     const daysDiff = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 3600 * 24));
-    const billingCycle = daysDiff > 300 ? 'yearly' : 'monthly';
     
     const processedLicense = {
       ...newLicense,
-      features: newLicense.features ? JSON.parse(newLicense.features) : [],
+      // Datos de la licencia asignada
+      id: newLicense.id,
+      companyId: newLicense.companyId,
+      licenseKey: newLicense.licenseKey,
       isActive,
+      startDate: newLicense.startDate,
+      endDate: newLicense.endDate,
+      
+      // Datos de la plantilla
+      features: licenseTemplate.features ? JSON.parse(licenseTemplate.features) : [],
+      maxUsers: licenseTemplate.maxUsers || 10,
+      maxClients: licenseTemplate.maxClients || 100,
       maxStorage: storageGB,
-      name: newLicense.companyName || `Licencia ${newLicense.licenseKey}`,
-      type: newLicense.licenseType,
-      description: descriptions[newLicense.licenseType as keyof typeof descriptions],
-      price: prices[newLicense.licenseType as keyof typeof prices],
-      currency: 'USD',
-      billingCycle,
+      name: newLicense.licenseName || licenseTemplate.name || `Licencia ${newLicense.licenseKey}`,
+      type: newLicense.licenseType || licenseTemplate.type,
+      description: licenseTemplate.description || `Plan ${licenseTemplate.type}`,
+      price: newLicense.licensePrice || licenseTemplate.price,
+      currency: newLicense.licenseCurrency || licenseTemplate.currency || 'USD',
+      billingCycle: newLicense.licenseBillingCycle || licenseTemplate.billingCycle || 'monthly',
+      
+      // Datos de la empresa
+      companyName: newLicense.companyName,
+      companyEmail: newLicense.companyEmail,
+      
+      // Metadatos
       companiesCount: 1,
       activeCompaniesCount: isActive ? 1 : 0
     };
@@ -829,6 +889,54 @@ export const getLicenseTemplates = async (req: Request, res: Response, next: Nex
     
   } catch (error) {
     console.error('❌ Error obteniendo plantillas:', error);
+    return next(error);
+  }
+};
+
+// Obtener plantilla de licencia por ID
+export const getLicenseTemplateById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    
+    console.log('🔍 Obteniendo plantilla de licencia por ID:', id);
+    
+    // Validar que el ID no esté vacío
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de plantilla requerido'
+      });
+    }
+    
+    // Obtener la plantilla
+    const template = await queryOne('SELECT * FROM licenses WHERE id = ?', [id]);
+    
+    if (!template) {
+      console.log('❌ Plantilla no encontrada:', id);
+      return res.status(404).json({
+        success: false,
+        message: 'Plantilla de licencia no encontrada'
+      });
+    }
+    
+    console.log('✅ Plantilla encontrada:', template.name);
+    
+    // Procesar datos para el frontend
+    const processedTemplate = {
+      ...template,
+      features: template.features ? JSON.parse(template.features) : [],
+      isActive: Boolean(template.isActive),
+      companiesCount: 0, // Se puede calcular si es necesario
+      activeCompaniesCount: 0 // Se puede calcular si es necesario
+    };
+    
+    res.json({
+      success: true,
+      data: processedTemplate
+    });
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo plantilla por ID:', error);
     return next(error);
   }
 };

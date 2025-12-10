@@ -1089,6 +1089,241 @@ const SystemManagement: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES PARA LICENCIAS ASIGNADAS ====================
+
+  const openAssignedCreateModal = async () => {
+    try {
+      console.log('🚀 Abriendo modal de asignación de licencias...');
+      
+      // Limpiar formulario
+      setAssignedFormData({
+        companyId: '',
+        licenseId: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+        isActive: true
+      });
+      
+      // Abrir modal
+      setShowAssignedCreateModal(true);
+      
+      console.log('📊 Estado actual antes de cargar:');
+      console.log('   - Empresas en estado:', companiesList.length);
+      console.log('   - Plantillas en estado:', licenseTemplates.length);
+      
+      // Siempre cargar empresas para asegurar datos actualizados
+      console.log('📋 Cargando lista de empresas...');
+      await loadCompaniesList();
+      
+      // Cargar plantillas de licencias y crear por defecto si no existen
+      console.log('📄 Cargando plantillas de licencias...');
+      await loadLicenseTemplates();
+      
+      // Si no hay plantillas, intentar crear las por defecto
+      if (licenseTemplates.length === 0) {
+        console.log('⚠️ No hay plantillas de licencias, creando plantillas por defecto...');
+        try {
+          const response = await licenseService.createDefaultTemplates();
+          console.log('✅ Plantillas por defecto creadas:', response);
+          
+          // Recargar plantillas después de crearlas
+          await loadLicenseTemplates();
+          
+          toast.success('Plantillas de licencias creadas automáticamente');
+        } catch (seedError) {
+          console.error('❌ Error creando plantillas por defecto:', seedError);
+          toast.error('Error al crear plantillas de licencias por defecto');
+        }
+      }
+      
+      // Esperar un momento para que se actualicen los estados
+      setTimeout(() => {
+        console.log('✅ Modal de asignación preparado:');
+        console.log('   - Empresas totales:', companiesList.length);
+        console.log('   - Empresas activas:', companiesList.filter(c => c.isActive).length);
+        console.log('   - Plantillas totales:', licenseTemplates.length);
+        console.log('   - Plantillas activas:', licenseTemplates.filter(t => t.isActive).length);
+        
+        if (companiesList.length > 0) {
+          console.log('   - Primeras 3 empresas:', companiesList.slice(0, 3).map(c => ({ name: c.name, active: c.isActive })));
+        }
+        
+        if (licenseTemplates.length > 0) {
+          console.log('   - Primeras 3 plantillas:', licenseTemplates.slice(0, 3).map(t => ({ name: t.name, active: t.isActive })));
+        }
+      }, 500);
+      
+    } catch (error) {
+      console.error('❌ Error al preparar modal de asignación:', error);
+      toast.error('Error al cargar datos para la asignación');
+    }
+  };
+
+  const openAssignedViewModal = (assigned: CompanyLicense) => {
+    console.log('👁️ Abriendo modal de vista para licencia:', assigned.id);
+    console.log('📋 Datos de la licencia:', assigned);
+    setSelectedAssigned(assigned);
+    setShowAssignedViewModal(true);
+  };
+
+  const handleCreateAssigned = async () => {
+    try {
+      setAssignedCreateLoading(true);
+      
+      console.log('🚀 FRONTEND - Iniciando asignación de licencia:');
+      console.log('   - Datos del formulario:', assignedFormData);
+      
+      // Validaciones básicas
+      if (!assignedFormData.companyId) {
+        toast.error('Debe seleccionar una empresa');
+        return;
+      }
+      
+      if (!assignedFormData.licenseId) {
+        toast.error('Debe seleccionar una plantilla de licencia');
+        return;
+      }
+      
+      if (!assignedFormData.startDate) {
+        toast.error('La fecha de inicio es requerida');
+        return;
+      }
+      
+      if (!assignedFormData.endDate) {
+        toast.error('La fecha de fin es requerida');
+        return;
+      }
+      
+      // Validar que la fecha de fin sea posterior a la de inicio
+      const startDate = new Date(assignedFormData.startDate);
+      const endDate = new Date(assignedFormData.endDate);
+      
+      if (endDate <= startDate) {
+        toast.error('La fecha de fin debe ser posterior a la fecha de inicio');
+        return;
+      }
+      
+      // Llamada a la API para crear licencia asignada
+      const result = await licenseService.assignLicenseToCompany(assignedFormData);
+      
+      console.log('✅ FRONTEND - Licencia asignada exitosamente:', result);
+      
+      toast.success('Licencia asignada correctamente a la empresa');
+      setShowAssignedCreateModal(false);
+      
+      // Limpiar formulario
+      setAssignedFormData({
+        companyId: '',
+        licenseId: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+        isActive: true
+      });
+      
+      // Recargar la lista de licencias asignadas
+      await loadCompanyLicenses();
+      
+    } catch (error: any) {
+      console.error('❌ Error creating assigned license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al asignar licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setAssignedCreateLoading(false);
+    }
+  };
+
+  const handleUpdateAssigned = async () => {
+    if (!selectedAssigned) return;
+
+    try {
+      setAssignedEditLoading(true);
+      
+      console.log('🚀 FRONTEND - Iniciando actualización de licencia asignada:');
+      console.log('   - Licencia ID:', selectedAssigned.id);
+      console.log('   - Datos del formulario:', assignedFormData);
+      
+      // Validaciones básicas
+      if (!assignedFormData.startDate) {
+        toast.error('La fecha de inicio es requerida');
+        return;
+      }
+      
+      if (!assignedFormData.endDate) {
+        toast.error('La fecha de fin es requerida');
+        return;
+      }
+      
+      // Validar que la fecha de fin sea posterior a la de inicio
+      const startDate = new Date(assignedFormData.startDate);
+      const endDate = new Date(assignedFormData.endDate);
+      
+      if (endDate <= startDate) {
+        toast.error('La fecha de fin debe ser posterior a la fecha de inicio');
+        return;
+      }
+      
+      // Llamada a la API para actualizar licencia asignada
+      const result = await licenseService.updateCompanyLicense(selectedAssigned.id, assignedFormData);
+      
+      console.log('✅ FRONTEND - Licencia actualizada exitosamente:', result);
+      
+      toast.success('Licencia actualizada correctamente');
+      setShowAssignedEditModal(false);
+      setSelectedAssigned(null);
+      
+      // Recargar la lista de licencias asignadas
+      await loadCompanyLicenses();
+      
+    } catch (error: any) {
+      console.error('❌ Error updating assigned license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al actualizar licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setAssignedEditLoading(false);
+    }
+  };
+
+  const handleDeleteAssigned = async () => {
+    if (!selectedAssigned) return;
+
+    try {
+      setAssignedDeleteLoading(true);
+      
+      console.log('🗑️ Eliminando licencia asignada:', selectedAssigned.id);
+      
+      // Llamada a la API para eliminar licencia asignada
+      await licenseService.deleteCompanyLicense(selectedAssigned.id);
+      
+      console.log('✅ Licencia asignada eliminada correctamente');
+      
+      toast.success('Licencia eliminada correctamente');
+      setShowAssignedDeleteModal(false);
+      setSelectedAssigned(null);
+      
+      // Recargar la lista de licencias asignadas
+      await loadCompanyLicenses();
+      
+    } catch (error: any) {
+      console.error('❌ Error deleting assigned license:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al eliminar licencia';
+      
+      toast.error(errorMessage);
+    } finally {
+      setAssignedDeleteLoading(false);
+    }
+  };
+
   // Cargar usuarios cuando cambien los filtros
   useEffect(() => {
     if (activeSection === 'users') {
@@ -1171,11 +1406,11 @@ const SystemManagement: React.FC = () => {
   // Filtrar licencias asignadas
   const filteredAssigned = companyLicenses.filter(assigned => {
     const matchesSearch = assignedSearchTerm === '' || 
-      assigned.company?.name.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
-      assigned.license?.name.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
+      assigned.companyName?.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
+      assigned.name?.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
       assigned.licenseKey.toLowerCase().includes(assignedSearchTerm.toLowerCase());
     
-    const matchesType = assignedTypeFilter === '' || assigned.license?.type === assignedTypeFilter;
+    const matchesType = assignedTypeFilter === '' || assigned.type === assignedTypeFilter;
     
     const matchesStatus = assignedStatusFilter === '' || 
       (assignedStatusFilter === 'active' && assigned.isActive && calculateDaysRemaining(assigned.endDate) > 0) ||
@@ -2106,7 +2341,7 @@ const SystemManagement: React.FC = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => setShowAssignedCreateModal(true)}
+                      onClick={openAssignedCreateModal}
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
@@ -2191,7 +2426,7 @@ const SystemManagement: React.FC = () => {
                       </p>
                       {!assignedSearchTerm && !assignedTypeFilter && !assignedStatusFilter && (
                         <button
-                          onClick={() => setShowAssignedCreateModal(true)}
+                          onClick={openAssignedCreateModal}
                           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                         >
                           <PlusIcon className="h-5 w-5 mr-2 inline" />
@@ -2235,25 +2470,25 @@ const SystemManagement: React.FC = () => {
                                   <div className="flex items-center">
                                     <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
                                       <span className="text-sm font-medium text-blue-700">
-                                        {assigned.company?.name?.substring(0, 2).toUpperCase() || 'CO'}
+                                        {assigned.companyName?.substring(0, 2).toUpperCase() || 'CO'}
                                       </span>
                                     </div>
                                     <div className="ml-4">
                                       <div className="text-sm font-medium text-gray-900">
-                                        {assigned.company?.name || 'Empresa no encontrada'}
+                                        {assigned.companyName || 'Empresa no encontrada'}
                                       </div>
                                       <div className="text-sm text-gray-500">
-                                        {assigned.company?.email || 'Sin email'}
+                                        {assigned.companyEmail || 'Sin email'}
                                       </div>
                                     </div>
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="text-sm font-medium text-gray-900">
-                                    {assigned.license?.name || 'Licencia no encontrada'}
+                                    {assigned.name || 'Licencia no encontrada'}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {assigned.license ? getLicenseTypeName(assigned.license.type) : 'Tipo desconocido'}
+                                    {assigned.type ? getLicenseTypeName(assigned.type) : 'Tipo desconocido'}
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -2283,10 +2518,7 @@ const SystemManagement: React.FC = () => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                   <div className="flex items-center space-x-2">
                                     <button
-                                      onClick={() => {
-                                        setSelectedAssigned(assigned);
-                                        setShowAssignedViewModal(true);
-                                      }}
+                                      onClick={() => openAssignedViewModal(assigned)}
                                       className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-1 rounded transition-colors"
                                       title="Ver detalles"
                                     >
@@ -4435,6 +4667,706 @@ const SystemManagement: React.FC = () => {
                   <>
                     <TrashIcon className="h-4 w-4 mr-2" />
                     Eliminar Plantilla
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Licencia Asignada */}
+      {showAssignedCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                  <PlusIcon className="h-6 w-6 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🏢 Asignar Licencia</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Asigna una licencia a una empresa del sistema
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateAssigned();
+              }} className="space-y-6">
+                {/* Selección de Empresa y Licencia */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-4">🏢 Empresa y Licencia</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Empresa *
+                      </label>
+                      <select
+                        value={assignedFormData.companyId}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, companyId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Selecciona una empresa</option>
+                        {companiesList.filter(company => company.isActive).map(company => {
+                          console.log('🏢 Empresa disponible:', company.name, '- Activa:', company.isActive);
+                          return (
+                            <option key={company.id} value={company.id}>
+                              🏢 {company.name}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {companiesList.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          ⚠️ No hay empresas cargadas. Verificar conexión con el servidor.
+                        </p>
+                      )}
+                      {companiesList.length > 0 && companiesList.filter(company => company.isActive).length === 0 && (
+                        <p className="text-xs text-yellow-600 mt-1">
+                          ⚠️ No hay empresas activas disponibles.
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Plantilla de Licencia *
+                      </label>
+                      <select
+                        value={assignedFormData.licenseId}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, licenseId: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Selecciona una plantilla</option>
+                        {licenseTemplates.filter(template => template.isActive).map(template => {
+                          console.log('📄 Plantilla disponible:', template.name, '- Activa:', template.isActive);
+                          return (
+                            <option key={template.id} value={template.id}>
+                              {template.type === 'basic' ? '🥉' : template.type === 'premium' ? '🥈' : '🥇'} {template.name} - {formatPrice(template.price, template.currency)}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {licenseTemplates.length === 0 && (
+                        <p className="text-xs text-red-500 mt-1">
+                          ⚠️ No hay plantillas cargadas. Verificar conexión con el servidor.
+                        </p>
+                      )}
+                      {licenseTemplates.length > 0 && licenseTemplates.filter(template => template.isActive).length === 0 && (
+                        <p className="text-xs text-yellow-600 mt-1">
+                          ⚠️ No hay plantillas activas disponibles.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Período de Vigencia */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-900 mb-4">📅 Período de Vigencia</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Fecha de Inicio *
+                      </label>
+                      <input
+                        type="date"
+                        value={assignedFormData.startDate}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, startDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Fecha de Fin *
+                      </label>
+                      <input
+                        type="date"
+                        value={assignedFormData.endDate}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, endDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Cálculo de duración */}
+                  {assignedFormData.startDate && assignedFormData.endDate && (
+                    <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
+                      <div className="text-sm text-green-800">
+                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Estado */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">⚙️ Configuración</h4>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="assignedActive"
+                      checked={assignedFormData.isActive}
+                      onChange={(e) => setAssignedFormData({...assignedFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="assignedActive" className="ml-2 text-sm text-gray-700">
+                      ✅ Licencia activa (la empresa podrá usar el sistema inmediatamente)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-blue-500 mt-0.5">ℹ️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900 mb-1">Información importante</h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <p>• Los campos marcados con (*) son obligatorios</p>
+                        <p>• La fecha de fin debe ser posterior a la fecha de inicio</p>
+                        <p>• Se generará automáticamente una clave de licencia única</p>
+                        <p>• La empresa recibirá notificación por email de la asignación</p>
+                        <p>• Los límites de la licencia se aplicarán inmediatamente</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowAssignedCreateModal(false);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateAssigned}
+                disabled={assignedCreateLoading}
+                className="inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+              >
+                {assignedCreateLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Asignando...
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Asignar Licencia
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Licencia Asignada */}
+      {showAssignedEditModal && selectedAssigned && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                  <PencilIcon className="h-6 w-6 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">✏️ Editar Licencia Asignada</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Modifica los datos de la licencia asignada a "{selectedAssigned.company?.name}"
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleUpdateAssigned();
+              }} className="space-y-6">
+                {/* Información de la Asignación */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-4">🏢 Información de la Asignación</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Empresa
+                      </label>
+                      <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
+                        🏢 {selectedAssigned.company?.name || 'Empresa no encontrada'}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">La empresa no se puede modificar</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Licencia
+                      </label>
+                      <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
+                        {selectedAssigned.license ? (
+                          <>
+                            {selectedAssigned.license.type === 'basic' ? '🥉' : selectedAssigned.license.type === 'premium' ? '🥈' : '🥇'} {selectedAssigned.license.name}
+                          </>
+                        ) : (
+                          'Licencia no encontrada'
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">La plantilla de licencia no se puede modificar</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Período de Vigencia */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-900 mb-4">📅 Período de Vigencia</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Fecha de Inicio *
+                      </label>
+                      <input
+                        type="date"
+                        value={assignedFormData.startDate}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, startDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Fecha de Fin *
+                      </label>
+                      <input
+                        type="date"
+                        value={assignedFormData.endDate}
+                        onChange={(e) => setAssignedFormData({...assignedFormData, endDate: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Cálculo de duración */}
+                  {assignedFormData.startDate && assignedFormData.endDate && (
+                    <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
+                      <div className="text-sm text-green-800">
+                        <strong>Duración:</strong> {Math.ceil((new Date(assignedFormData.endDate).getTime() - new Date(assignedFormData.startDate).getTime()) / (1000 * 60 * 60 * 24))} días
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Estado */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">⚙️ Configuración</h4>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="assignedActiveEdit"
+                      checked={assignedFormData.isActive}
+                      onChange={(e) => setAssignedFormData({...assignedFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="assignedActiveEdit" className="ml-2 text-sm text-gray-700">
+                      ✅ Licencia activa (la empresa puede usar el sistema)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-orange-500 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-orange-900 mb-1">Advertencia importante</h4>
+                      <div className="text-sm text-orange-800 space-y-1">
+                        <p>• Modificar las fechas afectará la vigencia de la licencia</p>
+                        <p>• Desactivar la licencia impedirá el acceso inmediato al sistema</p>
+                        <p>• Los cambios se aplicarán inmediatamente</p>
+                        <p>• La empresa será notificada de los cambios por email</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowAssignedEditModal(false);
+                  setSelectedAssigned(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateAssigned}
+                disabled={assignedEditLoading}
+                className="inline-flex items-center justify-center px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+              >
+                {assignedEditLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Actualizando...
+                  </>
+                ) : (
+                  <>
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Actualizar Licencia
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Licencia Asignada */}
+      {showAssignedViewModal && selectedAssigned && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                  <span className="text-lg font-medium text-blue-700">
+                    {selectedAssigned.companyName?.substring(0, 2).toUpperCase() || 'LI'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">👁️ Detalles de Licencia Asignada</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Información completa de la licencia y empresa
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información de la Empresa */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+                  <span className="mr-2">🏢</span>
+                  Información de la Empresa
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700 mb-1">Nombre</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.companyName || 'No disponible'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700 mb-1">Email</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.companyEmail || 'No disponible'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información de la Licencia */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-purple-900 mb-3 flex items-center">
+                  <span className="mr-2">📄</span>
+                  Información de la Licencia
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Nombre del Plan</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.name || 'No disponible'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Tipo</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedAssigned.type === 'basic' ? 'bg-blue-100 text-blue-800' :
+                        selectedAssigned.type === 'premium' ? 'bg-purple-100 text-purple-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedAssigned.type === 'basic' ? '🥉 Básica' :
+                         selectedAssigned.type === 'premium' ? '🥈 Premium' :
+                         '🥇 Empresarial'}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Clave de Licencia</label>
+                    <p className="text-sm font-mono text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.licenseKey}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Estado</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedAssigned.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedAssigned.isActive ? '✅ Activa' : '❌ Inactiva'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-purple-700 mb-1">Descripción</label>
+                  <p className="text-sm text-gray-900 bg-white p-3 rounded border">
+                    {selectedAssigned.description || 'No disponible'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Límites y Características */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-green-900 mb-3 flex items-center">
+                  <span className="mr-2">📊</span>
+                  Límites y Características
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-green-700 mb-1">Usuarios Máximos</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      👥 {selectedAssigned.maxUsers === -1 ? 'Ilimitados' : selectedAssigned.maxUsers}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-green-700 mb-1">Clientes Máximos</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      👤 {selectedAssigned.maxClients === -1 ? 'Ilimitados' : selectedAssigned.maxClients}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-green-700 mb-1">Almacenamiento</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      💾 {selectedAssigned.maxStorage} GB
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-green-700 mb-2">Características Incluidas</label>
+                  <div className="bg-white p-3 rounded border">
+                    {selectedAssigned.features && selectedAssigned.features.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedAssigned.features.map((feature, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                          >
+                            ✨ {feature}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No hay características definidas</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Información Comercial */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-yellow-900 mb-3 flex items-center">
+                  <span className="mr-2">💰</span>
+                  Información Comercial
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 mb-1">Precio</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.currency === 'USD' ? '$' : selectedAssigned.currency} {selectedAssigned.price}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 mb-1">Moneda</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.currency}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 mb-1">Ciclo de Facturación</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {selectedAssigned.billingCycle === 'monthly' ? '📅 Mensual' : '📅 Anual'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vigencia */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-orange-900 mb-3 flex items-center">
+                  <span className="mr-2">📅</span>
+                  Vigencia de la Licencia
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Fecha de Inicio</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {new Date(selectedAssigned.startDate).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Fecha de Vencimiento</label>
+                    <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                      {new Date(selectedAssigned.endDate).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-orange-700 mb-1">Días Restantes</label>
+                  <p className="text-sm text-gray-900 bg-white p-2 rounded border">
+                    {(() => {
+                      const daysRemaining = Math.ceil((new Date(selectedAssigned.endDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                      return daysRemaining < 0 ? `❌ Expiró hace ${Math.abs(daysRemaining)} días` : 
+                             daysRemaining === 0 ? '⚠️ Expira hoy' :
+                             `✅ ${daysRemaining} días restantes`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowAssignedViewModal(false);
+                  setSelectedAssigned(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                Cerrar
+              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    // Abrir modal de edición
+                    setAssignedFormData({
+                      companyId: selectedAssigned.companyId,
+                      licenseId: selectedAssigned.licenseId,
+                      startDate: selectedAssigned.startDate,
+                      endDate: selectedAssigned.endDate,
+                      isActive: selectedAssigned.isActive
+                    });
+                    setShowAssignedViewModal(false);
+                    setShowAssignedEditModal(true);
+                  }}
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                >
+                  ✏️ Editar Licencia
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Licencia Asignada */}
+      {showAssignedDeleteModal && selectedAssigned && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center shadow-sm">
+                  <TrashIcon className="h-6 w-6 text-red-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🗑️ Eliminar Licencia</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Esta acción no se puede deshacer
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-gray-700 mb-4">
+                  ¿Estás seguro de que deseas eliminar la licencia asignada a <strong>"{selectedAssigned.company?.name}"</strong>?
+                </p>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-red-500 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-900 mb-1">Consecuencias de eliminar:</h4>
+                      <div className="text-sm text-red-800 space-y-1">
+                        <p>• La empresa perderá acceso inmediato al sistema</p>
+                        <p>• Se eliminará la clave de licencia permanentemente</p>
+                        <p>• Los datos de la empresa se mantendrán intactos</p>
+                        <p>• Esta acción es irreversible</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm text-gray-600">
+                    <p><strong>Empresa:</strong> {selectedAssigned.company?.name}</p>
+                    <p><strong>Licencia:</strong> {selectedAssigned.license?.name}</p>
+                    <p><strong>Clave:</strong> {selectedAssigned.licenseKey}</p>
+                    <p><strong>Vigencia:</strong> {new Date(selectedAssigned.startDate).toLocaleDateString('es-ES')} - {new Date(selectedAssigned.endDate).toLocaleDateString('es-ES')}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowAssignedDeleteModal(false);
+                  setSelectedAssigned(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteAssigned}
+                disabled={assignedDeleteLoading}
+                className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50"
+              >
+                {assignedDeleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Eliminar Licencia
                   </>
                 )}
               </button>
