@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import userService, { User } from '../services/userService';
 import companyService, { Company } from '../services/companyService';
+import licenseService, { LicenseTemplate, CompanyLicense, LicenseTemplateFormData, CompanyLicenseFormData } from '../services/licenseService';
 
 // Iconos SVG
 const UserIcon = ({ className }: { className?: string }) => (
@@ -53,6 +54,12 @@ const PlusIcon = ({ className }: { className?: string }) => (
 const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+  </svg>
+);
+
+const ArrowPathIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
   </svg>
 );
 
@@ -143,6 +150,72 @@ const SystemManagement: React.FC = () => {
     isActive: true
   });
 
+  // Estados para licencias
+  const [licenseSubSection, setLicenseSubSection] = useState<'templates' | 'assigned'>('templates');
+  
+  // Estados para plantillas de licencias
+  const [licenseTemplates, setLicenseTemplates] = useState<LicenseTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const [templateSearchTerm, setTemplateSearchTerm] = useState('');
+  const [templateTypeFilter, setTemplateTypeFilter] = useState('');
+  const [templateStatusFilter, setTemplateStatusFilter] = useState('');
+  
+  // Estados para licencias asignadas
+  const [companyLicenses, setCompanyLicenses] = useState<CompanyLicense[]>([]);
+  const [assignedLoading, setAssignedLoading] = useState(false);
+  const [assignedError, setAssignedError] = useState<string | null>(null);
+  const [assignedSearchTerm, setAssignedSearchTerm] = useState('');
+  const [assignedTypeFilter, setAssignedTypeFilter] = useState('');
+  const [assignedStatusFilter, setAssignedStatusFilter] = useState('');
+  
+  // Estados para modales de plantillas de licencias
+  const [showTemplateViewModal, setShowTemplateViewModal] = useState(false);
+  const [showTemplateEditModal, setShowTemplateEditModal] = useState(false);
+  const [showTemplateCreateModal, setShowTemplateCreateModal] = useState(false);
+  const [showTemplateDeleteModal, setShowTemplateDeleteModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<LicenseTemplate | null>(null);
+  const [templateDeleteLoading, setTemplateDeleteLoading] = useState(false);
+  const [templateEditLoading, setTemplateEditLoading] = useState(false);
+  const [templateCreateLoading, setTemplateCreateLoading] = useState(false);
+  
+  // Estados para modales de licencias asignadas
+  const [showAssignedViewModal, setShowAssignedViewModal] = useState(false);
+  const [showAssignedEditModal, setShowAssignedEditModal] = useState(false);
+  const [showAssignedCreateModal, setShowAssignedCreateModal] = useState(false);
+  const [showAssignedDeleteModal, setShowAssignedDeleteModal] = useState(false);
+  const [selectedAssigned, setSelectedAssigned] = useState<CompanyLicense | null>(null);
+  const [assignedDeleteLoading, setAssignedDeleteLoading] = useState(false);
+  const [assignedEditLoading, setAssignedEditLoading] = useState(false);
+  const [assignedCreateLoading, setAssignedCreateLoading] = useState(false);
+  
+  // Estados para formularios de licencias
+  const [templateFormData, setTemplateFormData] = useState<LicenseTemplateFormData>({
+    name: '',
+    type: 'basic',
+    description: '',
+    maxUsers: 5,
+    maxClients: 100,
+    features: [],
+    price: 0,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    isActive: true
+  });
+  const [assignedFormData, setAssignedFormData] = useState<CompanyLicenseFormData>({
+    companyId: '',
+    licenseId: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año
+    isActive: true
+  });
+  
+  // Estados para datos auxiliares
+  const [availableFeatures, setAvailableFeatures] = useState<string[]>([]);
+  const [licenseTypes, setLicenseTypes] = useState<Array<{value: string, label: string, description: string, defaultMaxUsers: number, defaultMaxClients: number, defaultPrice: number}>>([]);
+  const [currencies, setCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
+  const [licenseStats, setLicenseStats] = useState<any>(null);
+
   // Funciones auxiliares
   const getUserInitials = (user: User) => {
     const firstName = user.firstName || '';
@@ -185,6 +258,49 @@ const SystemManagement: React.FC = () => {
       'enterprise': 'Empresarial'
     };
     return types[licenseType as keyof typeof types] || licenseType;
+  };
+
+  // Funciones auxiliares para licencias
+  const getTemplateInitials = (template: LicenseTemplate) => {
+    const name = template.name || '';
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const formatPrice = (price: number | string | null | undefined, currency: string) => {
+    const symbols = {
+      'USD': '$',
+      'EUR': '€',
+      'VES': 'Bs.',
+      'COP': '$',
+      'MXN': '$',
+      'ARS': '$'
+    };
+    const symbol = symbols[currency as keyof typeof symbols] || currency;
+    
+    // Convertir a número y validar
+    const numPrice = typeof price === 'number' ? price : parseFloat(String(price || 0));
+    const validPrice = isNaN(numPrice) ? 0 : numPrice;
+    
+    return `${symbol}${validPrice.toFixed(2)}`;
+  };
+
+
+  const calculateDaysRemaining = (endDate: string) => {
+    return licenseService.calculateDaysRemaining(endDate);
+  };
+
+  const getStatusBadge = (isActive: boolean, endDate?: string) => {
+    if (!isActive) return { color: 'red', text: '❌ Inactiva' };
+    if (endDate) {
+      const daysRemaining = calculateDaysRemaining(endDate);
+      if (daysRemaining < 0) return { color: 'red', text: '🔴 Expirada' };
+      if (daysRemaining <= 30) return { color: 'yellow', text: '⚠️ Por vencer' };
+    }
+    return { color: 'green', text: '✅ Activa' };
   };
 
   // Cargar roles disponibles
@@ -515,6 +631,107 @@ const SystemManagement: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES PARA LICENCIAS ====================
+
+  // Cargar datos auxiliares para licencias
+  const loadLicenseAuxiliaryData = async () => {
+    try {
+      console.log('🔄 Cargando datos auxiliares de licencias...');
+      
+      const [featuresData, typesData, currenciesData] = await Promise.all([
+        licenseService.getAvailableFeatures(),
+        licenseService.getLicenseTypes(),
+        licenseService.getAvailableCurrencies()
+      ]);
+      
+      setAvailableFeatures(featuresData);
+      setLicenseTypes(typesData);
+      setCurrencies(currenciesData);
+      
+      console.log('✅ Datos auxiliares cargados:', {
+        features: featuresData.length,
+        types: typesData.length,
+        currencies: currenciesData.length
+      });
+    } catch (error: any) {
+      console.error('❌ Error loading license auxiliary data:', error);
+    }
+  };
+
+  // Cargar plantillas de licencias
+  const loadLicenseTemplates = async () => {
+    try {
+      setTemplatesLoading(true);
+      setTemplatesError(null);
+      
+      console.log('🔄 Cargando plantillas de licencias...');
+      
+      const templatesData = await licenseService.getLicenseTemplates({
+        search: templateSearchTerm || undefined,
+        type: templateTypeFilter || undefined,
+        status: templateStatusFilter || undefined
+      });
+      
+      console.log('✅ Plantillas de licencias cargadas:', templatesData);
+      setLicenseTemplates(templatesData);
+      
+    } catch (error: any) {
+      console.error('❌ Error loading license templates:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al cargar plantillas de licencias';
+      
+      setTemplatesError(errorMessage);
+      setLicenseTemplates([]);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  // Cargar licencias asignadas
+  const loadCompanyLicenses = async () => {
+    try {
+      setAssignedLoading(true);
+      setAssignedError(null);
+      
+      console.log('🔄 Cargando licencias asignadas...');
+      
+      const assignedData = await licenseService.getCompanyLicenses({
+        search: assignedSearchTerm || undefined,
+        type: assignedTypeFilter || undefined,
+        status: assignedStatusFilter || undefined
+      });
+      
+      console.log('✅ Licencias asignadas cargadas:', assignedData);
+      setCompanyLicenses(assignedData);
+      
+    } catch (error: any) {
+      console.error('❌ Error loading company licenses:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al cargar licencias asignadas';
+      
+      setAssignedError(errorMessage);
+      setCompanyLicenses([]);
+    } finally {
+      setAssignedLoading(false);
+    }
+  };
+
+  // Cargar estadísticas de licencias
+  const loadLicenseStats = async () => {
+    try {
+      console.log('🔄 Cargando estadísticas de licencias...');
+      const statsData = await licenseService.getLicenseStats();
+      console.log('✅ Estadísticas de licencias cargadas:', statsData);
+      setLicenseStats(statsData);
+    } catch (error: any) {
+      console.error('❌ Error loading license stats:', error);
+    }
+  };
+
   // ==================== FUNCIONES PARA EMPRESAS ====================
 
   const openCompanyViewModal = (company: Company) => {
@@ -678,6 +895,200 @@ const SystemManagement: React.FC = () => {
     }
   };
 
+  // ==================== FUNCIONES PARA PLANTILLAS DE LICENCIAS ====================
+
+  const handleCreateTemplate = async () => {
+    try {
+      setTemplateCreateLoading(true);
+      
+      // Validaciones básicas
+      if (!templateFormData.name.trim()) {
+        toast.error('El nombre de la plantilla es requerido');
+        return;
+      }
+      
+      if (!templateFormData.type) {
+        toast.error('Debe seleccionar un tipo de licencia');
+        return;
+      }
+      
+      if (templateFormData.maxUsers <= 0) {
+        toast.error('El número de usuarios debe ser mayor a 0');
+        return;
+      }
+      
+      if (templateFormData.maxClients <= 0) {
+        toast.error('El número de clientes debe ser mayor a 0');
+        return;
+      }
+      
+      if (templateFormData.price < 0) {
+        toast.error('El precio no puede ser negativo');
+        return;
+      }
+
+      console.log('📝 Creando plantilla de licencia:', templateFormData);
+
+      // Preparar datos para enviar (excluir maxStorage explícitamente)
+      const templateData = {
+        name: templateFormData.name,
+        type: templateFormData.type,
+        description: templateFormData.description,
+        maxUsers: templateFormData.maxUsers,
+        maxClients: templateFormData.maxClients,
+        features: [], // Se asignarán automáticamente en el backend según el tipo
+        price: templateFormData.price,
+        currency: templateFormData.currency,
+        billingCycle: templateFormData.billingCycle,
+        isActive: templateFormData.isActive
+      };
+      
+      console.log('📤 Datos a enviar al backend:', templateData);
+      console.log('📋 Campos incluidos:', Object.keys(templateData));
+
+      const result = await licenseService.createLicenseTemplate(templateData);
+      
+      console.log('✅ Plantilla creada:', result);
+      
+      toast.success(`Plantilla "${templateFormData.name}" creada correctamente`);
+      
+      // Cerrar modal y limpiar formulario
+      setShowTemplateCreateModal(false);
+      setTemplateFormData({
+        name: '',
+        type: 'basic',
+        description: '',
+        maxUsers: 10,
+        maxClients: 100,
+        features: [],
+        price: 0,
+        currency: 'USD',
+        billingCycle: 'monthly',
+        isActive: true
+      });
+      
+      // Recargar la lista de plantillas
+      await loadLicenseTemplates();
+      
+    } catch (error: any) {
+      console.error('❌ Error creating template:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al crear plantilla';
+      
+      toast.error(errorMessage);
+    } finally {
+      setTemplateCreateLoading(false);
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    if (!selectedTemplate) return;
+
+    try {
+      setTemplateEditLoading(true);
+      
+      // Validaciones básicas
+      if (!templateFormData.name.trim()) {
+        toast.error('El nombre de la plantilla es requerido');
+        return;
+      }
+      
+      if (templateFormData.maxUsers <= 0) {
+        toast.error('El número de usuarios debe ser mayor a 0');
+        return;
+      }
+      
+      if (templateFormData.maxClients <= 0) {
+        toast.error('El número de clientes debe ser mayor a 0');
+        return;
+      }
+      
+      if (templateFormData.price < 0) {
+        toast.error('El precio no puede ser negativo');
+        return;
+      }
+
+      console.log('📝 Actualizando plantilla:', selectedTemplate.id, templateFormData);
+
+      // Preparar datos para enviar (excluir maxStorage explícitamente)
+      const templateData = {
+        name: templateFormData.name,
+        type: templateFormData.type,
+        description: templateFormData.description,
+        maxUsers: templateFormData.maxUsers,
+        maxClients: templateFormData.maxClients,
+        features: templateFormData.features,
+        price: templateFormData.price,
+        currency: templateFormData.currency,
+        billingCycle: templateFormData.billingCycle,
+        isActive: templateFormData.isActive
+      };
+      
+      console.log('📤 Datos a enviar al backend:', templateData);
+      console.log('📋 Campos incluidos:', Object.keys(templateData));
+
+      const result = await licenseService.updateLicenseTemplate(selectedTemplate.id, templateData);
+      
+      console.log('✅ Plantilla actualizada:', result);
+      
+      toast.success(`Plantilla "${templateFormData.name}" actualizada correctamente`);
+      
+      // Cerrar modal
+      setShowTemplateEditModal(false);
+      setSelectedTemplate(null);
+      
+      // Recargar la lista de plantillas
+      await loadLicenseTemplates();
+      
+    } catch (error: any) {
+      console.error('❌ Error updating template:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al actualizar plantilla';
+      
+      toast.error(errorMessage);
+    } finally {
+      setTemplateEditLoading(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplate) return;
+
+    try {
+      setTemplateDeleteLoading(true);
+      
+      console.log('🗑️ Eliminando plantilla:', selectedTemplate.id);
+
+      await licenseService.deleteLicenseTemplate(selectedTemplate.id);
+      
+      console.log('✅ Plantilla eliminada correctamente');
+      
+      toast.success(`Plantilla "${selectedTemplate.name}" eliminada correctamente`);
+      
+      // Cerrar modal
+      setShowTemplateDeleteModal(false);
+      setSelectedTemplate(null);
+      
+      // Recargar la lista de plantillas
+      await loadLicenseTemplates();
+      
+    } catch (error: any) {
+      console.error('❌ Error deleting template:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al eliminar plantilla';
+      
+      toast.error(errorMessage);
+    } finally {
+      setTemplateDeleteLoading(false);
+    }
+  };
+
   // Cargar usuarios cuando cambien los filtros
   useEffect(() => {
     if (activeSection === 'users') {
@@ -706,6 +1117,25 @@ const SystemManagement: React.FC = () => {
     }
   }, [activeSection]);
 
+  // Cargar datos de licencias cuando se monta la sección
+  useEffect(() => {
+    if (activeSection === 'licenses') {
+      if (licenseSubSection === 'templates') {
+        loadLicenseTemplates();
+      } else if (licenseSubSection === 'assigned') {
+        loadCompanyLicenses();
+      }
+    }
+  }, [activeSection, licenseSubSection, templateSearchTerm, templateTypeFilter, templateStatusFilter, assignedSearchTerm, assignedTypeFilter, assignedStatusFilter]);
+
+  // Cargar datos auxiliares de licencias una sola vez
+  useEffect(() => {
+    if (activeSection === 'licenses' && availableFeatures.length === 0) {
+      loadLicenseAuxiliaryData();
+      loadLicenseStats();
+    }
+  }, [activeSection]);
+
   // Filtrar usuarios
   const filteredUsers = users.filter(user => {
     const matchesSearch = searchTerm === '' || 
@@ -721,6 +1151,39 @@ const SystemManagement: React.FC = () => {
       user.roles.some(role => role.name.toLowerCase().includes(roleFilter.toLowerCase()));
     
     return matchesSearch && matchesStatus && matchesRole;
+  });
+
+  // Filtrar plantillas de licencias
+  const filteredTemplates = licenseTemplates.filter(template => {
+    const matchesSearch = templateSearchTerm === '' || 
+      template.name.toLowerCase().includes(templateSearchTerm.toLowerCase()) ||
+      template.description.toLowerCase().includes(templateSearchTerm.toLowerCase());
+    
+    const matchesType = templateTypeFilter === '' || template.type === templateTypeFilter;
+    
+    const matchesStatus = templateStatusFilter === '' || 
+      (templateStatusFilter === 'active' && template.isActive) ||
+      (templateStatusFilter === 'inactive' && !template.isActive);
+    
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  // Filtrar licencias asignadas
+  const filteredAssigned = companyLicenses.filter(assigned => {
+    const matchesSearch = assignedSearchTerm === '' || 
+      assigned.company?.name.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
+      assigned.license?.name.toLowerCase().includes(assignedSearchTerm.toLowerCase()) ||
+      assigned.licenseKey.toLowerCase().includes(assignedSearchTerm.toLowerCase());
+    
+    const matchesType = assignedTypeFilter === '' || assigned.license?.type === assignedTypeFilter;
+    
+    const matchesStatus = assignedStatusFilter === '' || 
+      (assignedStatusFilter === 'active' && assigned.isActive && calculateDaysRemaining(assigned.endDate) > 0) ||
+      (assignedStatusFilter === 'inactive' && !assigned.isActive) ||
+      (assignedStatusFilter === 'expired' && calculateDaysRemaining(assigned.endDate) < 0) ||
+      (assignedStatusFilter === 'expiring' && assigned.isActive && calculateDaysRemaining(assigned.endDate) <= 30 && calculateDaysRemaining(assigned.endDate) > 0);
+    
+    return matchesSearch && matchesType && matchesStatus;
   });
 
   // Solo los usuarios master pueden acceder a esta sección
@@ -1323,83 +1786,563 @@ const SystemManagement: React.FC = () => {
 
         {activeSection === 'licenses' && (
           <div>
-            {/* Header de la tarjeta con gradiente */}
+            {/* Header de la sección */}
             <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                  <span className="text-2xl">📄</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                    <span className="text-2xl">📄</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">📄 Gestión de Licencias</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Administra plantillas de licencias y asignaciones a empresas
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">📄 Gestión de Licencias</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Administra planes, suscripciones y licencias del sistema
-                  </p>
-                </div>
+                {/* Estadísticas rápidas */}
+                {licenseStats && (
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-pink-600">{licenseStats.totalTemplates || 0}</div>
+                      <div className="text-gray-600">Plantillas</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-green-600">{licenseStats.activeAssignedLicenses || 0}</div>
+                      <div className="text-gray-600">Activas</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-semibold text-red-600">{licenseStats.expiredLicenses || 0}</div>
+                      <div className="text-gray-600">Expiradas</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Contenido */}
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Tarjeta de acción */}
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
-                  <div className="flex items-center mb-4">
-                    <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center shadow-sm">
-                      <span className="text-2xl">📄</span>
+            {/* Sub-navegación */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8 px-6">
+                <button
+                  onClick={() => setLicenseSubSection('templates')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    licenseSubSection === 'templates'
+                      ? 'border-pink-500 text-pink-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  📋 Plantillas de Licencias
+                </button>
+                <button
+                  onClick={() => setLicenseSubSection('assigned')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    licenseSubSection === 'assigned'
+                      ? 'border-pink-500 text-pink-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  🏢 Licencias Asignadas
+                </button>
+              </nav>
+            </div>
+
+            {/* Contenido de plantillas de licencias */}
+            {licenseSubSection === 'templates' && (
+              <div>
+                {/* Header con botón crear */}
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                        <span className="text-xl">📋</span>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Plantillas de Licencias</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Gestiona los tipos de licencias disponibles en el sistema
+                        </p>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <h4 className="text-lg font-semibold text-orange-900">Licencias del Sistema</h4>
-                      <p className="text-sm text-orange-700">Gestionar suscripciones</p>
-                    </div>
+                    <button
+                      onClick={() => setShowTemplateCreateModal(true)}
+                      className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                    >
+                      <PlusIcon className="h-5 w-5 mr-2" />
+                      Nueva Plantilla
+                    </button>
                   </div>
-                  <p className="text-sm text-orange-800 mb-4">
-                    Controlar planes, suscripciones y licencias de uso del sistema.
-                  </p>
-                  <button
-                    onClick={() => navigate('/dashboard/licenses')}
-                    className="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    📄 Gestionar Licencias
-                  </button>
                 </div>
 
-                {/* Estadísticas */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">📊</div>
-                    <h4 className="text-lg font-semibold text-purple-900 mb-2">Estadísticas</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Licencias Activas:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Licencias Vencidas:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-700">Total:</span>
-                        <span className="font-medium text-purple-900">--</span>
-                      </div>
+                {/* Filtros */}
+                <div className="p-6 border-b border-gray-100">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar plantillas..."
+                        value={templateSearchTerm}
+                        onChange={(e) => setTemplateSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      />
+                    </div>
+                    <div>
+                      <select
+                        value={templateTypeFilter}
+                        onChange={(e) => setTemplateTypeFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="">📋 Todos los tipos</option>
+                        <option value="basic">🥉 Básica</option>
+                        <option value="premium">🥈 Premium</option>
+                        <option value="enterprise">🥇 Empresarial</option>
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        value={templateStatusFilter}
+                        onChange={(e) => setTemplateStatusFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="">📊 Todos los estados</option>
+                        <option value="active">✅ Activas</option>
+                        <option value="inactive">❌ Inactivas</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-center bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-sm text-gray-600">
+                        📊 {filteredTemplates.length} de {licenseTemplates.length} plantillas
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Información */}
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-lg border border-red-200">
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">ℹ️</div>
-                    <h4 className="text-lg font-semibold text-red-900 mb-2">Información</h4>
-                    <div className="text-sm text-red-800 space-y-1">
-                      <p>• Control de planes y suscripciones</p>
-                      <p>• Gestión de vencimientos</p>
-                      <p>• Límites de uso por empresa</p>
-                      <p>• Facturación y pagos</p>
+                {/* Lista de plantillas */}
+                <div className="p-6">
+                  {templatesLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+                      <span className="ml-2 text-gray-600">Cargando plantillas...</span>
                     </div>
-                  </div>
+                  ) : templatesError ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                      <div className="text-red-500 text-2xl mb-2">❌</div>
+                      <p className="text-red-700">{templatesError}</p>
+                      <button
+                        onClick={loadLicenseTemplates}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  ) : filteredTemplates.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                      <div className="text-gray-400 text-4xl mb-4">📋</div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron plantillas</h3>
+                      <p className="text-gray-600 mb-6">
+                        {templateSearchTerm || templateTypeFilter || templateStatusFilter 
+                          ? 'Intenta ajustar los filtros de búsqueda'
+                          : 'Comienza creando tu primera plantilla de licencia'
+                        }
+                      </p>
+                      {!templateSearchTerm && !templateTypeFilter && !templateStatusFilter && (
+                        <button
+                          onClick={() => setShowTemplateCreateModal(true)}
+                          className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          <PlusIcon className="h-5 w-5 mr-2 inline" />
+                          Crear Primera Plantilla
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Plantilla
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Tipo
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Límites
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Precio
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Estado
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredTemplates.map((template) => (
+                            <tr key={template.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                                    <span className="text-sm font-medium text-pink-700">
+                                      {getTemplateInitials(template)}
+                                    </span>
+                                  </div>
+                                  <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{template.name}</div>
+                                    <div className="text-sm text-gray-500 truncate max-w-xs" title={template.description}>
+                                      {template.description}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  template.type === 'basic' ? 'bg-blue-100 text-blue-800' :
+                                  template.type === 'premium' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {template.type === 'basic' ? '🥉 Básica' :
+                                   template.type === 'premium' ? '🥈 Premium' :
+                                   '🥇 Empresarial'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div className="space-y-1">
+                                  <div>👥 {template.maxUsers} usuarios</div>
+                                  <div>👤 {template.maxClients} clientes</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {formatPrice(template.price, template.currency)}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {template.billingCycle === 'monthly' ? 'Mensual' : 'Anual'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  template.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {template.isActive ? '✅ Activa' : '❌ Inactiva'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTemplate(template);
+                                      setShowTemplateViewModal(true);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-1 rounded transition-colors"
+                                    title="Ver detalles"
+                                  >
+                                    <EyeIcon className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTemplate(template);
+                                      setTemplateFormData({
+                                        name: template.name,
+                                        type: template.type,
+                                        description: template.description,
+                                        maxUsers: template.maxUsers,
+                                        maxClients: template.maxClients,
+                                        features: template.features,
+                                        price: template.price,
+                                        currency: template.currency,
+                                        billingCycle: template.billingCycle,
+                                        isActive: template.isActive
+                                      });
+                                      setShowTemplateEditModal(true);
+                                    }}
+                                    className="text-green-600 hover:text-green-900 hover:bg-green-50 p-1 rounded transition-colors"
+                                    title="Editar plantilla"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTemplate(template);
+                                      setShowTemplateDeleteModal(true);
+                                    }}
+                                    className="text-red-600 hover:text-red-900 hover:bg-red-50 p-1 rounded transition-colors"
+                                    title="Eliminar plantilla"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Contenido de licencias asignadas */}
+            {licenseSubSection === 'assigned' && (
+              <div>
+                {/* Header con botón asignar */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                        <span className="text-xl">🏢</span>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900">Licencias Asignadas</h4>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Gestiona las licencias activas de las empresas
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAssignedCreateModal(true)}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <PlusIcon className="h-5 w-5 mr-2" />
+                      Asignar Licencia
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filtros */}
+                <div className="p-6 border-b border-gray-100">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="relative">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar por empresa o clave..."
+                        value={assignedSearchTerm}
+                        onChange={(e) => setAssignedSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <select
+                        value={assignedTypeFilter}
+                        onChange={(e) => setAssignedTypeFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">📋 Todos los tipos</option>
+                        <option value="basic">🥉 Básica</option>
+                        <option value="premium">🥈 Premium</option>
+                        <option value="enterprise">🥇 Empresarial</option>
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        value={assignedStatusFilter}
+                        onChange={(e) => setAssignedStatusFilter(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">📊 Todos los estados</option>
+                        <option value="active">✅ Activas</option>
+                        <option value="inactive">❌ Inactivas</option>
+                        <option value="expired">🔴 Expiradas</option>
+                        <option value="expiring">⚠️ Por vencer</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-center bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-sm text-gray-600">
+                        📊 {filteredAssigned.length} de {companyLicenses.length} licencias
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista de licencias asignadas */}
+                <div className="p-6">
+                  {assignedLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-gray-600">Cargando licencias asignadas...</span>
+                    </div>
+                  ) : assignedError ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                      <div className="text-red-500 text-2xl mb-2">❌</div>
+                      <p className="text-red-700">{assignedError}</p>
+                      <button
+                        onClick={loadCompanyLicenses}
+                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  ) : filteredAssigned.length === 0 ? (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                      <div className="text-gray-400 text-4xl mb-4">🏢</div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron licencias asignadas</h3>
+                      <p className="text-gray-600 mb-6">
+                        {assignedSearchTerm || assignedTypeFilter || assignedStatusFilter 
+                          ? 'Intenta ajustar los filtros de búsqueda'
+                          : 'Comienza asignando licencias a las empresas'
+                        }
+                      </p>
+                      {!assignedSearchTerm && !assignedTypeFilter && !assignedStatusFilter && (
+                        <button
+                          onClick={() => setShowAssignedCreateModal(true)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          <PlusIcon className="h-5 w-5 mr-2 inline" />
+                          Asignar Primera Licencia
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Empresa
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Licencia
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Clave
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Vigencia
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Estado
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredAssigned.map((assigned) => {
+                            const daysRemaining = calculateDaysRemaining(assigned.endDate);
+                            const statusBadge = getStatusBadge(assigned.isActive, assigned.endDate);
+                            
+                            return (
+                              <tr key={assigned.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                                      <span className="text-sm font-medium text-blue-700">
+                                        {assigned.company?.name?.substring(0, 2).toUpperCase() || 'CO'}
+                                      </span>
+                                    </div>
+                                    <div className="ml-4">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {assigned.company?.name || 'Empresa no encontrada'}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {assigned.company?.email || 'Sin email'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {assigned.license?.name || 'Licencia no encontrada'}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {assigned.license ? getLicenseTypeName(assigned.license.type) : 'Tipo desconocido'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                                    {assigned.licenseKey}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">
+                                    {new Date(assigned.startDate).toLocaleDateString('es-ES')} - {new Date(assigned.endDate).toLocaleDateString('es-ES')}
+                                  </div>
+                                  <div className={`text-sm ${daysRemaining < 0 ? 'text-red-600' : daysRemaining <= 30 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                    {daysRemaining < 0 ? `Expiró hace ${Math.abs(daysRemaining)} días` : 
+                                     daysRemaining === 0 ? 'Expira hoy' :
+                                     `${daysRemaining} días restantes`}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    statusBadge.color === 'green' ? 'bg-green-100 text-green-800' :
+                                    statusBadge.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {statusBadge.text}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedAssigned(assigned);
+                                        setShowAssignedViewModal(true);
+                                      }}
+                                      className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-1 rounded transition-colors"
+                                      title="Ver detalles"
+                                    >
+                                      <EyeIcon className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedAssigned(assigned);
+                                        setAssignedFormData({
+                                          companyId: assigned.companyId,
+                                          licenseId: assigned.licenseId,
+                                          startDate: assigned.startDate,
+                                          endDate: assigned.endDate,
+                                          isActive: assigned.isActive
+                                        });
+                                        setShowAssignedEditModal(true);
+                                      }}
+                                      className="text-green-600 hover:text-green-900 hover:bg-green-50 p-1 rounded transition-colors"
+                                      title="Editar licencia"
+                                    >
+                                      <PencilIcon className="h-4 w-4" />
+                                    </button>
+                                    {daysRemaining <= 30 && daysRemaining > 0 && (
+                                      <button
+                                        onClick={() => {
+                                          // Función de renovar licencia
+                                          console.log('Renovar licencia:', assigned.id);
+                                        }}
+                                        className="text-orange-600 hover:text-orange-900 hover:bg-orange-50 p-1 rounded transition-colors"
+                                        title="Renovar licencia"
+                                      >
+                                        <ArrowPathIcon className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedAssigned(assigned);
+                                        setShowAssignedDeleteModal(true);
+                                      }}
+                                      className="text-red-600 hover:text-red-900 hover:bg-red-50 p-1 rounded transition-colors"
+                                      title="Eliminar licencia"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2789,6 +3732,709 @@ const SystemManagement: React.FC = () => {
                   <>
                     <TrashIcon className="h-4 w-4 mr-2" />
                     Desactivar Empresa
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODALES PARA PLANTILLAS DE LICENCIAS ==================== */}
+
+      {/* Modal Ver Plantilla */}
+      {showTemplateViewModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <span className="text-xl font-medium text-pink-700">
+                    {getTemplateInitials(selectedTemplate)}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">👁️ Detalles de Plantilla</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Información completa de la plantilla de licencia
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información Básica */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-900 mb-3">📋 Información Básica</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700">Nombre</label>
+                    <p className="text-sm text-blue-900 font-medium">{selectedTemplate.name}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700">Tipo</label>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedTemplate.type === 'basic' ? 'bg-blue-100 text-blue-800' :
+                      selectedTemplate.type === 'premium' ? 'bg-purple-100 text-purple-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedTemplate.type === 'basic' ? '🥉 Básica' :
+                       selectedTemplate.type === 'premium' ? '🥈 Premium' :
+                       '🥇 Empresarial'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-blue-700">Descripción</label>
+                  <p className="text-sm text-blue-900">{selectedTemplate.description}</p>
+                </div>
+              </div>
+
+              {/* Límites y Capacidad */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-green-900 mb-3">📊 Límites y Capacidad</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-700">{selectedTemplate.maxUsers}</div>
+                    <div className="text-sm text-green-600">👥 Usuarios máximos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-700">{selectedTemplate.maxClients}</div>
+                    <div className="text-sm text-green-600">👤 Clientes máximos</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Precio y Facturación */}
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-yellow-900 mb-3">💰 Precio y Facturación</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700">Precio</label>
+                    <p className="text-lg font-bold text-yellow-900">{formatPrice(selectedTemplate.price, selectedTemplate.currency)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700">Ciclo de Facturación</label>
+                    <p className="text-sm text-yellow-900 font-medium">
+                      {selectedTemplate.billingCycle === 'monthly' ? '📅 Mensual' : '📆 Anual'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Características */}
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-purple-900 mb-3">✨ Características Incluidas</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {selectedTemplate.features?.map((feature, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <span className="text-green-500">✅</span>
+                      <span className="text-sm text-purple-900">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Estado y Estadísticas */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">📈 Estado y Estadísticas</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Estado</label>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedTemplate.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedTemplate.isActive ? '✅ Activa' : '❌ Inactiva'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Empresas Usando</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedTemplate.companiesCount || 0}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Empresas Activas</label>
+                    <p className="text-sm font-medium text-gray-900">{selectedTemplate.activeCompaniesCount || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Creado: {new Date(selectedTemplate.createdAt).toLocaleDateString('es-ES')}
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowTemplateViewModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    setTemplateFormData({
+                      name: selectedTemplate.name,
+                      type: selectedTemplate.type,
+                      description: selectedTemplate.description,
+                      maxUsers: selectedTemplate.maxUsers,
+                      maxClients: selectedTemplate.maxClients,
+                      features: selectedTemplate.features,
+                      price: selectedTemplate.price,
+                      currency: selectedTemplate.currency,
+                      billingCycle: selectedTemplate.billingCycle,
+                      isActive: selectedTemplate.isActive
+                    });
+                    setShowTemplateViewModal(false);
+                    setShowTemplateEditModal(true);
+                  }}
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2 inline" />
+                  Editar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Crear Plantilla */}
+      {showTemplateCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <PlusIcon className="h-6 w-6 text-pink-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">➕ Crear Nueva Plantilla</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Define una nueva plantilla de licencia para el sistema
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateTemplate();
+              }} className="space-y-6">
+                {/* Información Básica */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-4">📋 Información Básica</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Nombre de la Plantilla *
+                      </label>
+                      <input
+                        type="text"
+                        value={templateFormData.name}
+                        onChange={(e) => setTemplateFormData({...templateFormData, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="Ej: Plan Básico Plus"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Tipo de Licencia *
+                      </label>
+                      <select
+                        value={templateFormData.type}
+                        onChange={(e) => setTemplateFormData({...templateFormData, type: e.target.value as 'basic' | 'premium' | 'enterprise'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        required
+                      >
+                        <option value="">Selecciona un tipo</option>
+                        <option value="basic">🥉 Básica</option>
+                        <option value="premium">🥈 Premium</option>
+                        <option value="enterprise">🥇 Empresarial</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-blue-700 mb-1">
+                      Descripción
+                    </label>
+                    <textarea
+                      value={templateFormData.description}
+                      onChange={(e) => setTemplateFormData({...templateFormData, description: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Describe las características principales de esta plantilla..."
+                    />
+                  </div>
+                </div>
+
+                {/* Límites y Capacidad */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-900 mb-4">📊 Límites y Capacidad</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        👥 Usuarios Máximos *
+                      </label>
+                      <input
+                        type="number"
+                        value={templateFormData.maxUsers}
+                        onChange={(e) => setTemplateFormData({...templateFormData, maxUsers: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        👤 Clientes Máximos *
+                      </label>
+                      <input
+                        type="number"
+                        value={templateFormData.maxClients}
+                        onChange={(e) => setTemplateFormData({...templateFormData, maxClients: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Precio y Facturación */}
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-yellow-900 mb-4">💰 Precio y Facturación</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Precio *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={templateFormData.price}
+                        onChange={(e) => setTemplateFormData({...templateFormData, price: parseFloat(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Moneda
+                      </label>
+                      <select
+                        value={templateFormData.currency}
+                        onChange={(e) => setTemplateFormData({...templateFormData, currency: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="USD">💵 USD - Dólar</option>
+                        <option value="EUR">💶 EUR - Euro</option>
+                        <option value="VES">💰 VES - Bolívar</option>
+                        <option value="COP">💵 COP - Peso Colombiano</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Ciclo de Facturación
+                      </label>
+                      <select
+                        value={templateFormData.billingCycle}
+                        onChange={(e) => setTemplateFormData({...templateFormData, billingCycle: e.target.value as 'monthly' | 'yearly'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="monthly">📅 Mensual</option>
+                        <option value="yearly">📆 Anual</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">⚙️ Configuración</h4>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="templateActive"
+                      checked={templateFormData.isActive}
+                      onChange={(e) => setTemplateFormData({...templateFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="templateActive" className="ml-2 text-sm text-gray-700">
+                      ✅ Plantilla activa (disponible para asignar a empresas)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-blue-500 mt-0.5">ℹ️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900 mb-1">Información importante</h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <p>• Los campos marcados con (*) son obligatorios</p>
+                        <p>• El tipo de licencia debe ser único en el sistema</p>
+                        <p>• Los límites definen la capacidad máxima para empresas que usen esta plantilla</p>
+                        <p>• Las características se asignarán automáticamente según el tipo</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowTemplateCreateModal(false);
+                  setTemplateFormData({
+                    name: '',
+                    type: 'basic',
+                    description: '',
+                    maxUsers: 10,
+                    maxClients: 100,
+                                features: [],
+                    price: 0,
+                    currency: 'USD',
+                    billingCycle: 'monthly',
+                    isActive: true
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateTemplate}
+                disabled={templateCreateLoading}
+                className="inline-flex items-center justify-center px-6 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50"
+              >
+                {templateCreateLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Crear Plantilla
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Plantilla */}
+      {showTemplateEditModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                  <PencilIcon className="h-6 w-6 text-pink-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">✏️ Editar Plantilla</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Modifica los datos de la plantilla "{selectedTemplate.name}"
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleUpdateTemplate();
+              }} className="space-y-6">
+                {/* Información Básica */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-4">📋 Información Básica</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Nombre de la Plantilla *
+                      </label>
+                      <input
+                        type="text"
+                        value={templateFormData.name}
+                        onChange={(e) => setTemplateFormData({...templateFormData, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        placeholder="Ej: Plan Básico Plus"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-blue-700 mb-1">
+                        Tipo de Licencia
+                      </label>
+                      <select
+                        value={templateFormData.type}
+                        onChange={(e) => setTemplateFormData({...templateFormData, type: e.target.value as 'basic' | 'premium' | 'enterprise'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-gray-100"
+                        disabled
+                      >
+                        <option value="basic">🥉 Básica</option>
+                        <option value="premium">🥈 Premium</option>
+                        <option value="enterprise">🥇 Empresarial</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">El tipo no se puede modificar después de crear la plantilla</p>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-blue-700 mb-1">
+                      Descripción
+                    </label>
+                    <textarea
+                      value={templateFormData.description}
+                      onChange={(e) => setTemplateFormData({...templateFormData, description: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      placeholder="Describe las características principales de esta plantilla..."
+                    />
+                  </div>
+                </div>
+
+                {/* Límites y Capacidad */}
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-900 mb-4">📊 Límites y Capacidad</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        👥 Usuarios Máximos *
+                      </label>
+                      <input
+                        type="number"
+                        value={templateFormData.maxUsers}
+                        onChange={(e) => setTemplateFormData({...templateFormData, maxUsers: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        👤 Clientes Máximos *
+                      </label>
+                      <input
+                        type="number"
+                        value={templateFormData.maxClients}
+                        onChange={(e) => setTemplateFormData({...templateFormData, maxClients: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Precio y Facturación */}
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-yellow-900 mb-4">💰 Precio y Facturación</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Precio *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={templateFormData.price}
+                        onChange={(e) => setTemplateFormData({...templateFormData, price: parseFloat(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Moneda
+                      </label>
+                      <select
+                        value={templateFormData.currency}
+                        onChange={(e) => setTemplateFormData({...templateFormData, currency: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="USD">💵 USD - Dólar</option>
+                        <option value="EUR">💶 EUR - Euro</option>
+                        <option value="VES">💰 VES - Bolívar</option>
+                        <option value="COP">💵 COP - Peso Colombiano</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 mb-1">
+                        Ciclo de Facturación
+                      </label>
+                      <select
+                        value={templateFormData.billingCycle}
+                        onChange={(e) => setTemplateFormData({...templateFormData, billingCycle: e.target.value as 'monthly' | 'yearly'})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                      >
+                        <option value="monthly">📅 Mensual</option>
+                        <option value="yearly">📆 Anual</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estado */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-4">⚙️ Configuración</h4>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="templateActiveEdit"
+                      checked={templateFormData.isActive}
+                      onChange={(e) => setTemplateFormData({...templateFormData, isActive: e.target.checked})}
+                      className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="templateActiveEdit" className="ml-2 text-sm text-gray-700">
+                      ✅ Plantilla activa (disponible para asignar a empresas)
+                    </label>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-orange-500 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-orange-900 mb-1">Advertencia importante</h4>
+                      <div className="text-sm text-orange-800 space-y-1">
+                        <p>• Modificar los límites afectará a todas las empresas que usen esta plantilla</p>
+                        <p>• Los cambios de precio no afectan licencias ya asignadas</p>
+                        <p>• Desactivar la plantilla impedirá asignarla a nuevas empresas</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowTemplateEditModal(false);
+                  setSelectedTemplate(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateTemplate}
+                disabled={templateEditLoading}
+                className="inline-flex items-center justify-center px-6 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50"
+              >
+                {templateEditLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Actualizando...
+                  </>
+                ) : (
+                  <>
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Actualizar Plantilla
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar Plantilla */}
+      {showTemplateDeleteModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center shadow-sm">
+                  <TrashIcon className="h-6 w-6 text-red-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🗑️ Eliminar Plantilla</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Esta acción no se puede deshacer
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-gray-700 mb-4">
+                  ¿Estás seguro de que deseas eliminar la plantilla <strong>"{selectedTemplate.name}"</strong>?
+                </p>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-red-500 mt-0.5">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-900 mb-1">Consecuencias de eliminar:</h4>
+                      <div className="text-sm text-red-800 space-y-1">
+                        <p>• La plantilla se eliminará permanentemente</p>
+                        <p>• Las licencias ya asignadas NO se verán afectadas</p>
+                        <p>• No se podrán asignar nuevas licencias de este tipo</p>
+                        <p>• Esta acción es irreversible</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-gray-50 p-3 rounded-lg">
+                  <div className="text-sm text-gray-600">
+                    <p><strong>Tipo:</strong> {selectedTemplate.type === 'basic' ? '🥉 Básica' : selectedTemplate.type === 'premium' ? '🥈 Premium' : '🥇 Empresarial'}</p>
+                    <p><strong>Precio:</strong> {formatPrice(selectedTemplate.price, selectedTemplate.currency)}</p>
+                    <p><strong>Empresas usando:</strong> {selectedTemplate.companiesCount || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setShowTemplateDeleteModal(false);
+                  setSelectedTemplate(null);
+                }}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteTemplate}
+                disabled={templateDeleteLoading}
+                className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors disabled:opacity-50"
+              >
+                {templateDeleteLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Eliminar Plantilla
                   </>
                 )}
               </button>

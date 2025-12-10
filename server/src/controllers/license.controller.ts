@@ -758,6 +758,11 @@ export const getLicenseTemplates = async (req: Request, res: Response, next: Nex
     console.log('🔄 Obteniendo plantillas de licencias...');
     
     const { search, type, status } = req.query;
+    console.log('📋 Query params:', { search, type, status });
+    
+    // Primero verificar si hay datos en la tabla
+    const countResult = await queryOne('SELECT COUNT(*) as count FROM licenses');
+    console.log('📊 Total plantillas en BD:', countResult.count);
     
     let whereConditions = ['1=1'];
     let params: any[] = [];
@@ -837,7 +842,6 @@ export const createLicenseTemplate = async (req: Request, res: Response, next: N
       description,
       maxUsers,
       maxClients,
-      maxStorage,
       features,
       price,
       currency = 'USD',
@@ -846,6 +850,7 @@ export const createLicenseTemplate = async (req: Request, res: Response, next: N
     } = req.body;
     
     console.log('➕ Creando plantilla de licencia:', { name, type });
+    console.log('📥 Datos recibidos del frontend:', req.body);
     
     // Validaciones
     if (!name?.trim()) {
@@ -872,14 +877,13 @@ export const createLicenseTemplate = async (req: Request, res: Response, next: N
     }
     
     const templateId = generateId();
-    const storageBytes = (maxStorage || 5) * 1024 * 1024 * 1024; // Convertir GB a bytes
     
-    // Insertar plantilla
+    // Insertar plantilla (sin maxStorage)
     await query(`
       INSERT INTO licenses (
-        id, name, type, description, maxUsers, maxClients, maxStorage, 
+        id, name, type, description, maxUsers, maxClients, 
         features, price, currency, billingCycle, isActive, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `, [
       templateId,
       name.trim(),
@@ -887,7 +891,6 @@ export const createLicenseTemplate = async (req: Request, res: Response, next: N
       description || '',
       maxUsers || 10,
       maxClients || 100,
-      storageBytes,
       JSON.stringify(features || []),
       price || 0,
       currency,
@@ -903,7 +906,6 @@ export const createLicenseTemplate = async (req: Request, res: Response, next: N
     const processedTemplate = {
       ...newTemplate,
       features: newTemplate.features ? JSON.parse(newTemplate.features) : [],
-      maxStorage: Math.round((newTemplate.maxStorage || 0) / (1024 * 1024 * 1024)),
       isActive: Boolean(newTemplate.isActive),
       companiesCount: 0,
       activeCompaniesCount: 0
@@ -930,7 +932,6 @@ export const updateLicenseTemplate = async (req: Request, res: Response, next: N
       description,
       maxUsers,
       maxClients,
-      maxStorage,
       features,
       price,
       currency,
@@ -939,6 +940,7 @@ export const updateLicenseTemplate = async (req: Request, res: Response, next: N
     } = req.body;
     
     console.log('🔄 Actualizando plantilla:', id);
+    console.log('📥 Datos recibidos del frontend:', req.body);
     
     // Verificar que la plantilla existe
     const existingTemplate = await queryOne('SELECT * FROM licenses WHERE id = ?', [id]);
@@ -949,16 +951,13 @@ export const updateLicenseTemplate = async (req: Request, res: Response, next: N
       });
     }
     
-    const storageBytes = maxStorage ? maxStorage * 1024 * 1024 * 1024 : existingTemplate.maxStorage;
-    
-    // Actualizar plantilla
+    // Actualizar plantilla (sin maxStorage)
     await query(`
       UPDATE licenses SET
         name = COALESCE(?, name),
         description = COALESCE(?, description),
         maxUsers = COALESCE(?, maxUsers),
         maxClients = COALESCE(?, maxClients),
-        maxStorage = COALESCE(?, maxStorage),
         features = COALESCE(?, features),
         price = COALESCE(?, price),
         currency = COALESCE(?, currency),
@@ -971,7 +970,6 @@ export const updateLicenseTemplate = async (req: Request, res: Response, next: N
       description,
       maxUsers,
       maxClients,
-      storageBytes,
       features ? JSON.stringify(features) : null,
       price,
       currency,
@@ -988,7 +986,6 @@ export const updateLicenseTemplate = async (req: Request, res: Response, next: N
     const processedTemplate = {
       ...updatedTemplate,
       features: updatedTemplate.features ? JSON.parse(updatedTemplate.features) : [],
-      maxStorage: Math.round((updatedTemplate.maxStorage || 0) / (1024 * 1024 * 1024)),
       isActive: Boolean(updatedTemplate.isActive)
     };
     

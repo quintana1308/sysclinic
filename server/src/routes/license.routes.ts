@@ -21,11 +21,27 @@ const router = express.Router();
 // Todas las rutas requieren autenticación
 router.use(authenticate);
 
-// Obtener todas las licencias (solo master)
-router.get('/', authorize('master'), getLicenses);
+// ==================== RUTAS ESPECÍFICAS (DEBEN IR ANTES DE /:id) ====================
 
 // Obtener estadísticas de licencias (solo master)
 router.get('/stats', authorize('master'), getLicenseStats);
+
+// Obtener todas las plantillas de licencias (solo master)
+router.get('/templates', authorize('master'), getLicenseTemplates);
+
+// Crear nueva plantilla de licencia (solo master)
+router.post('/templates', authorize('master'), createLicenseTemplate);
+
+// Actualizar plantilla de licencia (solo master)
+router.put('/templates/:id', authorize('master'), updateLicenseTemplate);
+
+// Eliminar plantilla de licencia (solo master)
+router.delete('/templates/:id', authorize('master'), deleteLicenseTemplate);
+
+// ==================== RUTAS PARA LICENCIAS ASIGNADAS ====================
+
+// Obtener todas las licencias (solo master)
+router.get('/', authorize('master'), getLicenses);
 
 // Obtener licencia por ID (solo master)
 router.get('/:id', authorize('master'), getLicenseById);
@@ -44,20 +60,6 @@ router.patch('/:id/renew', authorize('master'), renewLicense);
 
 // Eliminar licencia (solo master)
 router.delete('/:id', authorize('master'), deleteLicense);
-
-// ==================== RUTAS PARA PLANTILLAS DE LICENCIAS ====================
-
-// Obtener todas las plantillas de licencias (solo master)
-router.get('/templates', authorize('master'), getLicenseTemplates);
-
-// Crear nueva plantilla de licencia (solo master)
-router.post('/templates', authorize('master'), createLicenseTemplate);
-
-// Actualizar plantilla de licencia (solo master)
-router.put('/templates/:id', authorize('master'), updateLicenseTemplate);
-
-// Eliminar plantilla de licencia (solo master)
-router.delete('/templates/:id', authorize('master'), deleteLicenseTemplate);
 
 // ==================== RUTA TEMPORAL PARA INSERTAR LICENCIAS ====================
 
