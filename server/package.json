@@ -10,7 +10,9 @@
     "db:seed": "ts-node src/database/seed.ts",
     "db:seed-multi": "node src/seeders/runMultiCompanySeeder.js",
     "db:clean": "node src/seeders/cleanDatabase.js",
-    "db:reset": "npm run db:clean && npm run db:seed-multi"
+    "db:reset": "npm run db:clean && npm run db:seed-multi",
+    "seed": "node src/seeders/index.js",
+    "seed:licenses": "node src/seeders/index.js licenses"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
