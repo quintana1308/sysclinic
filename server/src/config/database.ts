@@ -33,16 +33,24 @@ const dbConfig = process.env.DATABASE_URL
       database: process.env.DB_NAME || 'gestion_citas_db'
     };
 
-// Crear pool de conexiones
-export const pool = mysql.createPool({
+// Configuración específica para Railway vs Local
+const poolConfig = {
   ...dbConfig,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  timezone: '+00:00'
-});
+  timezone: '+00:00',
+  charset: 'utf8mb4',
+  supportBigNumbers: true,
+  bigNumberStrings: true,
+  // SSL solo para producción (Railway)
+  ...(process.env.NODE_ENV === 'production' && {
+    ssl: { rejectUnauthorized: false }
+  })
+};
+
+// Crear pool de conexiones
+export const pool = mysql.createPool(poolConfig);
 
 // Función helper para ejecutar queries
 export const query = async <T = any>(sql: string, params?: any[]): Promise<T[]> => {

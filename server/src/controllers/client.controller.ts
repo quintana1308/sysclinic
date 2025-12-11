@@ -82,6 +82,17 @@ export const getClients = async (
     const status = req.query.status as string;
     const offset = (page - 1) * limit;
 
+    // Validar que limit y offset sean números válidos
+    if (isNaN(limit) || isNaN(offset) || limit <= 0 || offset < 0) {
+      console.error('❌ Parámetros de paginación inválidos:', { page, limit, offset });
+      return res.status(400).json({
+        success: false,
+        message: 'Parámetros de paginación inválidos'
+      });
+    }
+
+    console.log('📊 Parámetros de paginación:', { page, limit, offset });
+
     let whereClause = 'WHERE 1=1';
     const params: any[] = [];
 
@@ -128,6 +139,11 @@ export const getClients = async (
     console.log('📊 Total de clientes encontrados:', total);
 
     // Obtener clientes paginados
+    const finalParams = [...params, limit, offset];
+    console.log('📊 Parámetros finales para consulta principal:', finalParams);
+    console.log('📊 Tipos de parámetros:', finalParams.map(p => typeof p));
+    console.log('📊 Valores: limit =', limit, ', offset =', offset);
+    
     const clients = await query<any>(`
       SELECT 
         c.id,
@@ -156,7 +172,7 @@ export const getClients = async (
       GROUP BY c.id
       ORDER BY c.createdAt DESC
       LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, finalParams);
 
     const response: PaginatedResponse = {
       success: true,

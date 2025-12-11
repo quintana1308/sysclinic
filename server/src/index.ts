@@ -31,21 +31,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configurar trust proxy para Railway y otros servicios de hosting
-app.set('trust proxy', 1);
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, // límite de 100 requests por ventana por IP
   message: 'Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde.',
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  // Configuración específica para Railway
-  keyGenerator: (req) => {
-    // En Railway, usar X-Forwarded-For si está disponible, sino usar req.ip
-    return req.ip || req.connection.remoteAddress || 'unknown';
-  },
 });
 
 // Middlewares globales
