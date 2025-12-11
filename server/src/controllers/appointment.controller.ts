@@ -498,6 +498,19 @@ export const updateAppointment = async (
       }
     }
 
+    // Preparar valores de fecha y hora para MySQL
+    const updateDate = date || appointment.date;
+    const updateStartTime = startTime ? `${date || appointment.date.toISOString().split('T')[0]} ${startTime}:00` : appointment.startTime;
+    const updateEndTime = endTime ? `${date || appointment.date.toISOString().split('T')[0]} ${endTime}:00` : appointment.endTime;
+
+    console.log('📅 Valores de actualización preparados:', {
+      updateDate,
+      updateStartTime,
+      updateEndTime,
+      originalStartTime: appointment.startTime,
+      originalEndTime: appointment.endTime
+    });
+
     // Actualizar la cita
     await query(`
       UPDATE appointments 
@@ -506,9 +519,9 @@ export const updateAppointment = async (
       WHERE id = ?
     `, [
       employeeId !== undefined ? employeeId : appointment.employeeId,
-      date || appointment.date,
-      startTime || appointment.startTime,
-      endTime || appointment.endTime,
+      updateDate,
+      updateStartTime,
+      updateEndTime,
       notes !== undefined ? notes : appointment.notes,
       totalAmount,
       id
