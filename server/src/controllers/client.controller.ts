@@ -185,9 +185,9 @@ export const getClients = async (
       }
     };
 
-    res.json(response);
+    return res.json(response);
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
