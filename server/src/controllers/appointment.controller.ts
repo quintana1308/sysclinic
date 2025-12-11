@@ -534,10 +534,13 @@ export const updateAppointmentStatus = async (
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status || !Object.values(AppointmentStatus).includes(status)) {
+    // Validar que el estado sea válido
+    const validStatuses = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+    if (!validStatuses.includes(status)) {
       throw new AppError('Estado de cita inválido', 400);
     }
 
+    // Verificar que la cita existe
     const appointment = await queryOne<any>(`
       SELECT * FROM appointments WHERE id = ?
     `, [id]);
@@ -546,31 +549,87 @@ export const updateAppointmentStatus = async (
       throw new AppError('Cita no encontrada', 404);
     }
 
+    // Actualizar el estado
     await query(`
-      UPDATE appointments SET status = ?, updatedAt = NOW()
+      UPDATE appointments 
+      SET status = ?, updatedAt = NOW()
       WHERE id = ?
     `, [status, id]);
 
-    // Si el estado cambia a 'CONFIRMED', generar factura automáticamente
-    let invoiceId = null;
-    if (status === 'CONFIRMED' && appointment.status !== 'CONFIRMED') {
-      try {
-        invoiceId = await generateInvoiceFromAppointment(id, req.user?.id);
-        console.log(`✅ Factura generada automáticamente: ${invoiceId} para cita: ${id}`);
-      } catch (invoiceError) {
-        console.error('Error generando factura automática:', invoiceError);
-        // No fallar la actualización de la cita si hay error en la factura
-      }
-    }
-
     const response: ApiResponse = {
       success: true,
-      message: `Cita marcada como ${status.toLowerCase()}${invoiceId ? '. Factura generada automáticamente.' : ''}`,
-      data: invoiceId ? { invoiceId } : undefined
+      message: 'Estado de cita actualizado exitosamente'
     };
 
     res.json(response);
   } catch (error) {
+    next(error);
+  }
+};
+
+export const cancelAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    console.log('🚀 Iniciando cancelación de cita:', id);
+    console.log('📝 Motivo:', reason);
+
+    // Verificar que la cita existe
+    const appointment = await queryOne<any>(`
+      SELECT * FROM appointments WHERE id = ?
+    `, [id]);
+
+    if (!appointment) {
+      throw new AppError('Cita no encontrada', 404);
+    }
+
+    console.log('📋 Cita encontrada:', appointment);
+
+    // Verificar que la cita se puede cancelar
+    if (appointment.status === 'CANCELLED') {
+      throw new AppError('La cita ya está cancelada', 400);
+    }
+
+    if (appointment.status === 'COMPLETED') {
+      throw new AppError('No se puede cancelar una cita completada', 400);
+    }
+
+    // Verificar si tiene pagos relacionados (opcional - depende de la lógica de negocio)
+    const hasPayments = await queryOne<any>(`
+      SELECT COUNT(*) as count FROM payments 
+      WHERE appointmentId = ? AND status = 'PAID'
+    `, [id]);
+
+    if (hasPayments && hasPayments.count > 0) {
+      throw new AppError('No se puede cancelar una cita con pagos realizados', 400);
+    }
+
+    console.log('✅ Validaciones pasadas, procediendo con la cancelación');
+
+    // Actualizar el estado a cancelado y agregar el motivo
+    await query(`
+      UPDATE appointments 
+      SET status = 'CANCELLED', 
+          notes = CONCAT(COALESCE(notes, ''), '\n--- CANCELADA ---\nMotivo: ', ?),
+          updatedAt = NOW()
+      WHERE id = ?
+    `, [reason || 'Sin motivo especificado', id]);
+
+    console.log('✅ Cita cancelada exitosamente');
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Cita cancelada exitosamente'
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Error al cancelar cita:', error);
     next(error);
   }
 };

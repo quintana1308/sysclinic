@@ -8,7 +8,8 @@ import {
   createAppointment,
   updateAppointment,
   deleteAppointment,
-  updateAppointmentStatus
+  updateAppointmentStatus,
+  cancelAppointment
 } from '../controllers/appointment.controller';
 
 const router = Router();
@@ -46,6 +47,12 @@ router.put('/:id',
 router.patch('/:id/status', 
   requirePermission({ resource: 'appointments', action: 'update' }),
   updateAppointmentStatus
+);
+
+// Cancelar cita
+router.patch('/:id/cancel', 
+  requirePermission({ resource: 'appointments', action: 'update' }),
+  cancelAppointment
 );
 
 // Eliminar cita

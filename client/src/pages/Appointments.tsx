@@ -1010,44 +1010,83 @@ const Appointments: React.FC = () => {
     
     setSubmitting(true);
     try {
-      // Aquí iría la lógica para actualizar la cita
-      console.log('Updating appointment:', selectedAppointment.id, editFormData);
+      console.log('🚀 Iniciando edición de cita...');
+      console.log('📋 Datos del formulario de edición:', editFormData);
       
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Validaciones
+      const validationErrors = [];
       
-      // Actualizar la cita en la lista
-      setAppointments(prev => prev.map(apt => 
-        apt.id === selectedAppointment.id 
-          ? {
-              ...apt,
-              client: {
-                ...apt.client,
-                firstName: editFormData.clientName.split(' ')[0],
-                lastName: editFormData.clientName.split(' ')[1] || '',
-                email: apt.client?.email || ''
-              },
-              appointmentDate: editFormData.date,
-              appointmentTime: editFormData.startTime,
-              employee: employees.find(emp => emp.id === editFormData.employeeId),
-              treatments: editFormData.selectedTreatments.map(id => ({
-                id: id,
-                name: treatments.find(t => t.id === id)?.name || '',
-                duration: treatments.find(t => t.id === id)?.duration || 30,
-                price: treatments.find(t => t.id === id)?.price || 0
-              })),
-              totalAmount: editFormData.selectedTreatments.reduce((total, id) => {
-                const treatment = treatments.find(t => t.id === id);
-                return total + (treatment?.price || 0);
-              }, 0)
-            } as Appointment
-          : apt
-      ));
+      if (!editFormData.clientId || editFormData.clientId.trim() === '') {
+        validationErrors.push('Debe seleccionar un cliente válido');
+      }
       
-      handleCloseEditModal();
+      if (!editFormData.date || editFormData.date.trim() === '') {
+        validationErrors.push('Debe seleccionar una fecha');
+      }
       
-    } catch (error) {
-      console.error('Error updating appointment:', error);
+      if (!editFormData.startTime || editFormData.startTime.trim() === '') {
+        validationErrors.push('Debe especificar la hora de inicio');
+      }
+      
+      if (!editFormData.endTime || editFormData.endTime.trim() === '') {
+        validationErrors.push('Debe especificar la hora de fin');
+      }
+      
+      if (!editFormData.selectedTreatments || editFormData.selectedTreatments.length === 0) {
+        validationErrors.push('Debe seleccionar al menos un tratamiento');
+      }
+      
+      if (validationErrors.length > 0) {
+        console.error('❌ Errores de validación:', validationErrors);
+        toast.error(`Errores de validación:\n${validationErrors.join('\n')}`);
+        return;
+      }
+
+      // Preparar datos para el backend
+      const updateData: Partial<AppointmentFormData> = {
+        employeeId: editFormData.employeeId || undefined,
+        date: editFormData.date,
+        startTime: editFormData.startTime,
+        endTime: editFormData.endTime,
+        notes: editFormData.notes || undefined,
+        treatments: editFormData.selectedTreatments.map(treatmentId => ({
+          treatmentId,
+          quantity: 1,
+          notes: undefined
+        }))
+      };
+
+      console.log('📤 Enviando datos de actualización al servidor:', updateData);
+      
+      // Llamar al servicio para actualizar la cita
+      const response = await appointmentService.updateAppointment(selectedAppointment.id, updateData);
+      
+      console.log('📥 Respuesta del servidor:', response);
+      
+      if (response.success) {
+        console.log('✅ Cita actualizada exitosamente');
+        toast.success('Cita actualizada exitosamente');
+        handleCloseEditModal();
+        // Recargar las citas para mostrar los cambios
+        loadAppointments();
+      } else {
+        console.error('❌ Error en la respuesta del servidor:', response);
+        toast.error('Error al actualizar la cita: ' + (response.message || 'Error desconocido'));
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error updating appointment:', error);
+      console.error('📋 Error details:', error.response?.data || error.message);
+      
+      let errorMessage = 'Error desconocido al actualizar la cita';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error('Error al actualizar la cita: ' + errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -1112,23 +1151,53 @@ const Appointments: React.FC = () => {
     
     setSubmitting(true);
     try {
-      // Aquí iría la lógica para cancelar la cita
-      console.log('Cancelling appointment:', selectedAppointment.id, 'Reason:', cancelReason);
+      console.log('🚀 Iniciando cancelación de cita...');
+      console.log('📋 ID de cita:', selectedAppointment.id);
+      console.log('📝 Motivo:', cancelReason);
       
-      // Simular delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Validar que se haya proporcionado un motivo
+      if (!cancelReason.trim()) {
+        toast.error('Debe proporcionar un motivo para la cancelación');
+        return;
+      }
       
-      // Actualizar el estado de la cita a cancelada
-      setAppointments(prev => prev.map(apt => 
-        apt.id === selectedAppointment.id 
-          ? { ...apt, status: 'CANCELLED' as const }
-          : apt
-      ));
+      // Verificar que la cita se puede cancelar
+      if (!canCancelAppointment(selectedAppointment)) {
+        toast.error('Esta cita no se puede cancelar');
+        return;
+      }
       
-      handleCloseCancelModal();
+      console.log('📤 Enviando solicitud de cancelación al servidor...');
       
-    } catch (error) {
-      console.error('Error cancelling appointment:', error);
+      // Llamar al servicio para cancelar la cita
+      const response = await appointmentService.cancelAppointment(selectedAppointment.id, cancelReason);
+      
+      console.log('📥 Respuesta del servidor:', response);
+      
+      if (response.success) {
+        console.log('✅ Cita cancelada exitosamente');
+        toast.success('Cita cancelada exitosamente');
+        handleCloseCancelModal();
+        // Recargar las citas para mostrar los cambios
+        loadAppointments();
+      } else {
+        console.error('❌ Error en la respuesta del servidor:', response);
+        toast.error('Error al cancelar la cita: ' + (response.message || 'Error desconocido'));
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error cancelling appointment:', error);
+      console.error('📋 Error details:', error.response?.data || error.message);
+      
+      let errorMessage = 'Error desconocido al cancelar la cita';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error('Error al cancelar la cita: ' + errorMessage);
     } finally {
       setSubmitting(false);
     }
