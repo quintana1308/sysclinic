@@ -507,8 +507,8 @@ export const updateAppointment = async (
     `, [
       employeeId !== undefined ? employeeId : appointment.employeeId,
       date || appointment.date,
-      date && startTime ? `${date} ${startTime}` : appointment.startTime,
-      date && endTime ? `${date} ${endTime}` : appointment.endTime,
+      startTime || appointment.startTime,
+      endTime || appointment.endTime,
       notes !== undefined ? notes : appointment.notes,
       totalAmount,
       id
