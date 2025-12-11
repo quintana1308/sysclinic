@@ -60,8 +60,8 @@ export const getEmployees = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener empleados paginados
-    const employees = await query<any>(`
+    // Obtener todos los empleados sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allEmployees = await query<any>(`
       SELECT 
         e.id,
         e.userId,
@@ -87,8 +87,10 @@ export const getEmployees = async (
       ${whereClause}
       GROUP BY e.id
       ORDER BY e.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const employees = allEmployees.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,

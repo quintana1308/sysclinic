@@ -81,8 +81,8 @@ export const getAppointments = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener citas paginadas
-    const appointments = await query<any>(`
+    // Obtener todas las citas sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allAppointments = await query<any>(`
       SELECT 
         a.*,
         c.clientCode,
@@ -108,8 +108,10 @@ export const getAppointments = async (
       ${whereClause}
       GROUP BY a.id
       ORDER BY a.date DESC, a.startTime DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const appointments = allAppointments.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,

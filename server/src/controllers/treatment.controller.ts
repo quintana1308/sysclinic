@@ -68,8 +68,8 @@ export const getTreatments = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener tratamientos paginados
-    const treatments = await query<any>(`
+    // Obtener todos los tratamientos sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allTreatments = await query<any>(`
       SELECT 
         t.*,
         COUNT(DISTINCT at.appointmentId) as totalAppointments,
@@ -82,8 +82,10 @@ export const getTreatments = async (
       ${whereClause}
       GROUP BY t.id
       ORDER BY t.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const treatments = allTreatments.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,

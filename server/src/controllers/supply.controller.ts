@@ -52,14 +52,13 @@ export const getSupplies = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener supplies paginados
-    const supplies = await query<any>(`
+    // Obtener todos los suministros sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allSupplies = await query<any>(`
       SELECT 
         s.id,
         s.name,
         s.description,
         s.category,
-        s.unit,
         s.stock,
         s.minStock,
         s.maxStock,
@@ -87,8 +86,10 @@ export const getSupplies = async (
       FROM supplies s
       ${whereClause}
       ORDER BY s.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const supplies = allSupplies.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,
@@ -561,16 +562,12 @@ export const getSupplyMovements = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener movimientos paginados
-    const movements = await query<any>(`
+    // Obtener todos los movimientos sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allMovements = await query<any>(`
       SELECT 
         sm.id,
-        sm.supplyId,
-        sm.type as originalType,
         sm.quantity,
-        sm.unitCost,
         sm.reason,
-        sm.reference,
         sm.createdBy,
         sm.createdAt,
         CASE 
@@ -592,8 +589,10 @@ export const getSupplyMovements = async (
       FROM supply_movements sm
       WHERE sm.supplyId = ?
       ORDER BY sm.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [id, limit, offset]);
+    `, [id]);
+
+    // Aplicar paginación manual
+    const movements = allMovements.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,
@@ -652,16 +651,13 @@ export const getAllMovements = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener movimientos paginados
-    const movements = await query<any>(`
+    // Obtener todos los movimientos sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allMovements = await query<any>(`
       SELECT 
         sm.id,
         sm.supplyId,
-        sm.type as originalType,
         sm.quantity,
-        sm.unitCost,
         sm.reason,
-        sm.reference,
         sm.createdBy,
         sm.createdAt,
         s.name as supplyName,
@@ -686,8 +682,10 @@ export const getAllMovements = async (
       LEFT JOIN supplies s ON sm.supplyId = s.id
       ${whereClause}
       ORDER BY sm.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const movements = allMovements.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,

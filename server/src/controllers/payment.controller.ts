@@ -237,8 +237,8 @@ export const getPayments = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener pagos paginados
-    const payments = await query<any>(`
+    // Obtener todos los pagos sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    const allPayments = await query<any>(`
       SELECT 
         p.*,
         uc.firstName as clientFirstName,
@@ -257,8 +257,10 @@ export const getPayments = async (
       ${whereClause}
       GROUP BY p.id
       ORDER BY p.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, params);
+
+    // Aplicar paginación manual
+    const payments = allPayments.slice(offset, offset + limit);
 
     const response: PaginatedResponse = {
       success: true,

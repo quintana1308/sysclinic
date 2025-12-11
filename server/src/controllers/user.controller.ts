@@ -50,7 +50,7 @@ export const getUsers = async (
       whereClause += ` AND (LOWER(r.name) IN ('empleado', 'administrador', 'cliente') OR r.name IS NULL)`;
     }
 
-    // Consulta principal con información de roles y empresas
+    // Consulta principal sin LIMIT/OFFSET para compatibilidad Railway MySQL
     const usersQuery = `
       SELECT 
         u.id,
@@ -74,10 +74,7 @@ export const getUsers = async (
       HAVING (GROUP_CONCAT(DISTINCT r.name SEPARATOR '|') IS NULL OR 
               GROUP_CONCAT(DISTINCT LOWER(r.name) SEPARATOR '|') REGEXP 'empleado|administrador|cliente')
       ORDER BY u.createdAt DESC
-      LIMIT ? OFFSET ?
     `;
-
-    params.push(limit, offset);
 
     console.log('🔍 Ejecutando consulta de usuarios:', usersQuery);
     console.log('📋 Parámetros:', params);
@@ -132,14 +129,16 @@ export const getUsers = async (
               GROUP_CONCAT(DISTINCT LOWER(r.name) SEPARATOR '|') REGEXP 'empleado|administrador|cliente')
     `;
 
-    const countParams = params.slice(0, -2); // Remover limit y offset
-    const [{ total }] = await query(countQuery, countParams);
+    // Aplicar paginación manual
+    const paginatedUsers = formattedUsers.slice(offset, offset + limit);
+    
+    const [{ total }] = await query(countQuery, params);
 
-    console.log(`✅ Usuarios encontrados: ${formattedUsers.length} de ${total}`);
+    console.log(`✅ Usuarios encontrados: ${paginatedUsers.length} de ${total}`);
 
     res.json({
       success: true,
-      data: formattedUsers,
+      data: paginatedUsers,
       pagination: {
         page,
         limit,
