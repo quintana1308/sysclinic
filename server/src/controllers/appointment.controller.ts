@@ -547,6 +547,8 @@ export const updateAppointmentStatus = async (
     const { id } = req.params;
     const { status } = req.body;
 
+    console.log('🔄 Actualizando estado de cita:', { id, status });
+
     // Validar que el estado sea válido
     const validStatuses = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
     if (!validStatuses.includes(status)) {
@@ -562,6 +564,12 @@ export const updateAppointmentStatus = async (
       throw new AppError('Cita no encontrada', 404);
     }
 
+    console.log('📋 Cita encontrada:', { 
+      id: appointment.id, 
+      currentStatus: appointment.status, 
+      newStatus: status 
+    });
+
     // Actualizar el estado
     await query(`
       UPDATE appointments 
@@ -569,9 +577,30 @@ export const updateAppointmentStatus = async (
       WHERE id = ?
     `, [status, id]);
 
+    let invoiceId = null;
+
+    // Si el estado cambia a COMPLETED, generar factura automáticamente
+    if (status === 'COMPLETED' && appointment.status !== 'COMPLETED') {
+      console.log('💰 Cita completada - generando factura automáticamente...');
+      
+      try {
+        // Importar la función de generación de facturas
+        const { generateInvoiceFromAppointment } = require('./invoice.controller');
+        
+        invoiceId = await generateInvoiceFromAppointment(id, req.user?.id);
+        
+        console.log('✅ Factura generada exitosamente:', invoiceId);
+      } catch (invoiceError) {
+        console.error('❌ Error al generar factura:', invoiceError);
+        // No fallar la actualización del estado si hay error en la factura
+        console.log('⚠️ Continuando con actualización de estado sin factura');
+      }
+    }
+
     const response: ApiResponse = {
       success: true,
-      message: 'Estado de cita actualizado exitosamente'
+      message: `Cita marcada como ${status.toLowerCase()}${invoiceId ? '. Factura generada automáticamente.' : ''}`,
+      data: invoiceId ? { invoiceId } : undefined
     };
 
     res.json(response);
