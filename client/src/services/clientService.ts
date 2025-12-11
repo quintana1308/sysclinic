@@ -7,6 +7,29 @@ export interface Client {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  // Campos directos del cliente (desde getClientById)
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: string;
+  age?: number;
+  gender?: string;
+  address?: string;
+  emergencyContact?: string;
+  medicalConditions?: string;
+  allergies?: string;
+  companyId?: string;
+  // Estadísticas
+  totalAppointments?: number;
+  completedAppointments?: number;
+  cancelledAppointments?: number;
+  upcomingAppointments?: number;
+  totalPaid?: number;
+  totalPayments?: number;
+  totalSpent?: number;
+  lastAppointment?: string;
+  // Campos legacy para compatibilidad
   user?: {
     firstName: string;
     lastName: string;
@@ -16,10 +39,6 @@ export interface Client {
     gender?: string;
     address?: string;
   };
-  totalAppointments?: number;
-  completedAppointments?: number;
-  totalSpent?: number;
-  lastAppointment?: string;
 }
 
 export interface ClientFormData {

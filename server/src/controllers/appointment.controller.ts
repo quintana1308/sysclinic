@@ -570,6 +570,13 @@ export const updateAppointmentStatus = async (
       newStatus: status 
     });
 
+    console.log('🔍 Verificando condición para generar factura:');
+    console.log('   - Nuevo estado:', status);
+    console.log('   - Estado actual:', appointment.status);
+    console.log('   - ¿Es COMPLETED?:', status === 'COMPLETED');
+    console.log('   - ¿No era COMPLETED antes?:', appointment.status !== 'COMPLETED');
+    console.log('   - ¿Debe generar factura?:', status === 'COMPLETED' && appointment.status !== 'COMPLETED');
+
     // Actualizar el estado
     await query(`
       UPDATE appointments 
@@ -579,11 +586,13 @@ export const updateAppointmentStatus = async (
 
     let invoiceId = null;
 
-    // Si el estado cambia a COMPLETED, generar factura automáticamente
-    if (status === 'COMPLETED' && appointment.status !== 'COMPLETED') {
-      console.log('💰 Cita completada - generando factura automáticamente...');
+    // Si el estado cambia a CONFIRMED, generar factura automáticamente
+    if (status === 'CONFIRMED' && appointment.status !== 'CONFIRMED') {
+      console.log('💰 ¡CONDICIÓN CUMPLIDA! Cita completada - generando factura automáticamente...');
       
       try {
+        console.log('🔍 Paso 1: Obteniendo información de la cita con tratamientos...');
+        
         // Obtener información de la cita con tratamientos para generar factura
         const appointmentWithTreatments = await queryOne<any>(`
           SELECT 
@@ -601,13 +610,27 @@ export const updateAppointmentStatus = async (
           GROUP BY a.id
         `, [id]);
 
+        console.log('📋 Datos de cita obtenidos:', {
+          found: !!appointmentWithTreatments,
+          clientId: appointmentWithTreatments?.clientId,
+          clientName: appointmentWithTreatments ? `${appointmentWithTreatments.clientFirstName} ${appointmentWithTreatments.clientLastName}` : 'N/A',
+          treatmentNames: appointmentWithTreatments?.treatmentNames,
+          totalAmount: appointmentWithTreatments?.totalAmount
+        });
+
         if (appointmentWithTreatments) {
+          console.log('🔍 Paso 2: Verificando si ya existe factura...');
+          
           // Verificar si ya existe una factura para esta cita
           const existingInvoice = await queryOne(`
             SELECT id FROM invoices WHERE appointmentId = ?
           `, [id]);
 
+          console.log('📄 Factura existente:', existingInvoice ? existingInvoice.id : 'No existe');
+
           if (!existingInvoice) {
+            console.log('🔍 Paso 3: Creando nueva factura...');
+            
             const newInvoiceId = generateId();
             
             // Asegurar que el monto sea un número válido
@@ -626,6 +649,15 @@ export const updateAppointmentStatus = async (
             const dueDate = new Date(appointmentDate);
             dueDate.setDate(dueDate.getDate() + 30);
 
+            console.log('📝 Datos de factura a insertar:', {
+              id: newInvoiceId,
+              clientId: appointmentWithTreatments.clientId,
+              appointmentId: id,
+              amount: amount,
+              description: description,
+              dueDate: dueDate.toISOString().split('T')[0]
+            });
+
             await query(`
               INSERT INTO invoices (
                 id, clientId, appointmentId, amount, description, dueDate, status, createdAt, updatedAt
@@ -641,18 +673,25 @@ export const updateAppointmentStatus = async (
             ]);
 
             invoiceId = newInvoiceId;
-            console.log('✅ Factura generada exitosamente:', invoiceId);
+            console.log('✅ ¡FACTURA GENERADA EXITOSAMENTE!:', invoiceId);
           } else {
             invoiceId = existingInvoice.id;
             console.log('ℹ️ Ya existe factura para esta cita:', invoiceId);
           }
+        } else {
+          console.log('❌ No se pudo obtener información de la cita con tratamientos');
         }
       } catch (invoiceError: any) {
-        console.error('❌ Error al generar factura:', invoiceError);
-        console.error('📋 Stack trace:', invoiceError.stack);
+        console.error('❌ ERROR CRÍTICO al generar factura:', invoiceError);
+        console.error('📋 Stack trace completo:', invoiceError.stack);
+        console.error('📋 Mensaje de error:', invoiceError.message);
+        console.error('📋 SQL Error Code:', invoiceError.code);
         // No fallar la actualización del estado si hay error en la factura
         console.log('⚠️ Continuando con actualización de estado sin factura');
       }
+    } else {
+      console.log('❌ Condición NO cumplida para generar factura');
+      console.log('   - Razón: El estado no cambió a COMPLETED o ya era COMPLETED');
     }
 
     const response: ApiResponse = {

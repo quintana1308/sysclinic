@@ -80,27 +80,21 @@ const PlusIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Interfaces
-interface Client {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  age?: number;
-  address?: string;
+// Interfaces - Usar la interface del servicio y extender con campos locales
+interface Client extends ApiClient {
+  // Campos adicionales para la vista local
   status: 'active' | 'inactive';
-  totalAppointments: number;
   clientSince: string;
-  lastAppointment?: string;
-  birthDate?: string;
-  gender?: string;
-  emergencyContact?: string;
-  medicalConditions?: string;
-  allergies?: string;
+  fullName?: string;
+  appointmentsCount?: number;
+  totalRevenue?: number;
   hasPendingInvoices?: boolean;
   hasUpcomingAppointments?: boolean;
   hasConfirmedAppointments?: boolean;
+  // Campos requeridos para compatibilidad
+  phone: string;
+  totalAppointments: number;
+  birthDate?: string;
 }
 
 interface NewClientForm {
@@ -656,71 +650,118 @@ const Clients: React.FC = () => {
     };
   };
 
-  const handleEditClient = (client: Client) => {
-    console.log('🔍 Datos del cliente para editar:', {
-      id: client.id,
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email,
-      phone: client.phone,
-      birthDate: client.birthDate,
-      age: client.age,
-      gender: client.gender,
-      emergencyContact: client.emergencyContact,
-      address: client.address,
-      medicalConditions: client.medicalConditions,
-      allergies: client.allergies
-    });
+  const handleEditClient = async (client: Client) => {
+    console.log('🔍 Iniciando edición de cliente:', client.id);
     
-    // Función para convertir género de BD a formulario
-    const unmapGender = (gender: string): string => {
-      const genderMap: { [key: string]: string } = {
-        'M': 'masculino',
-        'F': 'femenino',
-        'Other': 'otro'
-      };
-      return genderMap[gender] || '';
-    };
-    
-    // Función para formatear fecha para input type="date" (YYYY-MM-DD)
-    const formatDateForInput = (dateString: string): string => {
-      if (!dateString) return '';
-      try {
-        const date = new Date(dateString);
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD
-      } catch (error) {
-        console.error('Error formateando fecha:', error);
-        return '';
+    try {
+      setSubmitting(true);
+      
+      // Obtener datos completos del cliente desde el backend
+      const response = await clientService.getClientById(client.id);
+      
+      if (response.success) {
+        const fullClientData = response.data;
+        
+        console.log('📋 Datos completos del cliente obtenidos:', {
+          id: fullClientData.id,
+          firstName: fullClientData.firstName,
+          lastName: fullClientData.lastName,
+          email: fullClientData.email,
+          phone: fullClientData.phone,
+          dateOfBirth: fullClientData.dateOfBirth,
+          age: fullClientData.age,
+          gender: fullClientData.gender,
+          emergencyContact: fullClientData.emergencyContact,
+          address: fullClientData.address,
+          medicalConditions: fullClientData.medicalConditions,
+          allergies: fullClientData.allergies
+        });
+        
+        // Función para convertir género de BD a formulario
+        const unmapGender = (gender: string): string => {
+          const genderMap: { [key: string]: string } = {
+            'M': 'masculino',
+            'F': 'femenino',
+            'Other': 'otro'
+          };
+          return genderMap[gender] || '';
+        };
+        
+        // Función para formatear fecha para input type="date" (YYYY-MM-DD)
+        const formatDateForInput = (dateString: string): string => {
+          if (!dateString) return '';
+          try {
+            const date = new Date(dateString);
+            return date.toISOString().split('T')[0]; // YYYY-MM-DD
+          } catch (error) {
+            console.error('Error formateando fecha:', error);
+            return '';
+          }
+        };
+        
+        // Convertir datos del backend al formato local
+        const localClientData: Client = {
+          ...fullClientData,
+          status: fullClientData.isActive ? 'active' : 'inactive',
+          clientSince: new Date(fullClientData.createdAt).toLocaleDateString('es-ES'),
+          fullName: `${fullClientData.firstName} ${fullClientData.lastName}`.trim(),
+          appointmentsCount: fullClientData.totalAppointments || 0,
+          totalRevenue: fullClientData.totalPaid || 0,
+          hasPendingInvoices: false,
+          hasUpcomingAppointments: (fullClientData.upcomingAppointments || 0) > 0,
+          hasConfirmedAppointments: false,
+          // Asegurar campos requeridos
+          phone: fullClientData.phone || '',
+          totalAppointments: fullClientData.totalAppointments || 0,
+          birthDate: fullClientData.dateOfBirth
+        };
+        
+        setSelectedClient(localClientData);
+        
+        // Prellenar el formulario con los datos completos del cliente
+        const formData = {
+          firstName: fullClientData.firstName || '',
+          lastName: fullClientData.lastName || '',
+          email: fullClientData.email || '',
+          password: '', // No mostrar contraseña existente por seguridad
+          phone: fullClientData.phone || '',
+          birthDate: formatDateForInput(fullClientData.dateOfBirth || ''),
+          age: fullClientData.age?.toString() || '',
+          gender: unmapGender(fullClientData.gender || ''),
+          emergencyContact: fullClientData.emergencyContact || '',
+          address: fullClientData.address || '',
+          medicalConditions: fullClientData.medicalConditions || '',
+          allergies: fullClientData.allergies || ''
+        };
+        
+        console.log('📝 Datos del formulario prellenado:', {
+          ...formData,
+          birthDate: `"${formData.birthDate}" (original: "${fullClientData.dateOfBirth}")`,
+          gender: `"${formData.gender}" (original: "${fullClientData.gender}")`,
+          age: `"${formData.age}" (original: ${fullClientData.age})`
+        });
+        
+        setEditFormData(formData);
+        setShowEditClientModal(true);
       }
-    };
-    
-    setSelectedClient(client);
-    
-    // Prellenar el formulario con los datos del cliente
-    const formData = {
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email,
-      password: '', // No mostrar contraseña existente por seguridad
-      phone: client.phone || '',
-      birthDate: formatDateForInput(client.birthDate || ''),
-      age: client.age?.toString() || '',
-      gender: unmapGender(client.gender || ''),
-      emergencyContact: client.emergencyContact || '',
-      address: client.address || '',
-      medicalConditions: client.medicalConditions || '',
-      allergies: client.allergies || ''
-    };
-    
-    console.log('📝 Datos del formulario prellenado:', {
-      ...formData,
-      birthDate: `"${formData.birthDate}" (original: "${client.birthDate}")`,
-      gender: `"${formData.gender}" (original: "${client.gender}")`,
-      age: `"${formData.age}" (original: ${client.age})`
-    });
-    setEditFormData(formData);
-    
-    setShowEditClientModal(true);
+    } catch (error: any) {
+      console.error('Error obteniendo datos del cliente:', error);
+      
+      let errorMessage = 'No se pudieron cargar los datos del cliente';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -1265,20 +1306,8 @@ const Clients: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-pink-500">📞</span>
-                  <span className="text-sm text-gray-700">{client.phone}</span>
+                  <span className="text-sm text-gray-700">{client.phone || 'N/A'}</span>
                 </div>
-                {client.age && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">🎂</span>
-                    <span className="text-sm text-gray-700">{client.age} años</span>
-                  </div>
-                )}
-                {client.address && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">📍</span>
-                    <span className="text-sm text-gray-700 truncate">{client.address}</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1286,32 +1315,13 @@ const Clients: React.FC = () => {
             <div className="border-t border-gray-100 bg-gray-50 p-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-pink-600">{client.totalAppointments}</div>
+                  <div className="text-2xl font-bold text-pink-600">{client.totalAppointments || 0}</div>
                   <div className="text-xs text-gray-600">📅 Citas totales</div>
                 </div>
                 <div className="text-center">
                   <div className="text-sm font-medium text-gray-700">{client.clientSince}</div>
                   <div className="text-xs text-gray-600">🗓️ Cliente desde</div>
                 </div>
-              </div>
-              
-              {/* Indicadores adicionales */}
-              <div className="flex justify-center space-x-4 mt-3 pt-3 border-t border-gray-200">
-                {client.hasUpcomingAppointments && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    🔜 Próxima cita
-                  </span>
-                )}
-                {client.hasPendingInvoices && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                    💰 Factura pendiente
-                  </span>
-                )}
-                {client.hasConfirmedAppointments && (
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                    ✅ Cita confirmada
-                  </span>
-                )}
               </div>
             </div>
 

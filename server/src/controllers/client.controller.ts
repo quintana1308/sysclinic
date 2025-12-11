@@ -152,7 +152,8 @@ export const getClients = async (
     try {
       // Primero probar sin LIMIT/OFFSET
       const testQuery = await query<any>(`
-        SELECT c.id, c.clientCode, u.firstName, u.lastName
+        SELECT c.id, c.clientCode, c.createdAt, c.updatedAt, c.userId,
+               u.firstName, u.lastName, u.email, u.phone, u.isActive
         FROM clients c
         INNER JOIN users u ON c.userId = u.id
         ${whereClause}
@@ -175,11 +176,11 @@ export const getClients = async (
         emergencyContact: null,
         medicalConditions: null,
         allergies: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        email: '',
-        phone: null,
-        isActive: true,
+        createdAt: client.createdAt || new Date(),
+        updatedAt: client.updatedAt || new Date(),
+        email: client.email || '',
+        phone: client.phone || null,
+        isActive: client.isActive !== undefined ? client.isActive : true,
         totalAppointments: 0,
         completedAppointments: 0
       }));
@@ -241,38 +242,93 @@ export const getClientById = async (
   try {
     const { id } = req.params;
 
+    console.log('🔍 Obteniendo cliente por ID:', id);
+
+    // Obtener datos completos del cliente
     const client = await queryOne<any>(`
       SELECT 
-        c.*,
+        c.id,
+        c.userId,
+        c.clientCode,
+        c.dateOfBirth,
+        c.age,
+        c.gender,
+        c.address,
+        c.emergencyContact,
+        c.medicalConditions,
+        c.allergies,
+        c.companyId,
+        c.createdAt,
+        c.updatedAt,
         u.firstName,
         u.lastName,
         u.email,
         u.phone,
         u.isActive,
-        u.createdAt as userCreatedAt,
-        COUNT(DISTINCT a.id) as totalAppointments,
-        COUNT(DISTINCT CASE WHEN a.status = 'COMPLETED' THEN a.id END) as completedAppointments,
-        SUM(CASE WHEN p.status = 'PAID' THEN p.amount ELSE 0 END) as totalPaid
+        u.createdAt as userCreatedAt
       FROM clients c
       INNER JOIN users u ON c.userId = u.id
-      LEFT JOIN appointments a ON c.id = a.clientId
-      LEFT JOIN payments p ON c.id = p.clientId
       WHERE c.id = ?
-      GROUP BY c.id
     `, [id]);
 
     if (!client) {
       throw new AppError('Cliente no encontrado', 404);
     }
 
+    console.log('📋 Cliente encontrado:', {
+      id: client.id,
+      name: `${client.firstName} ${client.lastName}`,
+      email: client.email,
+      phone: client.phone,
+      clientCode: client.clientCode
+    });
+
+    // Obtener estadísticas de citas por separado
+    const appointmentStats = await queryOne<any>(`
+      SELECT 
+        COUNT(*) as totalAppointments,
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completedAppointments,
+        COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelledAppointments,
+        COUNT(CASE WHEN status IN ('SCHEDULED', 'CONFIRMED') THEN 1 END) as upcomingAppointments
+      FROM appointments 
+      WHERE clientId = ?
+    `, [id]);
+
+    // Obtener total pagado por separado
+    const paymentStats = await queryOne<any>(`
+      SELECT 
+        COALESCE(SUM(CASE WHEN status = 'PAID' THEN amount ELSE 0 END), 0) as totalPaid,
+        COUNT(CASE WHEN status = 'PAID' THEN 1 END) as totalPayments
+      FROM payments 
+      WHERE clientId = ?
+    `, [id]);
+
+    // Combinar todos los datos
+    const completeClient = {
+      ...client,
+      totalAppointments: appointmentStats?.totalAppointments || 0,
+      completedAppointments: appointmentStats?.completedAppointments || 0,
+      cancelledAppointments: appointmentStats?.cancelledAppointments || 0,
+      upcomingAppointments: appointmentStats?.upcomingAppointments || 0,
+      totalPaid: paymentStats?.totalPaid || 0,
+      totalPayments: paymentStats?.totalPayments || 0
+    };
+
+    console.log('📊 Estadísticas del cliente:', {
+      totalAppointments: completeClient.totalAppointments,
+      completedAppointments: completeClient.completedAppointments,
+      totalPaid: completeClient.totalPaid
+    });
+
     const response: ApiResponse = {
       success: true,
       message: 'Cliente obtenido exitosamente',
-      data: client
+      data: completeClient
     };
 
     res.json(response);
   } catch (error) {
+    console.error('❌ Error obteniendo cliente por ID:', error);
     next(error);
   }
 };
