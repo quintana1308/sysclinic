@@ -230,8 +230,8 @@ export const getDashboardData = async (
         (SELECT COUNT(*) FROM supplies WHERE stock = 0) as outOfStockItems
     `, [companyId, companyId, companyId, companyId, companyId]);
     
-    // Obtener citas recientes
-    const recentAppointments = await query<any>(`
+    // Obtener todas las citas recientes sin LIMIT para compatibilidad Railway MySQL
+    const allRecentAppointments = await query<any>(`
       SELECT 
         a.id,
         a.date,
@@ -259,8 +259,10 @@ export const getDashboardData = async (
       WHERE uc.companyId = ?
       GROUP BY a.id
       ORDER BY a.createdAt DESC
-      LIMIT 5
     `, [companyId]);
+
+    // Aplicar límite manual
+    const recentAppointments = allRecentAppointments.slice(0, 5);
 
     // Procesar tratamientos
     const processedAppointments = recentAppointments.map((appointment: any) => ({
@@ -300,8 +302,8 @@ export const getRecentAppointments = async (
     const companyId = req.user?.currentCompanyId;
     console.log('🔍 Backend - Usuario completo:', req.user);
 
-    // Consulta para obtener citas futuras (desde ahora en adelante)
-    const appointments = await query<any>(`
+    // Obtener todas las citas futuras sin LIMIT para compatibilidad Railway MySQL
+    const allAppointments = await query<any>(`
       SELECT 
         a.id,
         a.date,
@@ -331,8 +333,10 @@ export const getRecentAppointments = async (
           OR (a.date = CURDATE() AND a.startTime >= NOW())
         )
       ORDER BY a.date ASC, a.startTime ASC
-      LIMIT ?
-    `, [companyId, companyId, limit]);
+    `, [companyId, companyId]);
+
+    // Aplicar límite manual
+    const appointments = allAppointments.slice(0, limit);
 
     console.log('🔍 Backend - Datos crudos de citas desde BD:', appointments);
     console.log('🔍 Backend - CompanyId usado:', companyId);
@@ -591,8 +595,8 @@ export const getClientStats = async (
       INNER JOIN users u ON c.userId = u.id
     `);
 
-    // Clientes más activos
-    const topClients = await query<any>(`
+    // Obtener todos los clientes activos sin LIMIT para compatibilidad Railway MySQL
+    const allTopClients = await query<any>(`
       SELECT 
         c.id,
         c.clientCode,
@@ -610,8 +614,10 @@ export const getClientStats = async (
       GROUP BY c.id
       HAVING totalAppointments > 0
       ORDER BY completedAppointments DESC, totalSpent DESC
-      LIMIT 10
     `);
+
+    // Aplicar límite manual
+    const topClients = allTopClients.slice(0, 10);
 
     const response: ApiResponse = {
       success: true,
