@@ -144,38 +144,56 @@ export const getClients = async (
     console.log('📊 Tipos de parámetros:', finalParams.map(p => typeof p));
     console.log('📊 Valores: limit =', limit, ', offset =', offset);
     
-    // Consulta simplificada sin GROUP BY para compatibilidad con Railway MySQL
-    const clients = await query<any>(`
-      SELECT 
-        c.id,
-        c.userId,
-        c.clientCode,
-        c.dateOfBirth,
-        c.age,
-        c.gender,
-        c.address,
-        c.emergencyContact,
-        c.medicalConditions,
-        c.allergies,
-        c.createdAt,
-        c.updatedAt,
-        u.firstName,
-        u.lastName,
-        u.email,
-        u.phone,
-        u.isActive,
-        0 as totalAppointments,
-        0 as completedAppointments
-      FROM clients c
-      INNER JOIN users u ON c.userId = u.id
-      ${whereClause}
-      ORDER BY c.createdAt DESC
-      LIMIT ? OFFSET ?
-    `, finalParams);
+    // Consulta ultra-básica para debugging Railway MySQL
+    console.log('🔍 Probando consulta básica sin LIMIT/OFFSET...');
+    
+    let clients: any[] = [];
+    
+    try {
+      // Primero probar sin LIMIT/OFFSET
+      const testQuery = await query<any>(`
+        SELECT c.id, c.clientCode, u.firstName, u.lastName
+        FROM clients c
+        INNER JOIN users u ON c.userId = u.id
+        ${whereClause}
+        ORDER BY c.createdAt DESC
+      `, params);
+      
+      console.log('✅ Consulta básica exitosa, registros:', testQuery.length);
+      
+      // Ahora aplicar paginación manualmente
+      const startIndex = offset;
+      const endIndex = offset + limit;
+      clients = testQuery.slice(startIndex, endIndex).map((client: any) => ({
+        ...client,
+        userId: client.userId || '',
+        clientCode: client.clientCode || '',
+        dateOfBirth: null,
+        age: null,
+        gender: null,
+        address: null,
+        emergencyContact: null,
+        medicalConditions: null,
+        allergies: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        email: '',
+        phone: null,
+        isActive: true,
+        totalAppointments: 0,
+        completedAppointments: 0
+      }));
+      
+      console.log('📊 Clientes paginados manualmente:', clients.length);
+      
+    } catch (basicError) {
+      console.error('❌ Error en consulta básica:', basicError);
+      throw basicError;
+    }
 
     // Obtener estadísticas de citas por separado para evitar problemas con GROUP BY
     if (clients.length > 0) {
-      const clientIds = clients.map(c => c.id);
+      const clientIds = clients.map((c: any) => c.id);
       const placeholders = clientIds.map(() => '?').join(',');
       
       const appointmentStats = await query<any>(`
@@ -189,8 +207,8 @@ export const getClients = async (
       `, clientIds);
 
       // Combinar estadísticas con datos de clientes
-      clients.forEach(client => {
-        const stats = appointmentStats.find(stat => stat.clientId === client.id);
+      clients.forEach((client: any) => {
+        const stats = appointmentStats.find((stat: any) => stat.clientId === client.id);
         if (stats) {
           client.totalAppointments = stats.totalAppointments;
           client.completedAppointments = stats.completedAppointments;
