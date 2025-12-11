@@ -144,6 +144,7 @@ export const getClients = async (
     console.log('📊 Tipos de parámetros:', finalParams.map(p => typeof p));
     console.log('📊 Valores: limit =', limit, ', offset =', offset);
     
+    // Consulta simplificada sin GROUP BY para compatibilidad con Railway MySQL
     const clients = await query<any>(`
       SELECT 
         c.id,
@@ -163,16 +164,39 @@ export const getClients = async (
         u.email,
         u.phone,
         u.isActive,
-        COUNT(DISTINCT a.id) as totalAppointments,
-        COUNT(DISTINCT CASE WHEN a.status = 'COMPLETED' THEN a.id END) as completedAppointments
+        0 as totalAppointments,
+        0 as completedAppointments
       FROM clients c
       INNER JOIN users u ON c.userId = u.id
-      LEFT JOIN appointments a ON c.id = a.clientId
       ${whereClause}
-      GROUP BY c.id
       ORDER BY c.createdAt DESC
       LIMIT ? OFFSET ?
     `, finalParams);
+
+    // Obtener estadísticas de citas por separado para evitar problemas con GROUP BY
+    if (clients.length > 0) {
+      const clientIds = clients.map(c => c.id);
+      const placeholders = clientIds.map(() => '?').join(',');
+      
+      const appointmentStats = await query<any>(`
+        SELECT 
+          a.clientId,
+          COUNT(*) as totalAppointments,
+          COUNT(CASE WHEN a.status = 'COMPLETED' THEN 1 END) as completedAppointments
+        FROM appointments a
+        WHERE a.clientId IN (${placeholders})
+        GROUP BY a.clientId
+      `, clientIds);
+
+      // Combinar estadísticas con datos de clientes
+      clients.forEach(client => {
+        const stats = appointmentStats.find(stat => stat.clientId === client.id);
+        if (stats) {
+          client.totalAppointments = stats.totalAppointments;
+          client.completedAppointments = stats.completedAppointments;
+        }
+      });
+    }
 
     const response: PaginatedResponse = {
       success: true,
