@@ -584,14 +584,72 @@ export const updateAppointmentStatus = async (
       console.log('💰 Cita completada - generando factura automáticamente...');
       
       try {
-        // Importar la función de generación de facturas
-        const { generateInvoiceFromAppointment } = require('./invoice.controller');
-        
-        invoiceId = await generateInvoiceFromAppointment(id, req.user?.id);
-        
-        console.log('✅ Factura generada exitosamente:', invoiceId);
-      } catch (invoiceError) {
+        // Obtener información de la cita con tratamientos para generar factura
+        const appointmentWithTreatments = await queryOne<any>(`
+          SELECT 
+            a.*,
+            uc.firstName as clientFirstName,
+            uc.lastName as clientLastName,
+            GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames,
+            SUM(at.price * at.quantity) as totalAmount
+          FROM appointments a
+          INNER JOIN clients c ON a.clientId = c.id
+          INNER JOIN users uc ON c.userId = uc.id
+          LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
+          LEFT JOIN treatments t ON at.treatmentId = t.id
+          WHERE a.id = ?
+          GROUP BY a.id
+        `, [id]);
+
+        if (appointmentWithTreatments) {
+          // Verificar si ya existe una factura para esta cita
+          const existingInvoice = await queryOne(`
+            SELECT id FROM invoices WHERE appointmentId = ?
+          `, [id]);
+
+          if (!existingInvoice) {
+            const newInvoiceId = generateId();
+            
+            // Asegurar que el monto sea un número válido
+            let amount = 0;
+            if (appointmentWithTreatments.totalAmount && !isNaN(parseFloat(appointmentWithTreatments.totalAmount))) {
+              amount = parseFloat(appointmentWithTreatments.totalAmount);
+            }
+            
+            console.log('💰 Monto calculado para la factura:', amount, 'desde totalAmount:', appointmentWithTreatments.totalAmount);
+            
+            const clientName = `${appointmentWithTreatments.clientFirstName} ${appointmentWithTreatments.clientLastName}`;
+            const description = `Factura por ${appointmentWithTreatments.treatmentNames || 'Tratamientos'} - ${clientName}`;
+            
+            // Calcular fecha de vencimiento (30 días después de la cita)
+            const appointmentDate = new Date(appointmentWithTreatments.date);
+            const dueDate = new Date(appointmentDate);
+            dueDate.setDate(dueDate.getDate() + 30);
+
+            await query(`
+              INSERT INTO invoices (
+                id, clientId, appointmentId, amount, description, dueDate, status, createdAt, updatedAt
+              )
+              VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
+            `, [
+              newInvoiceId, 
+              appointmentWithTreatments.clientId, 
+              id, 
+              amount, 
+              description, 
+              dueDate.toISOString().split('T')[0]
+            ]);
+
+            invoiceId = newInvoiceId;
+            console.log('✅ Factura generada exitosamente:', invoiceId);
+          } else {
+            invoiceId = existingInvoice.id;
+            console.log('ℹ️ Ya existe factura para esta cita:', invoiceId);
+          }
+        }
+      } catch (invoiceError: any) {
         console.error('❌ Error al generar factura:', invoiceError);
+        console.error('📋 Stack trace:', invoiceError.stack);
         // No fallar la actualización del estado si hay error en la factura
         console.log('⚠️ Continuando con actualización de estado sin factura');
       }
