@@ -326,13 +326,15 @@ export const updateEmployee = async (
     const {
       firstName,
       lastName,
+      email,
       phone,
       position,
       specialties,
       schedule,
       salary,
       hireDate,
-      isActive
+      isActive,
+      role
     } = req.body;
 
     // Obtener empresa actual para filtrar (usar misma lógica que createEmployee)
@@ -397,6 +399,17 @@ export const updateEmployee = async (
       throw new AppError('Empleado no encontrado o no pertenece a tu empresa', 404);
     }
 
+    // Verificar si el email ya existe (si se está actualizando)
+    if (email && email.toLowerCase() !== employee.email?.toLowerCase()) {
+      const existingUser = await queryOne(`
+        SELECT id FROM users WHERE email = ? AND id != ?
+      `, [email.toLowerCase(), employee.userId]);
+
+      if (existingUser) {
+        throw new AppError('El email ya está registrado por otro usuario', 400);
+      }
+    }
+
     // Actualizar usuario
     const userUpdateFields = [];
     const userUpdateValues = [];
@@ -408,6 +421,10 @@ export const updateEmployee = async (
     if (lastName !== undefined) {
       userUpdateFields.push('lastName = ?');
       userUpdateValues.push(lastName);
+    }
+    if (email !== undefined) {
+      userUpdateFields.push('email = ?');
+      userUpdateValues.push(email.toLowerCase());
     }
     if (phone !== undefined) {
       userUpdateFields.push('phone = ?');
@@ -456,6 +473,10 @@ export const updateEmployee = async (
     if (isActive !== undefined) {
       employeeUpdateFields.push('isActive = ?');
       employeeUpdateValues.push(isActive ? 1 : 0);
+    }
+    if (role !== undefined) {
+      employeeUpdateFields.push('role = ?');
+      employeeUpdateValues.push(role);
     }
 
     if (employeeUpdateFields.length > 0) {

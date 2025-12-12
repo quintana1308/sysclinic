@@ -39,7 +39,11 @@ const Employees: React.FC = () => {
     email: '',
     phone: '',
     position: '',
+    specialties: '',
+    schedule: '',
     salary: '',
+    hireDate: '',
+    role: 'employee' as 'owner' | 'employee',
     isActive: true
   });
 
@@ -100,7 +104,11 @@ const Employees: React.FC = () => {
       email: employee.email || '',
       phone: employee.phone || '',
       position: employee.position || '',
+      specialties: employee.specialties || '',
+      schedule: employee.schedule ? JSON.stringify(employee.schedule) : '',
       salary: employee.salary ? employee.salary.toString() : '',
+      hireDate: employee.hireDate ? employee.hireDate.split('T')[0] : '',
+      role: employee.role || 'employee',
       isActive: employee.isActive === 1 || employee.isActive === true
     });
     setSelectedEmployee(employee);
@@ -118,7 +126,11 @@ const Employees: React.FC = () => {
         email: editFormData.email,
         phone: editFormData.phone,
         position: editFormData.position,
+        specialties: editFormData.specialties,
+        schedule: editFormData.schedule ? JSON.parse(editFormData.schedule) : null,
         salary: editFormData.salary ? parseFloat(editFormData.salary) : undefined,
+        hireDate: editFormData.hireDate,
+        role: editFormData.role as 'owner' | 'employee',
         isActive: editFormData.isActive
       };
 
@@ -134,7 +146,11 @@ const Employees: React.FC = () => {
           email: '',
           phone: '',
           position: '',
+          specialties: '',
+          schedule: '',
           salary: '',
+          hireDate: '',
+          role: 'employee',
           isActive: true
         });
         loadEmployees(); // Recargar la lista
@@ -803,7 +819,11 @@ const Employees: React.FC = () => {
                     email: '',
                     phone: '',
                     position: '',
+                    specialties: '',
+                    schedule: '',
                     salary: '',
+                    hireDate: '',
+                    role: 'employee' as 'owner' | 'employee',
                     isActive: true
                   });
                 }}
@@ -911,6 +931,63 @@ const Employees: React.FC = () => {
                   </select>
                 </div>
 
+                {/* Especialidades */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-green-700 mb-2">
+                    🎯 Especialidades
+                  </label>
+                  <textarea
+                    value={editFormData.specialties}
+                    onChange={(e) => setEditFormData({ ...editFormData, specialties: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Especialidades del empleado (separadas por comas)"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Salario */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-green-700 mb-2">
+                    💰 Salario
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.salary}
+                    onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    placeholder="Salario mensual"
+                  />
+                </div>
+
+                {/* Fecha de Contratación */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-green-700 mb-2">
+                    📅 Fecha de Contratación
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.hireDate}
+                    onChange={(e) => setEditFormData({ ...editFormData, hireDate: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
+
+                {/* Rol del Empleado */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-green-700 mb-2">
+                    👑 Rol del Empleado
+                  </label>
+                  <select
+                    value={editFormData.role}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'owner' | 'employee' })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="employee">👨‍⚕️ Empleado</option>
+                    <option value="owner">👑 Propietario</option>
+                  </select>
+                </div>
+
                 {/* Estado */}
                 <div>
                   <label className="block text-sm font-medium text-green-700 mb-2">
@@ -938,6 +1015,30 @@ const Employees: React.FC = () => {
                       <span className="text-sm text-red-700">❌ Inactivo</span>
                     </label>
                   </div>
+                </div>
+              </div>
+
+              {/* Información de Horario */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-purple-800 mb-4">
+                  🕒 Horario de Trabajo
+                </h3>
+                
+                {/* Horario JSON */}
+                <div>
+                  <label className="block text-sm font-medium text-purple-700 mb-2">
+                    📋 Horario (JSON)
+                  </label>
+                  <textarea
+                    value={editFormData.schedule}
+                    onChange={(e) => setEditFormData({ ...editFormData, schedule: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder='{"lunes": {"inicio": "08:00", "fin": "17:00"}, "martes": {"inicio": "08:00", "fin": "17:00"}}'
+                    rows={4}
+                  />
+                  <p className="text-xs text-purple-600 mt-1">
+                    Formato JSON con días de la semana y horarios de inicio/fin
+                  </p>
                 </div>
               </div>
 
@@ -975,7 +1076,11 @@ const Employees: React.FC = () => {
                       email: '',
                       phone: '',
                       position: '',
+                      specialties: '',
+                      schedule: '',
                       salary: '',
+                      hireDate: '',
+                      role: 'employee',
                       isActive: true
                     });
                   }}

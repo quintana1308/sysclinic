@@ -40,6 +40,12 @@ export interface EmployeeFormData {
   password?: string;
   phone?: string;
   position: string;
+  specialties?: string;
+  schedule?: any;
+  salary?: number;
+  hireDate?: string;
+  role?: 'owner' | 'employee';
+  isActive?: boolean;
 }
 
 export interface EmployeeFilters {
