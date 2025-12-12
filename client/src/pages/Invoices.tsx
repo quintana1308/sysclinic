@@ -182,10 +182,20 @@ const Invoices: React.FC = () => {
     }
   };
 
+  // Debounce para el filtro de búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadInvoices();
+    }, 300); // 300ms de delay para búsqueda
+
+    return () => clearTimeout(timeoutId);
+  }, [filters.search]);
+
+  // Cargar inmediatamente para otros filtros
   useEffect(() => {
     loadInvoices();
     loadStats();
-  }, [filters]);
+  }, [filters.status, filters.clientId, filters.page, filters.limit]);
 
   // Funciones de manejo
   const handleCreateInvoice = async (e: React.FormEvent) => {
@@ -551,7 +561,7 @@ const Invoices: React.FC = () => {
                   type="text"
                   placeholder="Buscar por cliente, descripción..."
                   value={filters.search || ''}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
               </div>
@@ -564,7 +574,7 @@ const Invoices: React.FC = () => {
               </label>
               <select
                 value={filters.status || ''}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value as any })}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value as any, page: 1 })}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
                 <option value="">Todos los estados</option>
@@ -734,6 +744,38 @@ const Invoices: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {!loading && !error && invoices.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-4 mt-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Mostrando {((filters.page || 1) - 1) * (filters.limit || 10) + 1} a{' '}
+              {Math.min((filters.page || 1) * (filters.limit || 10), invoices.length)} de{' '}
+              {invoices.length} facturas
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setFilters({ ...filters, page: Math.max((filters.page || 1) - 1, 1) })}
+                disabled={(filters.page || 1) <= 1}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+              <span className="text-sm text-gray-700">
+                Página {filters.page || 1}
+              </span>
+              <button
+                onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
+                disabled={invoices.length < (filters.limit || 10)}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente →
+              </button>
+            </div>
           </div>
         </div>
       )}

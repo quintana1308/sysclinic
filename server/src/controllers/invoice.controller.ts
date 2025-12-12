@@ -27,10 +27,86 @@ export const getInvoices = async (
   next: NextFunction
 ) => {
   try {
-    console.log('getInvoices called with query:', req.query);
+    console.log('🔍 === OBTENIENDO FACTURAS CON FILTROS ===');
+    console.log('📥 Query parameters recibidos:', req.query);
     
+    // Extraer parámetros de filtro
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status,
+      clientId
+    } = req.query;
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
+    const offset = (pageNum - 1) * limitNum;
+
+    console.log('📊 Parámetros procesados:', {
+      page: pageNum,
+      limit: limitNum,
+      offset,
+      search,
+      status,
+      clientId
+    });
+
+    // Construir condiciones WHERE
+    const whereConditions: string[] = ['1=1'];
+    const queryParams: any[] = [];
+
+    // Filtro por empresa si aplica
+    if (req.companyId) {
+      whereConditions.push('c.companyId = ?');
+      queryParams.push(req.companyId);
+    }
+
+    // Filtro de búsqueda (cliente, descripción)
+    if (search && search.trim()) {
+      whereConditions.push(`(
+        CONCAT(uc.firstName, ' ', uc.lastName) LIKE ? OR
+        uc.email LIKE ? OR
+        i.description LIKE ? OR
+        i.id LIKE ?
+      )`);
+      const searchTerm = `%${search.trim()}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    // Filtro por estado
+    if (status && status.trim()) {
+      whereConditions.push('i.status = ?');
+      queryParams.push(status);
+    }
+
+    // Filtro por cliente específico
+    if (clientId && clientId.trim()) {
+      whereConditions.push('i.clientId = ?');
+      queryParams.push(clientId);
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+    console.log('🔍 WHERE clause construido:', whereClause);
+    console.log('📋 Parámetros de consulta:', queryParams);
+
+    // Obtener total de registros para paginación
+    const totalQuery = `
+      SELECT COUNT(DISTINCT i.id) as total
+      FROM invoices i
+      LEFT JOIN clients c ON i.clientId = c.id
+      LEFT JOIN users uc ON c.userId = uc.id
+      WHERE ${whereClause}
+    `;
+
+    const totalResult = await query<any>(totalQuery, queryParams);
+    const total = totalResult[0]?.total || 0;
+    const totalPages = Math.ceil(total / limitNum);
+
+    console.log('📊 Totales calculados:', { total, totalPages });
+
     // Obtener facturas con información del cliente y pagos relacionados
-    const invoices = await query<any>(`
+    const invoicesQuery = `
       SELECT 
         i.id,
         i.clientId,
@@ -57,18 +133,29 @@ export const getInvoices = async (
       LEFT JOIN clients c ON i.clientId = c.id
       LEFT JOIN users uc ON c.userId = uc.id
       LEFT JOIN payments p ON i.id = p.invoiceId AND p.status = 'PAID'
+      WHERE ${whereClause}
       GROUP BY i.id, i.clientId, i.appointmentId, i.amount, i.status, i.description, i.dueDate, i.createdAt, i.updatedAt, uc.firstName, uc.lastName, uc.email, uc.phone
       ORDER BY i.createdAt DESC
-      LIMIT 10
-    `);
+    `;
 
-    console.log('Invoices found:', invoices?.length || 0);
+    // Obtener todas las facturas y aplicar paginación manual (compatible con Railway)
+    const allInvoices = await query<any>(invoicesQuery, queryParams);
+    const invoices = allInvoices.slice(offset, offset + limitNum);
+
+    console.log('📋 Facturas encontradas:', {
+      total: allInvoices?.length || 0,
+      enPagina: invoices?.length || 0,
+      pagina: pageNum,
+      totalPaginas: totalPages
+    });
+
     if (invoices && invoices.length > 0) {
       console.log('📋 Primera factura de ejemplo:', {
         id: invoices[0].id,
         clientName: invoices[0].clientName,
         clientEmail: invoices[0].clientEmail,
         amount: invoices[0].amount,
+        status: invoices[0].status,
         totalPaid: invoices[0].totalPaid,
         paymentCount: invoices[0].paymentCount
       });
@@ -79,16 +166,22 @@ export const getInvoices = async (
       message: 'Facturas obtenidas exitosamente',
       data: invoices || [],
       pagination: {
-        page: 1,
-        limit: 10,
-        total: invoices?.length || 0,
-        totalPages: 1
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages
       }
     };
 
+    console.log('✅ Respuesta enviada:', {
+      success: response.success,
+      dataLength: response.data?.length || 0,
+      pagination: response.pagination
+    });
+
     res.json(response);
   } catch (error) {
-    console.error('Error in getInvoices:', error);
+    console.error('❌ Error in getInvoices:', error);
     res.status(500).json({
       success: false,
       message: 'Error al obtener facturas: ' + (error as Error).message,
