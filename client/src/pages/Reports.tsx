@@ -1193,28 +1193,30 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-800">📊 Reportes y Análisis</h1>
-          <p className="text-gray-600 mt-1">Estadísticas y métricas del rendimiento del negocio</p>
-        </div>
-        
-        {/* Botones de exportación */}
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleExportPDF}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-            title="Descargar reporte en formato HTML (se puede imprimir como PDF)"
-          >
-            📄 Exportar PDF
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-            title="Descargar reporte en formato CSV (compatible con Excel)"
-          >
-            📊 Exportar Excel
-          </button>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">📊 Reportes y Análisis</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Estadísticas y métricas del rendimiento del negocio</p>
+          </div>
+          
+          {/* Botones de exportación */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleExportPDF}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              title="Descargar reporte en formato HTML (se puede imprimir como PDF)"
+            >
+              📄 Exportar PDF
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+              title="Descargar reporte en formato CSV (compatible con Excel)"
+            >
+              📊 Exportar Excel
+            </button>
+          </div>
         </div>
       </div>
 

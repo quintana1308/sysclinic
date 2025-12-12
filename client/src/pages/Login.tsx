@@ -93,60 +93,65 @@ const Login: React.FC = () => {
       </div>
 
       {/* Panel derecho - Formulario de login */}
-      <div className="flex-1 flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 flex items-center justify-center bg-gray-50 py-6 px-4 sm:py-12 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
-          {/* Logo para móvil */}
-          <div className="lg:hidden text-center mb-8">
-            <img 
-              src="/SysClinic.png" 
-              alt="SysClinic Logo" 
-              className="h-36 w-36 object-contain mx-auto mb-4"
-            />
-            <p className="text-gray-600 mt-2">Sistema de Gestión Clínica</p>
-          </div>
 
           {/* Formulario */}
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Bienvenido</h3>
-              <p className="text-gray-600">Inicia sesión para acceder al sistema</p>
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Bienvenido</h3>
+              <p className="text-gray-600 text-sm sm:text-base">Inicia sesión para acceder al sistema</p>
             </div>
             
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                   Correo electrónico
                 </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-400 bg-white text-gray-900"
-                  placeholder="tu@email.com"
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-400 bg-white text-gray-900"
+                    placeholder="tu@email.com"
+                    disabled={isSubmitting}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                   Contraseña
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-400 bg-white text-gray-900"
-                  placeholder="Tu contraseña"
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-gray-400 bg-white text-gray-900"
+                    placeholder="Tu contraseña"
+                    disabled={isSubmitting}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               <button
@@ -171,7 +176,7 @@ const Login: React.FC = () => {
             </form>
 
             {/* Footer del formulario */}
-            <div className="mt-8 text-center">
+            <div className="mt-6 sm:mt-8 text-center">
               <p className="text-xs text-gray-500">
                 © 2025 SysClinic. Todos los derechos reservados.
               </p>

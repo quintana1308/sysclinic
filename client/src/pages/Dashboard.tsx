@@ -656,7 +656,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
           {/* Header */}
           <div className="flex-shrink-0 p-4 border-b border-primary-700">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex-1 flex justify-center">
+              <div className="flex-1 flex justify-start">
                 <img 
                   src="/SysClinic.png" 
                   alt="SysClinic Logo" 
@@ -750,9 +750,6 @@ const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
         </button>
         
         <div className="flex items-center space-x-3">
-          {/* Selector de empresa para master en móvil */}
-          <CompanySelector className="mr-2" />
-          
           <div className="text-right">
             <p className="text-sm font-medium text-gray-900">
               {user?.firstName} {user?.lastName}

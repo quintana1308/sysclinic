@@ -1717,22 +1717,22 @@ const SystemManagement: React.FC = () => {
         {activeSection === 'users' && (
           <div>
             {/* Header de la tarjeta con gradiente */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                    <span className="text-2xl">👥</span>
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 sm:p-6 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                    <span className="text-xl sm:text-2xl">👥</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">Gestión de Usuarios</h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Gestión de Usuarios</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Administra empleados, administradores y clientes del sistema
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={openCreateModal}
-                  className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors w-full sm:w-auto"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Nuevo Usuario
@@ -2010,22 +2010,22 @@ const SystemManagement: React.FC = () => {
         {activeSection === 'companies' && (
           <div>
             {/* Header de la sección */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                    <span className="text-2xl">🏢</span>
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 sm:p-6 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                    <span className="text-xl sm:text-2xl">🏢</span>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">Gestión de Empresas</h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Gestión de Empresas</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       Crear, editar y administrar empresas del sistema
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={openCompanyCreateModal}
-                  className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors w-full sm:w-auto"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
                   Nueva Empresa
@@ -2251,33 +2251,37 @@ const SystemManagement: React.FC = () => {
         {activeSection === 'licenses' && (
           <div>
             {/* Header de la sección */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                    <span className="text-2xl">📄</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">📄 Gestión de Licencias</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Administra plantillas de licencias y asignaciones a empresas
-                    </p>
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 sm:p-6 border-b border-gray-100">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                      <span className="text-xl sm:text-2xl">📄</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900">📄 Gestión de Licencias</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                        Administra plantillas de licencias y asignaciones a empresas
+                      </p>
+                    </div>
                   </div>
                 </div>
                 {/* Estadísticas rápidas */}
                 {licenseStats && (
-                  <div className="flex items-center space-x-6 text-sm">
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-pink-600">{licenseStats.totalTemplates || 0}</div>
-                      <div className="text-gray-600">Plantillas</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-green-600">{licenseStats.activeAssignedLicenses || 0}</div>
-                      <div className="text-gray-600">Activas</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-semibold text-red-600">{licenseStats.expiredLicenses || 0}</div>
-                      <div className="text-gray-600">Expiradas</div>
+                  <div className="flex justify-center sm:justify-end">
+                    <div className="flex items-center space-x-4 sm:space-x-6 text-xs sm:text-sm">
+                      <div className="text-center">
+                        <div className="text-base sm:text-lg font-semibold text-pink-600">{licenseStats.totalTemplates || 0}</div>
+                        <div className="text-gray-600">Plantillas</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-base sm:text-lg font-semibold text-green-600">{licenseStats.activeAssignedLicenses || 0}</div>
+                        <div className="text-gray-600">Activas</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-base sm:text-lg font-semibold text-red-600">{licenseStats.expiredLicenses || 0}</div>
+                        <div className="text-gray-600">Expiradas</div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2314,22 +2318,22 @@ const SystemManagement: React.FC = () => {
             {licenseSubSection === 'templates' && (
               <div>
                 {/* Header con botón crear */}
-                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                        <span className="text-xl">📋</span>
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 sm:p-6 border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                        <span className="text-lg sm:text-xl">📋</span>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900">Plantillas de Licencias</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900">Plantillas de Licencias</h4>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
                           Gestiona los tipos de licencias disponibles en el sistema
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => setShowTemplateCreateModal(true)}
-                      className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors"
+                      className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-colors w-full sm:w-auto"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
                       Nueva Plantilla
@@ -2556,22 +2560,22 @@ const SystemManagement: React.FC = () => {
             {licenseSubSection === 'assigned' && (
               <div>
                 {/* Header con botón asignar */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
-                        <span className="text-xl">🏢</span>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 border-b border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                        <span className="text-lg sm:text-xl">🏢</span>
                       </div>
                       <div>
-                        <h4 className="text-lg font-semibold text-gray-900">Licencias Asignadas</h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900">Licencias Asignadas</h4>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
                           Gestiona las licencias activas de las empresas
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={openAssignedCreateModal}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
                       Asignar Licencia

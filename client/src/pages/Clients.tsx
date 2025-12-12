@@ -1239,28 +1239,30 @@ const Clients: React.FC = () => {
       />
       
       {/* Header Mejorado */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-800">👥 Gestión de Clientes</h1>
-          <p className="text-gray-600 mt-1">Administra la información y historial de todos los clientes</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => {
-              setSearchInput('');
-              setFilters({ search: '', status: 'Todos los estados' });
-            }}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            🔄 Limpiar Filtros
-          </button>
-          <button
-            onClick={handleNewClient}
-            className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            👤 Nuevo Cliente
-          </button>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">👥 Gestión de Clientes</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Administra la información y historial de todos los clientes</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setFilters({ search: '', status: 'Todos los estados' });
+              }}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              🔄 Limpiar Filtros
+            </button>
+            <button
+              onClick={handleNewClient}
+              className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              👤 Nuevo Cliente
+            </button>
+          </div>
         </div>
       </div>
 

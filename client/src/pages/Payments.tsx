@@ -415,28 +415,30 @@ const Payments: React.FC = () => {
       />
       
       {/* Header Mejorado */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-800">💳 Historial de Pagos</h1>
-          <p className="text-gray-600 mt-1">Visualización y seguimiento de todos los abonos realizados</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => {
-              setFilters({
-                search: '',
-                status: 'Todos',
-                method: 'Todos',
-                dateFrom: '',
-                dateTo: ''
-              });
-              setCurrentPage(1);
-            }}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            🔄 Limpiar Filtros
-          </button>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">💳 Historial de Pagos</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Visualización y seguimiento de todos los abonos realizados</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => {
+                setFilters({
+                  search: '',
+                  status: 'Todos',
+                  method: 'Todos',
+                  dateFrom: '',
+                  dateTo: ''
+                });
+                setCurrentPage(1);
+              }}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              🔄 Limpiar Filtros
+            </button>
+          </div>
         </div>
       </div>
 

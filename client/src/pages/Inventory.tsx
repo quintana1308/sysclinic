@@ -404,28 +404,30 @@ const Inventory: React.FC = () => {
   return (
     <div className="p-6">
       {/* Header Mejorado */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-800">📦 Gestión de Inventario</h1>
-          <p className="text-gray-600 mt-1">Administra insumos, stock y movimientos de inventario</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => {
-              setFilters({ search: '', category: '', status: '' });
-              loadSupplies();
-            }}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            🔄 Limpiar Filtros
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            📦 Nuevo Insumo
-          </button>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">📦 Gestión de Inventario</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Administra insumos, stock y movimientos de inventario</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => {
+                setFilters({ search: '', category: '', status: '' });
+                loadSupplies();
+              }}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              🔄 Limpiar Filtros
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              📦 Nuevo Insumo
+            </button>
+          </div>
         </div>
       </div>
 
