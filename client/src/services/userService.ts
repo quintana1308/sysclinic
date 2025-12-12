@@ -162,6 +162,23 @@ class UserService {
     }
   }
 
+  // Cambiar contraseña de un usuario
+  async updateUserPassword(id: string, newPassword: string): Promise<void> {
+    try {
+      console.log('🌐 SERVICIO - Cambiando contraseña del usuario:', id);
+      
+      const response = await api.put(`/users/${id}/password`, { newPassword });
+      
+      console.log('✅ SERVICIO - Contraseña actualizada correctamente');
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ SERVICIO - Error updating password:', error);
+      console.error('❌ SERVICIO - Error details:', (error as any)?.response?.data || (error as any)?.message);
+      throw error;
+    }
+  }
+
   // Obtener empresas disponibles para el usuario
   async getCompanies(): Promise<Array<{ id: string; name: string; }>> {
     try {

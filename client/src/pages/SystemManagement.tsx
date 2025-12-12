@@ -91,10 +91,12 @@ const SystemManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Estados para modales de empresas
   const [showCompanyViewModal, setShowCompanyViewModal] = useState(false);
@@ -124,6 +126,10 @@ const SystemManagement: React.FC = () => {
     isActive: true,
     roleId: '',
     companyId: ''
+  });
+  const [passwordFormData, setPasswordFormData] = useState({
+    newPassword: '',
+    confirmPassword: ''
   });
 
   // Estados para formularios de empresas
@@ -457,6 +463,16 @@ const SystemManagement: React.FC = () => {
     setShowDeleteModal(true);
   };
 
+  const openPasswordModal = (user: User) => {
+    setSelectedUser(user);
+    // Limpiar formulario de contraseña
+    setPasswordFormData({
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setShowPasswordModal(true);
+  };
+
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
 
@@ -531,6 +547,56 @@ const SystemManagement: React.FC = () => {
       toast.error(errorMessage);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!selectedUser) return;
+
+    try {
+      // Validaciones frontend
+      if (!passwordFormData.newPassword.trim()) {
+        toast.error('La nueva contraseña es requerida');
+        return;
+      }
+
+      if (passwordFormData.newPassword.length < 6) {
+        toast.error('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+
+      if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+        toast.error('Las contraseñas no coinciden');
+        return;
+      }
+
+      setPasswordLoading(true);
+      
+      console.log('🔐 Cambiando contraseña del usuario:', selectedUser.id);
+      
+      // Llamada a la API para cambiar contraseña
+      await userService.updateUserPassword(selectedUser.id, passwordFormData.newPassword);
+      
+      toast.success(`Contraseña de ${getUserName(selectedUser)} actualizada correctamente`);
+      setShowPasswordModal(false);
+      setSelectedUser(null);
+      
+      // Limpiar formulario
+      setPasswordFormData({
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+    } catch (error: any) {
+      console.error('❌ Error updating password:', error);
+      
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          'Error al cambiar contraseña';
+      
+      toast.error(errorMessage);
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -1895,6 +1961,13 @@ const SystemManagement: React.FC = () => {
                                   title="Editar usuario"
                                 >
                                   <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => openPasswordModal(user)}
+                                  className="inline-flex items-center p-1.5 text-orange-600 hover:text-orange-900 hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Cambiar contraseña"
+                                >
+                                  🔐
                                 </button>
                                 <button
                                   onClick={() => openDeleteModal(user)}
@@ -5705,6 +5778,98 @@ const SystemManagement: React.FC = () => {
                     <TrashIcon className="h-4 w-4 mr-2" />
                     Eliminar Licencia
                   </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cambiar Contraseña */}
+      {showPasswordModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            {/* Header del modal */}
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center shadow-sm">
+                  <span className="text-2xl">🔐</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">🔐 Cambiar Contraseña</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Actualizar contraseña de {getUserName(selectedUser)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido del modal */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🔑 Nueva Contraseña *
+                </label>
+                <input
+                  type="password"
+                  value={passwordFormData.newPassword}
+                  onChange={(e) => setPasswordFormData({...passwordFormData, newPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Ingresa la nueva contraseña"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🔒 Confirmar Contraseña *
+                </label>
+                <input
+                  type="password"
+                  value={passwordFormData.confirmPassword}
+                  onChange={(e) => setPasswordFormData({...passwordFormData, confirmPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Confirma la nueva contraseña"
+                  required
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-500 mt-0.5">ℹ️</div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Requisitos de seguridad</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p>• La contraseña debe tener al menos 6 caracteres</p>
+                      <p>• Ambas contraseñas deben coincidir</p>
+                      <p>• El usuario deberá usar la nueva contraseña en su próximo inicio de sesión</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer del modal */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={passwordLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdatePassword}
+                disabled={passwordLoading}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {passwordLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Actualizando...
+                  </>
+                ) : (
+                  <>🔐 Cambiar Contraseña</>
                 )}
               </button>
             </div>

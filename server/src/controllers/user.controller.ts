@@ -860,6 +860,63 @@ export const createUser = async (
   }
 };
 
+export const updateUserPassword = async (
+  req: AuthenticatedRequest,
+  res: Response<ApiResponse<any>>,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    console.log(`🔄 Actualizando contraseña del usuario ${id}...`);
+
+    // Solo usuarios master pueden cambiar contraseñas
+    if (!req.user?.isMaster) {
+      throw new AppError('No tienes permisos para cambiar contraseñas de usuarios', 403);
+    }
+
+    // Validaciones
+    if (!newPassword) {
+      throw new AppError('La nueva contraseña es requerida', 400);
+    }
+
+    if (newPassword.length < 6) {
+      throw new AppError('La contraseña debe tener al menos 6 caracteres', 400);
+    }
+
+    // Verificar que el usuario existe
+    const userExists = await queryOne('SELECT id, firstName, lastName, email, isMaster FROM users WHERE id = ?', [id]);
+    if (!userExists) {
+      throw new AppError('Usuario no encontrado', 404);
+    }
+
+    // No permitir cambiar contraseña de otros usuarios master
+    if (userExists.isMaster && userExists.id !== req.user.id) {
+      throw new AppError('No puedes cambiar la contraseña de otro usuario master', 403);
+    }
+
+    console.log(`👤 Usuario a actualizar: ${userExists.firstName} ${userExists.lastName} (${userExists.email})`);
+
+    // Hash de la nueva contraseña
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Actualizar contraseña
+    await query('UPDATE users SET password = ?, updatedAt = NOW() WHERE id = ?', [hashedPassword, id]);
+
+    console.log('✅ Contraseña actualizada correctamente');
+
+    res.json({
+      success: true,
+      message: `Contraseña de ${userExists.firstName} ${userExists.lastName} actualizada correctamente`
+    });
+
+  } catch (error) {
+    console.error('❌ Error en updateUserPassword:', error);
+    next(error);
+  }
+};
+
 export const getRoles = async (
   req: AuthenticatedRequest,
   res: Response<ApiResponse<any[]>>,

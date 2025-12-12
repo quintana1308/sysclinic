@@ -416,7 +416,7 @@ const Employees: React.FC = () => {
               >
                 <option value="">👥 Todas las posiciones</option>
                 <option value="Enfermera">💉 Enfermera</option>
-                <option value="Licenciada">�‍⚕️ Licenciada</option>
+                <option value="Licenciada">⚕️ Licenciada</option>
                 <option value="Asistente">🤝 Asistente</option>
               </select>
             </div>
@@ -906,7 +906,7 @@ const Employees: React.FC = () => {
                   >
                     <option value="">Seleccionar posición</option>
                     <option value="Enfermera">💉 Enfermera</option>
-                    <option value="Licenciada">�‍⚕️ Licenciada</option>
+                    <option value="Licenciada">⚕️ Licenciada</option>
                     <option value="Asistente">🤝 Asistente</option>
                   </select>
                 </div>
