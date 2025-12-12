@@ -68,7 +68,8 @@ export const usePermissions = () => {
 
       case 'payments':
       case 'invoices':
-        return canViewReports();
+        // Empleados, admin y master pueden acceder a facturas y pagos
+        return isEmployee() || isAdmin() || isMaster();
 
       case 'inventory':
         return isEmployee() || isAdmin() || isMaster();
