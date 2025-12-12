@@ -140,16 +140,16 @@ const Appointments: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const [clientSearch, setClientSearch] = useState('Patricia Fernandez');
+  const [clientSearch, setClientSearch] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   
   // Form data
   const [formData, setFormData] = useState<NewAppointmentForm>({
     clientId: '',
-    clientName: 'Patricia Fernandez',
-    date: '2025-10-28',
-    startTime: '14:00',
-    endTime: '15:00',
+    clientName: '',
+    date: '',
+    startTime: '',
+    endTime: '',
     employeeId: '',
     selectedTreatments: [],
     notes: ''
@@ -219,40 +219,27 @@ const Appointments: React.FC = () => {
         
       } else {
         console.log('❌ No se encontraron tratamientos activos');
-        // Fallback a datos de prueba
-        const fallbackTreatments = [
-          { id: 'treatment-jalupro-001', name: 'Jalupro Classic', duration: 30, price: 120, category: 'Facial', isActive: true, createdAt: '', updatedAt: '' },
-          { id: 'treatment-hidrafacial-001', name: 'Hidrafacial Coreano', duration: 60, price: 200, category: 'Facial', isActive: true, createdAt: '', updatedAt: '' },
-          { id: 'treatment-masaje-001', name: 'Masaje Corporal/Linfático', duration: 90, price: 85, category: 'Corporal', isActive: true, createdAt: '', updatedAt: '' }
-        ];
+        // No usar fallback - mantener lista vacía
+        setTreatments([]);
         
-        console.log('🔄 Usando tratamientos de fallback:', fallbackTreatments);
-        setTreatments(fallbackTreatments);
-        
-        // Seleccionar Jalupro por defecto en fallback
+        // Limpiar selecciones
         setFormData(prev => ({
           ...prev,
-          selectedTreatments: ['treatment-jalupro-001']
+          selectedTreatments: []
         }));
-        setTreatmentSearch('jalup');
+        setTreatmentSearch('');
       }
     } catch (error) {
       console.error('❌ Error loading active treatments:', error);
-      // Fallback en caso de error
-      const fallbackTreatments = [
-        { id: 'treatment-jalupro-001', name: 'Jalupro Classic', duration: 30, price: 120, category: 'Facial', isActive: true, createdAt: '', updatedAt: '' },
-        { id: 'treatment-hidrafacial-001', name: 'Hidrafacial Coreano', duration: 60, price: 200, category: 'Facial', isActive: true, createdAt: '', updatedAt: '' },
-        { id: 'treatment-masaje-001', name: 'Masaje Corporal/Linfático', duration: 90, price: 85, category: 'Corporal', isActive: true, createdAt: '', updatedAt: '' }
-      ];
+      // No usar fallback - mantener lista vacía en caso de error
+      setTreatments([]);
       
-      console.log('🔄 Usando tratamientos de fallback por error:', fallbackTreatments);
-      setTreatments(fallbackTreatments);
-      
+      // Limpiar selecciones
       setFormData(prev => ({
         ...prev,
-        selectedTreatments: ['treatment-jalupro-001']
+        selectedTreatments: []
       }));
-      setTreatmentSearch('jalup');
+      setTreatmentSearch('');
     }
   };
 
@@ -308,23 +295,16 @@ const Appointments: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error loading active clients:', error);
-      // Fallback a datos de prueba si falla la carga
-      const fallbackClients = [
-        { id: 'client-santiago-001', firstName: 'Santiago', lastName: 'Pérez', email: 'santiago@example.com', name: 'Santiago Pérez' },
-        { id: 'client-patricia-001', firstName: 'Patricia', lastName: 'Fernandez', email: 'patricia@example.com', name: 'Patricia Fernandez' },
-        { id: 'client-maria-001', firstName: 'María', lastName: 'González', email: 'maria@example.com', name: 'María González' },
-        { id: 'client-ana-001', firstName: 'Ana', lastName: 'Martínez', email: 'ana@example.com', name: 'Ana Martínez' }
-      ];
-      console.log('🔄 Usando clientes de fallback:', fallbackClients);
-      setClients(fallbackClients);
+      // No usar fallback - mantener lista vacía en caso de error
+      setClients([]);
       
-      // Seleccionar Patricia por defecto en fallback
+      // Limpiar selecciones
       setFormData(prev => ({
         ...prev,
-        clientId: 'client-patricia-001',
-        clientName: 'Patricia Fernandez'
+        clientId: '',
+        clientName: ''
       }));
-      setClientSearch('Patricia Fernandez');
+      setClientSearch('');
     }
   };
 
@@ -378,23 +358,13 @@ const Appointments: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error loading active employees:', error);
-      console.log('🔄 Usando empleados de fallback debido a error:', error);
+      // No usar fallback - mantener lista vacía en caso de error
+      setEmployees([]);
       
-      // Fallback a datos de prueba que coincidan con la base de datos
-      // Usando IDs reales de empleados que existen en la BD
-      const fallbackEmployees = [
-        { id: 'b1ec891a-0ed2-4cb7-bb1f-78820de52cb5', firstName: 'Ana', lastName: 'Martínez', position: 'Esteticista Senior' },
-        { id: '2404344a-20cf-4c52-bf69-f562cb73c202', firstName: 'Carlos', lastName: 'Rodríguez', position: 'Terapeuta de Masajes' },
-        { id: '36e4ef6d-363a-4122-b3ea-02e8363a9a60', firstName: 'María', lastName: 'González', position: 'Administradora General' }
-      ];
-      
-      console.log('🔄 Empleados de fallback configurados:', fallbackEmployees);
-      setEmployees(fallbackEmployees);
-      
-      // Seleccionar el primer empleado por defecto
+      // Limpiar selecciones
       setFormData(prev => ({
         ...prev,
-        employeeId: fallbackEmployees[0].id
+        employeeId: ''
       }));
     }
   };
@@ -459,6 +429,7 @@ const Appointments: React.FC = () => {
         limit: pagination.limit,
         search: filters.search || undefined,
         status: filters.status !== 'Todos' ? mapStatusToAPI(filters.status) : undefined,
+        employeeId: filters.employee !== 'Todos' ? filters.employee : undefined,
         startDate: filters.dateFrom || undefined,
         endDate: filters.dateTo || undefined
       };
@@ -644,9 +615,19 @@ const Appointments: React.FC = () => {
     }).format(fixedDate);
   };
 
+  // Debounce para el filtro de búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadAppointments();
+    }, 300); // 300ms de delay para búsqueda
+
+    return () => clearTimeout(timeoutId);
+  }, [filters.search]);
+
+  // Cargar inmediatamente para otros filtros
   useEffect(() => {
     loadAppointments();
-  }, [currentPage, filters]);
+  }, [currentPage, filters.status, filters.employee, filters.dateFrom, filters.dateTo]);
 
   const handleNewAppointment = () => {
     setShowNewAppointmentModal(true);
@@ -655,23 +636,18 @@ const Appointments: React.FC = () => {
   const handleCloseModal = () => {
     setShowNewAppointmentModal(false);
     setShowClientDropdown(false);
-    setClientSearch('Patricia Fernandez');
+    setClientSearch('');
     setTreatmentSearch('');
     
-    // Resetear a valores por defecto, pero mantener los IDs reales si están disponibles
-    const defaultClientId = clients.find(c => c.name?.includes('Patricia'))?.id || '';
-    const defaultTreatmentId = treatments.find(t => t.name.toLowerCase().includes('jalupro'))?.id || 
-                              (treatments.length > 0 ? treatments[0].id : '');
-    const defaultEmployeeId = employees.length > 0 ? employees[0].id : '';
-    
+    // Resetear formulario completamente vacío
     setFormData({
-      clientId: defaultClientId,
-      clientName: 'Patricia Fernandez',
-      date: '2025-10-28',
-      startTime: '14:00',
-      endTime: '15:00',
-      employeeId: defaultEmployeeId,
-      selectedTreatments: defaultTreatmentId ? [defaultTreatmentId] : [],
+      clientId: '',
+      clientName: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      employeeId: '',
+      selectedTreatments: [],
       notes: ''
     });
   };
@@ -1283,7 +1259,10 @@ const Appointments: React.FC = () => {
                   type="text"
                   placeholder="Cliente, empleado, tratamiento..."
                   value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) => {
+                    setFilters({ ...filters, search: e.target.value });
+                    setCurrentPage(1); // Resetear página al buscar
+                  }}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
               </div>
@@ -1296,7 +1275,10 @@ const Appointments: React.FC = () => {
               </label>
               <select
                 value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                onChange={(e) => {
+                  setFilters({ ...filters, status: e.target.value });
+                  setCurrentPage(1); // Resetear página al cambiar estado
+                }}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
                 <option value="Todos">📋 Todos los estados</option>
@@ -1315,7 +1297,10 @@ const Appointments: React.FC = () => {
               </label>
               <select
                 value={filters.employee}
-                onChange={(e) => setFilters({ ...filters, employee: e.target.value })}
+                onChange={(e) => {
+                  setFilters({ ...filters, employee: e.target.value });
+                  setCurrentPage(1); // Resetear página al cambiar empleado
+                }}
                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
               >
                 <option value="Todos">👥 Todos los empleados</option>
@@ -1336,7 +1321,10 @@ const Appointments: React.FC = () => {
                 <input
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                  onChange={(e) => {
+                    setFilters({ ...filters, dateFrom: e.target.value });
+                    setCurrentPage(1); // Resetear página al cambiar fecha
+                  }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
               </div>
@@ -1347,7 +1335,10 @@ const Appointments: React.FC = () => {
                 <input
                   type="date"
                   value={filters.dateTo}
-                  onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                  onChange={(e) => {
+                    setFilters({ ...filters, dateTo: e.target.value });
+                    setCurrentPage(1); // Resetear página al cambiar fecha
+                  }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
               </div>
@@ -1482,51 +1473,56 @@ const Appointments: React.FC = () => {
         </div>
 
         {/* Paginación */}
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="flex-1 flex justify-between sm:hidden">
-            <button
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            <button
-              disabled={currentPage === totalPages}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Mostrando <span className="font-medium">1</span> a <span className="font-medium">1</span> de{' '}
-                <span className="font-medium">1</span> resultados
-              </p>
+        {!loading && !error && appointments.length > 0 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ← Anterior
+              </button>
+              <button
+                onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
+                disabled={currentPage === pagination.totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente →
+              </button>
             </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  <ChevronLeftIcon className="h-5 w-5" />
-                </button>
-                <button
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  1
-                </button>
-                <button
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  <ChevronRightIcon className="h-5 w-5" />
-                </button>
-              </nav>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Mostrando <span className="font-medium">{((currentPage - 1) * pagination.limit) + 1}</span> a{' '}
+                  <span className="font-medium">{Math.min(currentPage * pagination.limit, pagination.total)}</span> de{' '}
+                  <span className="font-medium">{pagination.total}</span> citas
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    Página {currentPage} de {pagination.totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
+                    disabled={currentPage === pagination.totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Modal Nueva Cita */}
