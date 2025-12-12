@@ -93,7 +93,6 @@ const Inventory: React.FC = () => {
     quantity: 0,
     type: 'add' as 'add' | 'subtract' | 'adjust',
     reason: '',
-    unitCost: undefined as number | undefined,
     reference: undefined as string | undefined
   });
   
@@ -259,7 +258,7 @@ const Inventory: React.FC = () => {
         stockMovement.quantity, 
         stockMovement.type,
         stockMovement.reason,
-        stockMovement.unitCost,
+        undefined, // unitCost removido
         stockMovement.reference
       );
       if (response.success) {
@@ -268,7 +267,7 @@ const Inventory: React.FC = () => {
           stockMovement.type === 'subtract' ? 'reducido' : 'ajustado'
         } exitosamente`);
         setShowStockModal(false);
-        setStockMovement({ quantity: 0, type: 'add', reason: '', unitCost: undefined, reference: undefined });
+        setStockMovement({ quantity: 0, type: 'add', reason: '', reference: undefined });
         loadSupplies(true); // Recargar todos los datos
       }
     } catch (error) {
@@ -293,21 +292,79 @@ const Inventory: React.FC = () => {
     setSelectedSupply(null);
   };
   
-  const openEditModal = (supply: ApiSupply) => {
-    setSelectedSupply(supply);
-    setFormData({
-      name: supply.name,
-      description: supply.description || '',
-      category: supply.category,
-      unit: supply.unit || '',
-      stock: supply.stock,
-      minStock: supply.minStock,
-      maxStock: supply.maxStock || undefined,
-      unitPrice: supply.unitPrice,
-      supplier: supply.supplier || '',
-      expirationDate: supply.expirationDate || ''
-    });
-    setShowEditModal(true);
+  const openEditModal = async (supply: ApiSupply) => {
+    console.log('🔍 Abriendo modal de edición para suministro:', supply.id);
+    
+    try {
+      setLoading(true);
+      
+      // Obtener datos completos del suministro desde el backend
+      const response = await inventoryService.getSupplyById(supply.id);
+      
+      if (response.success) {
+        const fullSupplyData = response.data;
+        
+        console.log('📋 Datos completos del suministro para edición:', {
+          id: fullSupplyData.id,
+          name: fullSupplyData.name,
+          description: fullSupplyData.description,
+          category: fullSupplyData.category,
+          unit: fullSupplyData.unit,
+          stock: fullSupplyData.stock,
+          minStock: fullSupplyData.minStock,
+          maxStock: fullSupplyData.maxStock,
+          unitCost: fullSupplyData.unitCost,  // Campo real del backend
+          supplier: fullSupplyData.supplier,
+          expiryDate: fullSupplyData.expiryDate  // Campo real del backend
+        });
+        
+        console.log('🔍 Verificando campos específicos:', {
+          unit: fullSupplyData.unit,
+          unitCost: fullSupplyData.unitCost,
+          expiryDate: fullSupplyData.expiryDate,
+          expiryDateFormatted: fullSupplyData.expiryDate ? new Date(fullSupplyData.expiryDate).toISOString().split('T')[0] : '',
+          movementsCount: fullSupplyData.movementsCount
+        });
+        
+        console.log('🔘 Estado del botón de movimientos:', {
+          hasMovements: fullSupplyData.movementsCount && fullSupplyData.movementsCount > 0,
+          movementsCount: fullSupplyData.movementsCount,
+          buttonShouldBeEnabled: fullSupplyData.movementsCount > 0
+        });
+        
+        setSelectedSupply(fullSupplyData);
+        setFormData({
+          name: fullSupplyData.name || '',
+          description: fullSupplyData.description || '',
+          category: fullSupplyData.category || '',
+          unit: fullSupplyData.unit || '',
+          stock: fullSupplyData.stock || 0,
+          minStock: fullSupplyData.minStock || 0,
+          maxStock: fullSupplyData.maxStock || undefined,
+          unitPrice: fullSupplyData.unitCost || 0,  // Mapear unitCost a unitPrice
+          supplier: fullSupplyData.supplier || '',
+          expirationDate: fullSupplyData.expiryDate ? new Date(fullSupplyData.expiryDate).toISOString().split('T')[0] : ''  // Formatear fecha para input date
+        });
+        setShowEditModal(true);
+      }
+    } catch (error: any) {
+      console.error('Error obteniendo datos completos del suministro:', error);
+      
+      let errorMessage = 'No se pudieron cargar los datos completos del suministro';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   const openStockModal = (supply: ApiSupply) => {
@@ -562,7 +619,16 @@ const Inventory: React.FC = () => {
                     </button>
                     <button
                       onClick={() => openMovementsModal(supply)}
-                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                      disabled={!supply.movementsCount || supply.movementsCount === 0}
+                      className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                        supply.movementsCount && supply.movementsCount > 0
+                          ? 'text-gray-700 bg-gray-100 border-gray-300 hover:bg-gray-200 focus:ring-gray-500'
+                          : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
+                      }`}
+                      title={supply.movementsCount && supply.movementsCount > 0 
+                        ? `Ver ${supply.movementsCount} movimiento${supply.movementsCount > 1 ? 's' : ''}`
+                        : 'Sin movimientos registrados'
+                      }
                     >
                       <ClockIcon className="h-4 w-4" />
                     </button>
@@ -1027,7 +1093,7 @@ const Inventory: React.FC = () => {
               <button
                 onClick={() => { 
                   setShowStockModal(false); 
-                  setStockMovement({ quantity: 0, type: 'add', reason: '', unitCost: undefined, reference: undefined }); 
+                  setStockMovement({ quantity: 0, type: 'add', reason: '', reference: undefined }); 
                 }}
                 className="text-pink-400 hover:text-pink-600"
               >
@@ -1147,21 +1213,6 @@ const Inventory: React.FC = () => {
                       </p>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-blue-700 mb-1">
-                        Costo Unitario (USD)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={stockMovement.unitCost || ''}
-                        onChange={(e) => setStockMovement({ ...stockMovement, unitCost: parseFloat(e.target.value) || undefined })}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        min="0"
-                        placeholder="0.00"
-                      />
-                      <p className="text-xs text-blue-600 mt-1">Solo para entradas (opcional)</p>
-                    </div>
                   </div>
                   
                   <div className="mt-4">
@@ -1244,17 +1295,6 @@ const Inventory: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Información adicional */}
-                    {stockMovement.unitCost && stockMovement.unitCost > 0 && (
-                      <div className="mt-4 pt-4 border-t border-green-100">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Costo total:</span>
-                          <span className="font-semibold text-green-600">
-                            ${(stockMovement.unitCost * stockMovement.quantity).toFixed(2)} USD
-                          </span>
-                        </div>
-                      </div>
-                    )}
                     
                     {/* Alertas y validaciones */}
                     <div className="mt-4 space-y-2">
@@ -1302,7 +1342,7 @@ const Inventory: React.FC = () => {
                   type="button"
                   onClick={() => { 
                     setShowStockModal(false); 
-                    setStockMovement({ quantity: 0, type: 'add', reason: '', unitCost: undefined, reference: undefined }); 
+                    setStockMovement({ quantity: 0, type: 'add', reason: '', reference: undefined }); 
                   }}
                   className="px-4 py-2 text-sm font-medium text-pink-700 bg-white border border-pink-300 rounded-lg hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
                 >
@@ -1528,10 +1568,15 @@ const Inventory: React.FC = () => {
                               )}
                             </div>
                             
-                            {movement.createdBy && (
+                            {(movement.firstName || movement.createdBy) && (
                               <div className="flex items-center justify-end space-x-2 text-xs text-gray-500 mt-2">
                                 <span>👤 Usuario:</span>
-                                <span className="font-medium">{movement.createdBy}</span>
+                                <span className="font-medium">
+                                  {movement.firstName && movement.lastName 
+                                    ? `${movement.firstName} ${movement.lastName}${movement.userRole ? ` - ${movement.userRole}` : ''}`
+                                    : movement.createdBy
+                                  }
+                                </span>
                               </div>
                             )}
                           </div>

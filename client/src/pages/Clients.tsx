@@ -563,10 +563,72 @@ const Clients: React.FC = () => {
     }
   };
 
-  const handleViewClient = (client: Client) => {
-    setSelectedClient(client);
-    setActiveTab('personal');
-    setShowHistoryModal(true);
+  const handleViewClient = async (client: Client) => {
+    console.log('🔍 Abriendo detalle completo del cliente:', client.id);
+    
+    try {
+      setSubmitting(true);
+      
+      // Obtener datos completos del cliente desde el backend
+      const response = await clientService.getClientById(client.id);
+      
+      if (response.success) {
+        const fullClientData = response.data;
+        
+        console.log('📋 Datos completos del cliente para detalle:', {
+          id: fullClientData.id,
+          firstName: fullClientData.firstName,
+          lastName: fullClientData.lastName,
+          email: fullClientData.email,
+          phone: fullClientData.phone,
+          dateOfBirth: fullClientData.dateOfBirth,
+          age: fullClientData.age,
+          gender: fullClientData.gender,
+          emergencyContact: fullClientData.emergencyContact,
+          address: fullClientData.address,
+          medicalConditions: fullClientData.medicalConditions,
+          allergies: fullClientData.allergies
+        });
+        
+        // Convertir datos del backend al formato local para el detalle
+        const localClientData: Client = {
+          ...fullClientData,
+          status: fullClientData.isActive ? 'active' : 'inactive',
+          clientSince: new Date(fullClientData.createdAt).toLocaleDateString('es-ES'),
+          fullName: `${fullClientData.firstName} ${fullClientData.lastName}`.trim(),
+          appointmentsCount: fullClientData.totalAppointments || 0,
+          totalRevenue: fullClientData.totalPaid || 0,
+          hasPendingInvoices: false,
+          hasUpcomingAppointments: (fullClientData.upcomingAppointments || 0) > 0,
+          hasConfirmedAppointments: false,
+          // Asegurar campos requeridos
+          phone: fullClientData.phone || '',
+          totalAppointments: fullClientData.totalAppointments || 0,
+          birthDate: fullClientData.dateOfBirth
+        };
+        
+        setSelectedClient(localClientData);
+        setActiveTab('personal');
+        setShowHistoryModal(true);
+      }
+    } catch (error: any) {
+      console.error('Error obteniendo datos completos del cliente:', error);
+      
+      let errorMessage = 'No se pudieron cargar los datos completos del cliente';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCloseHistoryModal = () => {

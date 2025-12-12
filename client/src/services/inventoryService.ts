@@ -16,6 +16,7 @@ export interface Supply {
   status: string;
   createdAt: string;
   updatedAt: string;
+  movementsCount?: number;
 }
 
 export interface SupplyFormData {
@@ -55,6 +56,9 @@ export interface InventoryMovement {
   reference?: string;
   createdBy?: string;
   createdAt: string;
+  firstName?: string;
+  lastName?: string;
+  userRole?: string;
 }
 
 export interface MovementFilters {

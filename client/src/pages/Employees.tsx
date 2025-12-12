@@ -149,11 +149,47 @@ const Employees: React.FC = () => {
 
   // Función para manejar la creación del empleado
   const handleCreateEmployee = async () => {
+    console.log('🔍 Iniciando creación de empleado:', createFormData);
+    
+    // Validaciones frontend
+    if (!createFormData.firstName.trim()) {
+      toast.error('El nombre es requerido');
+      return;
+    }
+    
+    if (!createFormData.lastName.trim()) {
+      toast.error('El apellido es requerido');
+      return;
+    }
+    
+    if (!createFormData.email.trim()) {
+      toast.error('El email es requerido');
+      return;
+    }
+    
+    if (!createFormData.password.trim()) {
+      toast.error('La contraseña es requerida');
+      return;
+    }
+    
+    if (createFormData.password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    if (!createFormData.position) {
+      toast.error('Debe seleccionar una posición');
+      return;
+    }
+
     try {
+      console.log('📤 Enviando datos al servicio:', createFormData);
       const response = await employeeService.createEmployee(createFormData);
       
+      console.log('📥 Respuesta del servicio:', response);
+      
       if (response.success) {
-        toast.success('Empleado creado correctamente');
+        toast.success(`Empleado ${createFormData.firstName} ${createFormData.lastName} creado correctamente`);
         setShowCreateModal(false);
         setCreateFormData({
           firstName: '',
@@ -163,13 +199,31 @@ const Employees: React.FC = () => {
           position: '',
           password: ''
         });
-        loadEmployees(); // Recargar la lista
+        await loadEmployees(); // Recargar la lista
       } else {
-        toast.error('Error al crear empleado');
+        const errorMessage = response.message || 'Error al crear empleado';
+        toast.error(errorMessage);
+        console.error('❌ Error en respuesta:', response);
       }
-    } catch (error) {
-      console.error('Error creating employee:', error);
-      toast.error('Error al crear empleado');
+    } catch (error: any) {
+      console.error('❌ Error creating employee:', error);
+      
+      let errorMessage = 'Error al crear empleado';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'No tienes permisos para crear empleados';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'Datos inválidos para crear empleado';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     }
   };
 
@@ -202,23 +256,47 @@ const Employees: React.FC = () => {
   const handleDeleteEmployee = async () => {
     if (!selectedEmployee) return;
 
+    console.log('🗑️ Iniciando eliminación de empleado:', selectedEmployee.id);
+
     try {
       setDeleteLoading(true);
       
       const response = await employeeService.deleteEmployee(selectedEmployee.id);
       
+      console.log('📥 Respuesta del servicio de eliminación:', response);
+      
       if (response.success) {
-        toast.success('Empleado eliminado correctamente');
+        toast.success(`Empleado ${getEmployeeName(selectedEmployee)} eliminado correctamente`);
         setShowDeleteModal(false);
         setSelectedEmployee(null);
         setEmployeeAppointments([]);
-        loadEmployees(); // Recargar la lista
+        await loadEmployees(); // Recargar la lista
       } else {
-        toast.error('Error al eliminar empleado');
+        const errorMessage = response.message || 'Error al eliminar empleado';
+        toast.error(errorMessage);
+        console.error('❌ Error en respuesta de eliminación:', response);
       }
-    } catch (error) {
-      console.error('Error deleting employee:', error);
-      toast.error('Error al eliminar empleado');
+    } catch (error: any) {
+      console.error('❌ Error deleting employee:', error);
+      
+      let errorMessage = 'Error al eliminar empleado';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message === 'Network Error') {
+        errorMessage = 'Error de conexión con el servidor. Por favor, verifique su conexión a internet e intente nuevamente.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'No tienes permisos para eliminar empleados';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || 'No se puede eliminar el empleado';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Empleado no encontrado';
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     } finally {
       setDeleteLoading(false);
     }

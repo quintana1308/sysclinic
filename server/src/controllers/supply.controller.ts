@@ -59,6 +59,7 @@ export const getSupplies = async (
         s.name,
         s.description,
         s.category,
+        s.unit,
         s.stock,
         s.minStock,
         s.maxStock,
@@ -82,7 +83,8 @@ export const getSupplies = async (
         CASE 
           WHEN s.status = 'DISCONTINUED' THEN 0
           ELSE 1
-        END as isActive
+        END as isActive,
+        (SELECT COUNT(*) FROM supply_movements sm WHERE sm.supplyId = s.id) as movementsCount
       FROM supplies s
       ${whereClause}
       ORDER BY s.createdAt DESC
@@ -116,6 +118,14 @@ export const getSupplyById = async (
   try {
     const { id } = req.params;
 
+    console.log('🔍 Obteniendo suministro por ID:', id);
+
+    // Verificar movimientos para debugging
+    const movementsDebug = await query(`
+      SELECT COUNT(*) as count FROM supply_movements WHERE supplyId = ?
+    `, [id]);
+    console.log('📊 Movimientos encontrados para suministro', id, ':', movementsDebug[0]?.count || 0);
+
     const supply = await queryOne<any>(`
       SELECT 
         s.*,
@@ -125,9 +135,10 @@ export const getSupplyById = async (
           ELSE 'normal'
         END as stockStatus,
         CASE 
-          WHEN s.expirationDate IS NOT NULL AND s.expirationDate <= DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1
+          WHEN s.expiryDate IS NOT NULL AND s.expiryDate <= DATE_ADD(NOW(), INTERVAL 30 DAY) THEN 1
           ELSE 0
-        END as nearExpiration
+        END as nearExpiration,
+        (SELECT COUNT(*) FROM supply_movements sm WHERE sm.supplyId = s.id) as movementsCount
       FROM supplies s
       WHERE s.id = ?
     `, [id]);
@@ -135,6 +146,12 @@ export const getSupplyById = async (
     if (!supply) {
       throw new AppError('Insumo no encontrado', 404);
     }
+
+    console.log('📋 Datos del suministro obtenidos:', {
+      id: supply.id,
+      name: supply.name,
+      movementsCount: supply.movementsCount
+    });
 
     const response: ApiResponse = {
       success: true,
@@ -239,6 +256,7 @@ export const updateSupply = async (
       name,
       description,
       category,
+      unit,
       stock,
       minStock,
       maxStock,
@@ -246,6 +264,26 @@ export const updateSupply = async (
       supplier,
       expirationDate
     } = req.body;
+
+    // Formatear fecha para MySQL (solo la parte de fecha YYYY-MM-DD)
+    let formattedExpiryDate = null;
+    if (expirationDate) {
+      try {
+        const date = new Date(expirationDate);
+        if (!isNaN(date.getTime())) {
+          // Convertir a formato YYYY-MM-DD para MySQL DATE
+          formattedExpiryDate = date.toISOString().split('T')[0];
+          console.log('📅 Fecha formateada para MySQL:', {
+            original: expirationDate,
+            formatted: formattedExpiryDate
+          });
+        } else {
+          console.warn('⚠️ Fecha inválida recibida:', expirationDate);
+        }
+      } catch (error) {
+        console.error('❌ Error formateando fecha:', error);
+      }
+    }
 
     // Verificar que el insumo existe
     const supply = await queryOne<any>(`
@@ -285,19 +323,20 @@ export const updateSupply = async (
 
     await query(`
       UPDATE supplies 
-      SET name = ?, description = ?, category = ?, stock = ?, minStock = ?, 
+      SET name = ?, description = ?, category = ?, unit = ?, stock = ?, minStock = ?, 
           maxStock = ?, unitCost = ?, supplier = ?, expiryDate = ?, updatedAt = NOW()
       WHERE id = ?
     `, [
       name || supply.name,
       description !== undefined ? description : supply.description,
       category || supply.category,
+      unit || supply.unit,
       stock !== undefined ? stock : supply.stock,
       minStock !== undefined ? minStock : supply.minStock,
       maxStock !== undefined ? maxStock : supply.maxStock,
       unitPrice !== undefined ? unitPrice : supply.unitCost,
       supplier !== undefined ? supplier : supply.supplier,
-      expirationDate !== undefined ? (expirationDate || null) : supply.expiryDate,
+      formattedExpiryDate !== null ? formattedExpiryDate : (expirationDate === '' ? null : supply.expiryDate),
       id
     ]);
 
@@ -562,7 +601,16 @@ export const getSupplyMovements = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener todos los movimientos sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    // Obtener el stock actual del suministro
+    const currentSupply = await queryOne<any>(`
+      SELECT stock FROM supplies WHERE id = ?
+    `, [id]);
+
+    if (!currentSupply) {
+      throw new AppError('Suministro no encontrado', 404);
+    }
+
+    // Obtener todos los movimientos con información del usuario
     const allMovements = await query<any>(`
       SELECT 
         sm.id,
@@ -570,6 +618,7 @@ export const getSupplyMovements = async (
         sm.reason,
         sm.createdBy,
         sm.createdAt,
+        sm.type as originalType,
         CASE 
           WHEN sm.type = 'IN' THEN 'add'
           WHEN sm.type = 'OUT' THEN 'subtract'
@@ -584,12 +633,69 @@ export const getSupplyMovements = async (
           WHEN sm.type = 'EXPIRED' THEN 'Vencido'
           ELSE 'Entrada'
         END as typeLabel,
-        0 as previousStock,
-        0 as newStock
+        u.firstName,
+        u.lastName,
+        COALESCE(
+          CASE 
+            WHEN r.name = 'administrador' THEN 'Administrador'
+            WHEN r.name = 'empleado' THEN 'Empleado'
+            WHEN r.name = 'cliente' THEN 'Cliente'
+            WHEN r.name = 'master' THEN 'Master'
+            ELSE 'Usuario'
+          END,
+          'Usuario'
+        ) as userRole
       FROM supply_movements sm
+      LEFT JOIN users u ON sm.createdBy = u.id
+      LEFT JOIN user_roles ur ON u.id = ur.userId
+      LEFT JOIN roles r ON ur.roleId = r.id
       WHERE sm.supplyId = ?
       ORDER BY sm.createdAt DESC
     `, [id]);
+
+    // Calcular stock anterior y nuevo para cada movimiento
+    let runningStock = currentSupply.stock;
+    
+    console.log('📊 Calculando stocks para movimientos. Stock actual:', runningStock);
+    
+    for (let i = 0; i < allMovements.length; i++) {
+      const movement = allMovements[i];
+      
+      // El stock nuevo es el stock después de este movimiento (hacia atrás en el tiempo)
+      movement.newStock = runningStock;
+      
+      // Calcular el stock anterior basándose en el tipo de movimiento
+      if (movement.originalType === 'IN') {
+        // Si fue entrada (+), el stock anterior era menor
+        movement.previousStock = runningStock - movement.quantity;
+      } else if (movement.originalType === 'OUT' || movement.originalType === 'EXPIRED') {
+        // Si fue salida (-) o vencido, el stock anterior era mayor
+        movement.previousStock = runningStock + movement.quantity;
+      } else if (movement.originalType === 'ADJUST') {
+        // Para ajustes, el stock se estableció a la cantidad especificada
+        // Necesitamos calcular qué stock había antes del ajuste
+        // Mirando el siguiente movimiento en el tiempo (índice i+1)
+        if (i + 1 < allMovements.length) {
+          movement.previousStock = allMovements[i + 1].newStock || 0;
+        } else {
+          movement.previousStock = 0; // Si es el primer movimiento, asumimos que empezó en 0
+        }
+        movement.newStock = movement.quantity; // El ajuste estableció el stock a esta cantidad
+        runningStock = movement.previousStock;
+        continue;
+      }
+      
+      console.log(`📋 Movimiento ${i + 1}:`, {
+        type: movement.originalType,
+        quantity: movement.quantity,
+        previousStock: movement.previousStock,
+        newStock: movement.newStock,
+        createdBy: `${movement.firstName || 'Usuario'} ${movement.lastName || 'Desconocido'} - ${movement.userRole || 'Sin Rol'}`
+      });
+      
+      // Actualizar runningStock para el siguiente movimiento (hacia atrás en el tiempo)
+      runningStock = movement.previousStock;
+    }
 
     // Aplicar paginación manual
     const movements = allMovements.slice(offset, offset + limit);

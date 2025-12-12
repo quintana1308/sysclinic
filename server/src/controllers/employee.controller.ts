@@ -190,11 +190,59 @@ export const createEmployee = async (
     }
 
     // Obtener empresa actual
-    const companyId = req.user?.isMaster && req.companyId 
-      ? req.companyId 
-      : req.user?.companies?.current?.id;
+    console.log('🏢 Información del usuario para determinar empresa:', {
+      isMaster: req.user?.isMaster,
+      companyId: req.companyId,
+      currentCompanyId: req.user?.currentCompanyId,
+      companiesCurrentId: req.user?.companies?.current?.id,
+      userCompanies: req.user?.companies
+    });
+
+    let companyId: string | undefined;
+    
+    // Para usuarios master, priorizar la empresa actualmente asignada
+    if (req.user?.isMaster) {
+      if (req.user.currentCompanyId) {
+        // Master con empresa asignada - usar esa empresa
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario master usando empresa asignada:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        // Fallback a estructura de companies para master
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario master usando companies.current.id:', companyId);
+      } else if (req.companyId) {
+        // Master con empresa específica seleccionada via parámetro
+        companyId = req.companyId;
+        console.log('✅ Usuario master usando companyId del parámetro:', companyId);
+      } else if (req.user?.companies?.available?.ids?.length > 0) {
+        // Último recurso: primera empresa disponible
+        companyId = req.user.companies.available.ids[0];
+        console.log('⚠️ Usuario master sin empresa asignada, usando primera disponible:', companyId);
+      }
+    } else {
+      // Para usuarios no-master, usar empresa actual
+      if (req.user?.currentCompanyId) {
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario normal usando currentCompanyId:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario normal usando companies.current.id:', companyId);
+      }
+    }
+
+    console.log('🎯 CompanyId final determinado:', companyId);
 
     if (!companyId) {
+      console.error('❌ No se pudo determinar la empresa:', {
+        userInfo: {
+          id: req.user?.id,
+          email: req.user?.email,
+          isMaster: req.user?.isMaster,
+          currentCompanyId: req.user?.currentCompanyId,
+          companies: req.user?.companies
+        },
+        reqCompanyId: req.companyId
+      });
       throw new AppError('No se puede determinar la empresa para el empleado', 400);
     }
 
@@ -287,13 +335,56 @@ export const updateEmployee = async (
       isActive
     } = req.body;
 
-    // Obtener empresa actual para filtrar
-    const companyId = req.user?.isMaster && req.companyId 
-      ? req.companyId 
-      : req.user?.companies?.current?.id;
+    // Obtener empresa actual para filtrar (usar misma lógica que createEmployee)
+    console.log('🏢 Información del usuario para actualizar empleado:', {
+      isMaster: req.user?.isMaster,
+      companyId: req.companyId,
+      currentCompanyId: req.user?.currentCompanyId,
+      companiesCurrentId: req.user?.companies?.current?.id
+    });
+
+    let companyId: string | undefined;
+    
+    // Para usuarios master, priorizar la empresa actualmente asignada
+    if (req.user?.isMaster) {
+      if (req.user.currentCompanyId) {
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario master actualizando empleado de empresa asignada:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario master usando companies.current.id:', companyId);
+      } else if (req.companyId) {
+        companyId = req.companyId;
+        console.log('✅ Usuario master usando companyId del parámetro:', companyId);
+      } else if (req.user?.companies?.available?.ids?.length > 0) {
+        companyId = req.user.companies.available.ids[0];
+        console.log('⚠️ Usuario master usando primera empresa disponible:', companyId);
+      }
+    } else {
+      // Para usuarios no-master, usar empresa actual
+      if (req.user?.currentCompanyId) {
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario normal actualizando empleado de currentCompanyId:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario normal usando companies.current.id:', companyId);
+      }
+    }
+
+    console.log('🎯 CompanyId final para actualización:', companyId);
 
     if (!companyId) {
-      throw new AppError('No se puede determinar la empresa', 400);
+      console.error('❌ No se pudo determinar la empresa para actualización:', {
+        userInfo: {
+          id: req.user?.id,
+          email: req.user?.email,
+          isMaster: req.user?.isMaster,
+          currentCompanyId: req.user?.currentCompanyId,
+          companies: req.user?.companies
+        },
+        reqCompanyId: req.companyId
+      });
+      throw new AppError('No se puede determinar la empresa para actualizar el empleado', 400);
     }
 
     const employee = await queryOne<any>(`
@@ -324,7 +415,7 @@ export const updateEmployee = async (
     }
     if (isActive !== undefined) {
       userUpdateFields.push('isActive = ?');
-      userUpdateValues.push(isActive);
+      userUpdateValues.push(isActive ? 1 : 0);
     }
 
     if (userUpdateFields.length > 0) {
@@ -362,6 +453,10 @@ export const updateEmployee = async (
       employeeUpdateFields.push('hireDate = ?');
       employeeUpdateValues.push(hireDate);
     }
+    if (isActive !== undefined) {
+      employeeUpdateFields.push('isActive = ?');
+      employeeUpdateValues.push(isActive ? 1 : 0);
+    }
 
     if (employeeUpdateFields.length > 0) {
       employeeUpdateFields.push('updatedAt = NOW()');
@@ -398,13 +493,56 @@ export const deleteEmployee = async (
 
     const { id } = req.params;
 
-    // Obtener empresa actual para filtrar
-    const companyId = req.user?.isMaster && req.companyId 
-      ? req.companyId 
-      : req.user?.companies?.current?.id;
+    // Obtener empresa actual para filtrar (usar misma lógica que createEmployee)
+    console.log('🏢 Información del usuario para eliminar empleado:', {
+      isMaster: req.user?.isMaster,
+      companyId: req.companyId,
+      currentCompanyId: req.user?.currentCompanyId,
+      companiesCurrentId: req.user?.companies?.current?.id
+    });
+
+    let companyId: string | undefined;
+    
+    // Para usuarios master, priorizar la empresa actualmente asignada
+    if (req.user?.isMaster) {
+      if (req.user.currentCompanyId) {
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario master eliminando de empresa asignada:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario master usando companies.current.id:', companyId);
+      } else if (req.companyId) {
+        companyId = req.companyId;
+        console.log('✅ Usuario master usando companyId del parámetro:', companyId);
+      } else if (req.user?.companies?.available?.ids?.length > 0) {
+        companyId = req.user.companies.available.ids[0];
+        console.log('⚠️ Usuario master usando primera empresa disponible:', companyId);
+      }
+    } else {
+      // Para usuarios no-master, usar empresa actual
+      if (req.user?.currentCompanyId) {
+        companyId = req.user.currentCompanyId;
+        console.log('✅ Usuario normal eliminando de currentCompanyId:', companyId);
+      } else if (req.user?.companies?.current?.id) {
+        companyId = req.user.companies.current.id;
+        console.log('✅ Usuario normal usando companies.current.id:', companyId);
+      }
+    }
+
+    console.log('🎯 CompanyId final para eliminación:', companyId);
 
     if (!companyId) {
-      throw new AppError('No se puede determinar la empresa', 400);
+      console.error('❌ No se pudo determinar la empresa para eliminación:', {
+        userInfo: {
+          id: req.user?.id,
+          email: req.user?.email,
+          isMaster: req.user?.isMaster,
+          currentCompanyId: req.user?.currentCompanyId,
+          companies: req.user?.companies
+        },
+        reqCompanyId: req.companyId
+      });
+      throw new AppError('No se puede determinar la empresa para eliminar el empleado', 400);
     }
 
     const employee = await queryOne<any>(`
@@ -426,13 +564,37 @@ export const deleteEmployee = async (
       throw new AppError('No se puede eliminar un empleado con citas asignadas', 400);
     }
 
-    // Eliminar empleado (esto desactivará el usuario)
-    await query(`UPDATE employees SET isActive = 0, updatedAt = NOW() WHERE id = ?`, [id]);
-    await query(`UPDATE users SET isActive = 0, updatedAt = NOW() WHERE id = ?`, [employee.userId]);
+    // Eliminar empleado completamente (eliminación física)
+    console.log('🗑️ Eliminando empleado físicamente:', {
+      employeeId: id,
+      userId: employee.userId,
+      employeeName: `${employee.firstName} ${employee.lastName}`,
+      email: employee.email
+    });
+
+    // 1. Limpiar referencias en otras tablas (mantener integridad referencial)
+    await query(`UPDATE appointments SET employeeId = NULL WHERE employeeId = ?`, [id]);
+    console.log('✅ Referencias de citas actualizadas (employeeId = NULL)');
+
+    // 2. Eliminar de tabla employees
+    await query(`DELETE FROM employees WHERE id = ?`, [id]);
+    console.log('✅ Registro eliminado de tabla employees');
+
+    // 3. Eliminar relaciones usuario-empresa
+    await query(`DELETE FROM user_companies WHERE userId = ?`, [employee.userId]);
+    console.log('✅ Relaciones usuario-empresa eliminadas');
+
+    // 4. Eliminar roles del usuario
+    await query(`DELETE FROM user_roles WHERE userId = ?`, [employee.userId]);
+    console.log('✅ Roles del usuario eliminados');
+
+    // 5. Eliminar usuario completamente
+    await query(`DELETE FROM users WHERE id = ?`, [employee.userId]);
+    console.log('✅ Usuario eliminado completamente');
 
     const response: ApiResponse = {
       success: true,
-      message: 'Empleado desactivado exitosamente'
+      message: 'Empleado eliminado exitosamente'
     };
 
     res.json(response);
