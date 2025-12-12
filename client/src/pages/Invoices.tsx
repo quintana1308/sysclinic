@@ -526,12 +526,6 @@ const Invoices: React.FC = () => {
           >
             🔄 Limpiar Filtros
           </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            🧾 Nueva Factura
-          </button>
         </div>
       </div>
 
@@ -722,7 +716,6 @@ const Invoices: React.FC = () => {
                           onClick={() => openDetailsModal(invoice)}
                           className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                         >
-                          <EyeIcon className="h-4 w-4 mr-1" />
                           Ver
                         </button>
                         <button
@@ -992,10 +985,10 @@ const Invoices: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="flex-shrink-0">
+                            <div className="mt-3">
                               <button
                                 onClick={() => openPaymentDetailsModal(payment)}
-                                className="inline-flex items-center px-3 py-2 text-sm font-medium text-pink-700 bg-pink-100 border border-pink-300 rounded-lg hover:bg-pink-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                                className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-pink-700 bg-pink-100 border border-pink-300 rounded-lg hover:bg-pink-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
                                 title="Ver detalles del pago"
                               >
                                 <EyeIcon className="h-4 w-4 mr-1" />
@@ -1244,11 +1237,11 @@ const Invoices: React.FC = () => {
 
       {/* Modal de Detalles del Pago */}
       {showPaymentDetailsModal && selectedPayment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-pink-200 bg-pink-50">
-              <h3 className="text-lg font-semibold text-pink-800">💰 Detalles del Pago</h3>
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800">💰 Detalles del Pago</h3>
               <button
                 onClick={closePaymentDetailsModal}
                 className="text-gray-400 hover:text-gray-600"
@@ -1263,10 +1256,10 @@ const Invoices: React.FC = () => {
             <div className="p-6">
               <div className="space-y-4">
                 {/* Monto */}
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-pink-700">Monto Pagado</span>
-                    <span className="text-2xl font-bold text-pink-800">
+                    <span className="text-sm font-medium text-green-700">Monto Pagado</span>
+                    <span className="text-2xl font-bold text-green-800">
                       ${formatAmount(selectedPayment.amount)}
                     </span>
                   </div>
@@ -1275,20 +1268,20 @@ const Invoices: React.FC = () => {
                 {/* Información del Pago */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       💳 Método de Pago
                     </label>
-                    <div className="text-sm text-pink-900 bg-pink-50 p-2 rounded border border-pink-200">
+                    <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border border-gray-200">
                       {selectedPayment.method}
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       ✅ Estado
                     </label>
                     <div className="text-sm">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-pink-100 text-pink-800 rounded-full">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                         {selectedPayment.status === 'PAID' ? 'Pagado' : selectedPayment.status}
                       </span>
                     </div>
@@ -1298,10 +1291,10 @@ const Invoices: React.FC = () => {
                 {/* Fechas */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       📅 Fecha de Pago
                     </label>
-                    <div className="text-sm text-pink-900 bg-pink-50 p-2 rounded border border-pink-200">
+                    <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border border-gray-200">
                       {selectedPayment.paidDate 
                         ? new Date(selectedPayment.paidDate).toLocaleDateString('es-ES', {
                             year: 'numeric',
@@ -1314,10 +1307,10 @@ const Invoices: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       🗓️ Fecha de Registro
                     </label>
-                    <div className="text-sm text-pink-900 bg-pink-50 p-2 rounded border border-pink-200">
+                    <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border border-gray-200">
                       {new Date(selectedPayment.createdAt).toLocaleDateString('es-ES', {
                         year: 'numeric',
                         month: 'long',
@@ -1330,10 +1323,10 @@ const Invoices: React.FC = () => {
                 {/* ID de Transacción */}
                 {selectedPayment.transactionId && (
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       🏷️ ID de Transacción
                     </label>
-                    <div className="text-sm text-pink-600 bg-pink-50 p-2 rounded font-mono border border-pink-200">
+                    <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded font-mono border border-blue-200">
                       {selectedPayment.transactionId}
                     </div>
                   </div>
@@ -1342,10 +1335,10 @@ const Invoices: React.FC = () => {
                 {/* Notas */}
                 {selectedPayment.notes && (
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       📝 Notas
                     </label>
-                    <div className="text-sm text-pink-900 bg-pink-50 p-3 rounded border border-pink-200">
+                    <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded border border-gray-200">
                       {selectedPayment.notes}
                     </div>
                   </div>
@@ -1354,20 +1347,19 @@ const Invoices: React.FC = () => {
                 {/* Factura Asociada */}
                 {selectedPayment.invoiceId && (
                   <div>
-                    <label className="block text-sm font-medium text-pink-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       📄 Factura Asociada
                     </label>
-                    <div className="flex items-center justify-between bg-pink-50 border border-pink-200 rounded-lg p-3">
-                      <div className="text-sm text-pink-900">
+                    <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="text-sm text-blue-900">
                         <div className="font-medium">Factura #{selectedPayment.invoiceId.slice(-8).toUpperCase()}</div>
-                        <div className="text-xs text-pink-600">ID: {selectedPayment.invoiceId}</div>
+                        <div className="text-xs text-blue-600">ID: {selectedPayment.invoiceId}</div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleViewInvoiceFromPayment(selectedPayment)}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-pink-600 bg-pink-100 rounded hover:bg-pink-200 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200 transition-colors"
                         >
-                          <DocumentIcon className="h-3 w-3 mr-1" />
                           Ver
                         </button>
                       </div>
@@ -1376,9 +1368,9 @@ const Invoices: React.FC = () => {
                 )}
 
                 {/* Información Adicional */}
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-pink-700 mb-2">📊 Información Adicional</h4>
-                  <div className="space-y-1 text-xs text-pink-600">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">📊 Información Adicional</h4>
+                  <div className="space-y-1 text-xs text-gray-600">
                     <div>ID del Pago: {selectedPayment.id}</div>
                     {selectedPayment.createdBy && (
                       <div>Registrado por: {selectedPayment.createdBy}</div>
@@ -1394,7 +1386,6 @@ const Invoices: React.FC = () => {
                 onClick={() => handleViewInvoiceFromPayment(selectedPayment)}
                 className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-pink-600 rounded-md hover:bg-pink-700 transition-colors"
               >
-                <DocumentIcon className="h-4 w-4 mr-2" />
                 Ver Factura
               </button>
               <button
