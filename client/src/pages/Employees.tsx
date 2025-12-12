@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { employeeService, Employee } from '../services/employeeService';
-import { useAuth } from '../contexts/AuthContext';
-import { usePermissions } from '../hooks/usePermissions';
 import { toast } from 'react-hot-toast';
+import { employeeService, Employee, EmployeeFormData } from '../services/employeeService';
+import { usePermissions } from '../hooks/usePermissions';
+import { formatDateVenezuela, formatDateForBackend } from '../utils/dateUtils';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon, 
@@ -107,7 +108,7 @@ const Employees: React.FC = () => {
       specialties: employee.specialties || '',
       schedule: employee.schedule ? JSON.stringify(employee.schedule) : '',
       salary: employee.salary ? employee.salary.toString() : '',
-      hireDate: employee.hireDate ? employee.hireDate.split('T')[0] : '',
+      hireDate: employee.hireDate ? formatDateVenezuela(employee.hireDate, 'input') : '',
       role: employee.role || 'employee',
       isActive: employee.isActive === 1 || employee.isActive === true
     });
@@ -129,7 +130,7 @@ const Employees: React.FC = () => {
         specialties: editFormData.specialties,
         schedule: editFormData.schedule ? JSON.parse(editFormData.schedule) : null,
         salary: editFormData.salary ? parseFloat(editFormData.salary) : undefined,
-        hireDate: editFormData.hireDate,
+        hireDate: formatDateForBackend(editFormData.hireDate),
         role: editFormData.role as 'owner' | 'employee',
         isActive: editFormData.isActive
       };
@@ -546,7 +547,7 @@ const Employees: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <span className="text-pink-500">📅</span>
                     <span className="text-sm text-gray-700">
-                      Desde {new Date(employee.hireDate || employee.createdAt).toLocaleDateString('es-ES')}
+                      Desde {formatDateVenezuela(employee.hireDate || employee.createdAt, 'short')}
                     </span>
                   </div>
                 </div>
@@ -693,65 +694,24 @@ const Employees: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-purple-700">📅 Fecha de Contratación</span>
                     <span className="text-sm text-purple-800">
-                      {new Date(selectedEmployee.hireDate || selectedEmployee.createdAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {formatDateVenezuela(selectedEmployee.hireDate || selectedEmployee.createdAt, 'long')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-purple-700">🔄 Última Actualización</span>
                     <span className="text-sm text-purple-800">
-                      {new Date(selectedEmployee.updatedAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {formatDateVenezuela(selectedEmployee.updatedAt, 'long')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-purple-700">📝 Fecha de Registro</span>
                     <span className="text-sm text-purple-800">
-                      {new Date(selectedEmployee.createdAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {formatDateVenezuela(selectedEmployee.createdAt, 'long')}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Estadísticas */}
-              {(selectedEmployee.totalAppointments !== undefined || selectedEmployee.completedAppointments !== undefined) && (
-                <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-teal-800 mb-4 flex items-center">
-                    📊 Estadísticas de Rendimiento
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-teal-100 rounded-lg p-3 text-center">
-                      <div className="text-2xl font-bold text-teal-600">
-                        {selectedEmployee.totalAppointments || 0}
-                      </div>
-                      <div className="text-xs text-teal-700">Citas Totales</div>
-                    </div>
-                    <div className="bg-teal-100 rounded-lg p-3 text-center">
-                      <div className="text-2xl font-bold text-teal-600">
-                        {selectedEmployee.completedAppointments || 0}
-                      </div>
-                      <div className="text-xs text-teal-700">Citas Completadas</div>
-                    </div>
-                    <div className="bg-teal-100 rounded-lg p-3 text-center">
-                      <div className="text-2xl font-bold text-teal-600">
-                        {selectedEmployee.totalAppointments ? 
-                          Math.round(((selectedEmployee.completedAppointments || 0) / selectedEmployee.totalAppointments) * 100) : 0}%
-                      </div>
-                      <div className="text-xs text-teal-700">Tasa de Éxito</div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Información Adicional */}
               {selectedEmployee.specialties && (
@@ -1057,7 +1017,7 @@ const Employees: React.FC = () => {
                   <div>
                     <span className="font-medium text-yellow-700">Fecha de Contratación:</span>
                     <span className="ml-2 text-yellow-600">
-                      {new Date(selectedEmployee.hireDate || selectedEmployee.createdAt).toLocaleDateString('es-ES')}
+                      {formatDateVenezuela(selectedEmployee.hireDate || selectedEmployee.createdAt, 'short')}
                     </span>
                   </div>
                 </div>
