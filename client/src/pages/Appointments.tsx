@@ -1880,6 +1880,18 @@ const Appointments: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Sección Notas de la Cita */}
+              {selectedAppointment.notes && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-yellow-800 mb-4">📝 Notas de la Cita</h3>
+                  <div className="bg-white border border-yellow-200 rounded-lg p-3">
+                    <div className="text-sm text-yellow-800 whitespace-pre-wrap">
+                      {selectedAppointment.notes}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}

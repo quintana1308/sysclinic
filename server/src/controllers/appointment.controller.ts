@@ -37,6 +37,27 @@ export const getAppointments = async (
       params.push(req.companyId);
     }
 
+    // Filtrar por cliente si el usuario es cliente (solo puede ver sus propias citas)
+    if (req.user?.roles?.some((role: any) => 
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
+    )) {
+      // Buscar el clientId basado en el userId
+      const clientRecord = await queryOne<{ id: string }>(`
+        SELECT id FROM clients WHERE userId = ?
+      `, [req.user.id]);
+      
+      if (clientRecord) {
+        whereClause += ` AND a.clientId = ?`;
+        params.push(clientRecord.id);
+        console.log(`🔍 Cliente ${req.user.id} filtrando citas por clientId: ${clientRecord.id}`);
+      } else {
+        // Si no se encuentra el registro de cliente, no mostrar citas
+        console.log(`❌ No se encontró registro de cliente para usuario: ${req.user.id}`);
+        whereClause += ` AND 1=0`; // Condición que nunca se cumple
+      }
+    }
+
     if (search) {
       whereClause += ` AND (uc.firstName LIKE ? OR uc.lastName LIKE ? OR uc.email LIKE ?)`;
       const searchTerm = `%${search}%`;
@@ -81,7 +102,7 @@ export const getAppointments = async (
 
     const total = totalResult?.total || 0;
 
-    // Obtener todas las citas sin LIMIT/OFFSET para compatibilidad Railway MySQL
+    // Consulta simplificada sin GROUP BY para compatibilidad Railway MySQL
     const allAppointments = await query<any>(`
       SELECT 
         a.*,
@@ -92,26 +113,45 @@ export const getAppointments = async (
         uc.phone as clientPhone,
         e.position as employeePosition,
         ue.firstName as employeeFirstName,
-        ue.lastName as employeeLastName,
-        GROUP_CONCAT(
-          CONCAT(t.name, ' ($', at.price, ' x', at.quantity, ')')
-          SEPARATOR ', '
-        ) as treatments,
-        SUM(at.price * at.quantity) as calculatedTotal
+        ue.lastName as employeeLastName
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN employees e ON a.employeeId = e.id
       LEFT JOIN users ue ON e.userId = ue.id
-      LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
-      LEFT JOIN treatments t ON at.treatmentId = t.id
       ${whereClause}
-      GROUP BY a.id
       ORDER BY a.date DESC, a.startTime DESC
     `, params);
 
+    console.log(`📊 Citas encontradas: ${allAppointments.length}`);
+    console.log(`📊 Parámetros utilizados:`, params);
+
     // Aplicar paginación manual
     const appointments = allAppointments.slice(offset, offset + limit);
+
+    // Obtener tratamientos para cada cita
+    for (const appointment of appointments) {
+      try {
+        const treatments = await query<any>(`
+          SELECT 
+            t.id,
+            t.name,
+            t.description,
+            t.duration,
+            at.price,
+            at.quantity
+          FROM appointment_treatments at
+          INNER JOIN treatments t ON at.treatmentId = t.id
+          WHERE at.appointmentId = ?
+        `, [appointment.id]);
+
+        appointment.treatments = treatments || [];
+        console.log(`📋 Cita ${appointment.id}: ${treatments.length} tratamientos encontrados`);
+      } catch (treatmentError) {
+        console.error(`❌ Error obteniendo tratamientos para cita ${appointment.id}:`, treatmentError);
+        appointment.treatments = [];
+      }
+    }
 
     const response: PaginatedResponse = {
       success: true,
@@ -586,9 +626,10 @@ export const updateAppointmentStatus = async (
 
     let invoiceId = null;
 
-    // Si el estado cambia a CONFIRMED, generar factura automáticamente
-    if (status === 'CONFIRMED' && appointment.status !== 'CONFIRMED') {
-      console.log('💰 ¡CONDICIÓN CUMPLIDA! Cita completada - generando factura automáticamente...');
+    // Si el estado cambia a CONFIRMED o COMPLETED, generar factura automáticamente
+    if ((status === 'CONFIRMED' || status === 'COMPLETED') && 
+        (appointment.status !== 'CONFIRMED' && appointment.status !== 'COMPLETED')) {
+      console.log('💰 ¡CONDICIÓN CUMPLIDA! Cita confirmada/completada - generando factura automáticamente...');
       
       try {
         console.log('🔍 Paso 1: Obteniendo información de la cita con tratamientos...');
@@ -691,7 +732,8 @@ export const updateAppointmentStatus = async (
       }
     } else {
       console.log('❌ Condición NO cumplida para generar factura');
-      console.log('   - Razón: El estado no cambió a COMPLETED o ya era COMPLETED');
+      console.log('   - Razón: El estado no cambió a CONFIRMED/COMPLETED o ya estaba en uno de esos estados');
+      console.log('   - Estado actual:', appointment.status, '-> Nuevo estado:', status);
     }
 
     const response: ApiResponse = {
@@ -702,6 +744,172 @@ export const updateAppointmentStatus = async (
 
     res.json(response);
   } catch (error) {
+    next(error);
+  }
+};
+
+export const confirmAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    console.log('🚀 Iniciando confirmación de cita:', id);
+
+    // Verificar que la cita existe
+    const appointment = await queryOne<any>(`
+      SELECT * FROM appointments WHERE id = ?
+    `, [id]);
+
+    if (!appointment) {
+      throw new AppError('Cita no encontrada', 404);
+    }
+
+    console.log('📋 Cita encontrada:', appointment);
+
+    // Verificar que el usuario tiene permisos para confirmar esta cita
+    if (req.user?.roles?.some((role: any) => 
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
+    )) {
+      // Si es cliente, verificar que la cita le pertenece
+      const clientRecord = await queryOne<{ id: string }>(`
+        SELECT id FROM clients WHERE userId = ?
+      `, [req.user.id]);
+
+      if (!clientRecord || appointment.clientId !== clientRecord.id) {
+        throw new AppError('No tienes permisos para confirmar esta cita', 403);
+      }
+      console.log('✅ Cliente autorizado para confirmar su propia cita');
+    }
+
+    // Verificar que la cita se puede confirmar
+    if (appointment.status === 'CONFIRMED') {
+      throw new AppError('La cita ya está confirmada', 400);
+    }
+
+    if (appointment.status === 'CANCELLED') {
+      throw new AppError('No se puede confirmar una cita cancelada', 400);
+    }
+
+    if (appointment.status === 'COMPLETED') {
+      throw new AppError('No se puede confirmar una cita completada', 400);
+    }
+
+    if (appointment.status !== 'SCHEDULED') {
+      throw new AppError('Solo se pueden confirmar citas programadas', 400);
+    }
+
+    console.log('✅ Validaciones pasadas, procediendo con la confirmación');
+
+    // Actualizar el estado a confirmado
+    await query(`
+      UPDATE appointments 
+      SET status = 'CONFIRMED', 
+          notes = CONCAT(COALESCE(notes, ''), '\n--- CONFIRMADA POR EL CLIENTE ---\nFecha de confirmación: ', NOW()),
+          updatedAt = NOW()
+      WHERE id = ?
+    `, [id]);
+
+    let invoiceId = null;
+
+    // Generar factura automáticamente al confirmar
+    console.log('💰 Cita confirmada - generando factura automáticamente...');
+    
+    try {
+      console.log('🔍 Paso 1: Obteniendo información de la cita con tratamientos...');
+      
+      // Obtener información de la cita con tratamientos para generar factura
+      const appointmentWithTreatments = await queryOne<any>(`
+        SELECT 
+          a.*,
+          uc.firstName as clientFirstName,
+          uc.lastName as clientLastName,
+          GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames,
+          SUM(at.price * at.quantity) as totalAmount
+        FROM appointments a
+        INNER JOIN clients c ON a.clientId = c.id
+        INNER JOIN users uc ON c.userId = uc.id
+        LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
+        LEFT JOIN treatments t ON at.treatmentId = t.id
+        WHERE a.id = ?
+        GROUP BY a.id
+      `, [id]);
+
+      console.log('📋 Datos de cita obtenidos:', {
+        found: !!appointmentWithTreatments,
+        clientId: appointmentWithTreatments?.clientId,
+        clientName: appointmentWithTreatments ? `${appointmentWithTreatments.clientFirstName} ${appointmentWithTreatments.clientLastName}` : 'N/A',
+        treatmentNames: appointmentWithTreatments?.treatmentNames,
+        totalAmount: appointmentWithTreatments?.totalAmount
+      });
+
+      if (appointmentWithTreatments) {
+        console.log('🔍 Paso 2: Verificando si ya existe factura...');
+        
+        // Verificar si ya existe una factura para esta cita
+        const existingInvoice = await queryOne(`
+          SELECT id FROM invoices WHERE appointmentId = ?
+        `, [id]);
+
+        console.log('📄 Factura existente:', existingInvoice ? existingInvoice.id : 'No existe');
+
+        if (!existingInvoice) {
+          console.log('🔍 Paso 3: Creando nueva factura...');
+          
+          // Generar número de factura único
+          const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+          
+          // Crear la factura
+          const invoiceResult = await query(`
+            INSERT INTO invoices (
+              invoiceNumber, 
+              clientId, 
+              appointmentId, 
+              amount, 
+              status, 
+              dueDate, 
+              description,
+              companyId,
+              createdAt,
+              updatedAt
+            ) VALUES (?, ?, ?, ?, 'PENDING', DATE_ADD(NOW(), INTERVAL 30 DAY), ?, ?, NOW(), NOW())
+          `, [
+            invoiceNumber,
+            appointmentWithTreatments.clientId,
+            id,
+            appointmentWithTreatments.totalAmount || 0,
+            `Factura por cita médica - ${appointmentWithTreatments.treatmentNames || 'Consulta General'}`,
+            appointmentWithTreatments.companyId
+          ]) as any;
+
+          invoiceId = invoiceResult.insertId;
+          console.log('✅ Factura creada exitosamente:', { invoiceId, invoiceNumber });
+        } else {
+          invoiceId = existingInvoice.id;
+          console.log('ℹ️ Usando factura existente:', invoiceId);
+        }
+      } else {
+        console.log('⚠️ No se pudo obtener información de la cita para generar factura');
+      }
+    } catch (invoiceError) {
+      console.error('❌ Error al generar factura automática:', invoiceError);
+      // No fallar la confirmación si hay error en la factura
+    }
+
+    console.log('✅ Cita confirmada exitosamente');
+
+    const response: ApiResponse = {
+      success: true,
+      message: `Cita confirmada exitosamente${invoiceId ? '. Factura generada automáticamente.' : ''}`,
+      data: invoiceId ? { invoiceId } : undefined
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Error al confirmar cita:', error);
     next(error);
   }
 };
@@ -728,6 +936,22 @@ export const cancelAppointment = async (
     }
 
     console.log('📋 Cita encontrada:', appointment);
+
+    // Verificar que el usuario tiene permisos para cancelar esta cita
+    if (req.user?.roles?.some((role: any) => 
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
+    )) {
+      // Si es cliente, verificar que la cita le pertenece
+      const clientRecord = await queryOne<{ id: string }>(`
+        SELECT id FROM clients WHERE userId = ?
+      `, [req.user.id]);
+
+      if (!clientRecord || appointment.clientId !== clientRecord.id) {
+        throw new AppError('No tienes permisos para cancelar esta cita', 403);
+      }
+      console.log('✅ Cliente autorizado para cancelar su propia cita');
+    }
 
     // Verificar que la cita se puede cancelar
     if (appointment.status === 'CANCELLED') {

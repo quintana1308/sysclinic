@@ -9,6 +9,7 @@ import {
   updateAppointment,
   deleteAppointment,
   updateAppointmentStatus,
+  confirmAppointment,
   cancelAppointment
 } from '../controllers/appointment.controller';
 
@@ -47,6 +48,12 @@ router.put('/:id',
 router.patch('/:id/status', 
   requirePermission({ resource: 'appointments', action: 'update' }),
   updateAppointmentStatus
+);
+
+// Confirmar cita
+router.patch('/:id/confirm', 
+  requirePermission({ resource: 'appointments', action: 'update' }),
+  confirmAppointment
 );
 
 // Cancelar cita

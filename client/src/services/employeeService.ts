@@ -115,10 +115,27 @@ class EmployeeService {
   // Obtener solo empleados activos (para selectores)
   async getActiveEmployees(): Promise<{ success: boolean; data: Employee[] }> {
     try {
+      console.log('🔍 Llamando al endpoint de empleados activos...');
       const response = await api.get('/employees?status=active&limit=1000');
-      return response.data;
+      console.log('📋 Respuesta del servidor de empleados:', response.data);
+      
+      if (response.data && response.data.success) {
+        console.log('✅ Empleados obtenidos exitosamente:', response.data.data);
+        return response.data;
+      } else {
+        console.log('❌ Respuesta del servidor no exitosa:', response.data);
+        return {
+          success: false,
+          data: []
+        };
+      }
     } catch (error: any) {
-      console.error('Error fetching active employees:', error);
+      console.error('❌ Error fetching active employees:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
       // Retornar estructura consistente en caso de error
       return {
         success: false,

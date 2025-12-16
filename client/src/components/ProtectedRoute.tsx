@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions, Permission } from '../hooks/usePermissions';
@@ -16,8 +16,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermissions = [],
   page
 }) => {
-  const { isAuthenticated, isLoading, hasRole } = useAuth();
+  const { isAuthenticated, isLoading, hasRole, isClient, user } = useAuth();
   const { hasAnyPermission, canAccessPage } = usePermissions();
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [redirectPath, setRedirectPath] = useState('');
+
+  // Efecto para countdown y redirección automática
+  useEffect(() => {
+    if (!shouldRedirect) return;
+
+    const timer = setInterval(() => {
+      setRedirectCountdown(prev => {
+        if (prev <= 1) {
+          window.location.href = redirectPath;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [shouldRedirect, redirectPath]);
 
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
@@ -65,23 +85,62 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const hasRequiredRole = requiredRoles.some(role => hasRole(role));
 
     if (!hasRequiredRole) {
+      // Determinar a dónde redirigir según el rol del usuario
+      const currentRedirectPath = isClient() ? '/client-dashboard' : '/dashboard';
+      const userRoleText = isClient() ? 'Cliente' : 'Administrativo';
+      const targetSectionText = requiredRoles.includes('cliente') || requiredRoles.includes('client') 
+        ? 'área de clientes' 
+        : 'área administrativa';
+
+      // Configurar redirección automática
+      if (!shouldRedirect) {
+        setRedirectPath(currentRedirectPath);
+        setShouldRedirect(true);
+      }
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Rol Insuficiente
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              🚫 Acceso Denegado
             </h2>
-            <p className="text-gray-600 mb-4">
-              Tu rol actual no tiene permisos para esta funcionalidad.
-            </p>
-            <p className="text-sm text-gray-500">
-              Roles requeridos: {requiredRoles.join(', ')}
-            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-800 font-medium mb-2">
+                Tu rol actual ({userRoleText}) no puede acceder al {targetSectionText}.
+              </p>
+              <p className="text-red-700 text-sm">
+                Roles permitidos: {requiredRoles.join(', ')}
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 text-sm mb-2">
+                🔄 Serás redirigido automáticamente a tu dashboard en:
+              </p>
+              <div className="text-2xl font-bold text-blue-600">
+                {redirectCountdown} segundos
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => window.location.href = currentRedirectPath}
+                className="inline-flex items-center px-4 py-2 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                🏠 Ir a Mi Dashboard
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+              >
+                ← Regresar
+              </button>
+            </div>
           </div>
         </div>
       );

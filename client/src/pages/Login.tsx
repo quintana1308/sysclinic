@@ -4,16 +4,20 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, isClient } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirigir si ya está autenticado
+  // Redirigir si ya está autenticado según el rol
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    if (isClient()) {
+      return <Navigate to="/client-dashboard" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

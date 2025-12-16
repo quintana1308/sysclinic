@@ -6,8 +6,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import ClientDashboard from './pages/ClientDashboard';
 import LicenseStatus from './pages/LicenseStatus';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleBasedRedirect from './components/RoleBasedRedirect';
 import './index.css';
 
 // Crear cliente de React Query
@@ -32,15 +34,28 @@ function App() {
               <Route path="/" element={<Login />} />
               <Route path="/license-status" element={<LicenseStatus />} />
               
-              {/* Rutas protegidas */}
+              {/* Rutas protegidas para empleados/admin */}
               <Route 
                 path="/dashboard/*" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requiredRoles={['administrador', 'empleado', 'master']}>
                     <Dashboard />
                   </ProtectedRoute>
                 } 
               />
+              
+              {/* Rutas protegidas para clientes */}
+              <Route 
+                path="/client-dashboard/*" 
+                element={
+                  <ProtectedRoute requiredRoles={['cliente', 'client']}>
+                    <ClientDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Ruta para redirección automática basada en rol */}
+              <Route path="/auto-redirect" element={<RoleBasedRedirect />} />
               
               {/* Redirección por defecto */}
               <Route path="*" element={<Navigate to="/" replace />} />

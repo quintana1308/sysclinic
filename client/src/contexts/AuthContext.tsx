@@ -97,6 +97,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔍 Roles:', roles);
       console.log('🔍 Es master:', userData.isMaster);
       
+      // Redirección automática basada en el rol
+      const userRoles = roles || [];
+      const isClientUser = userRoles.includes('cliente') || userRoles.includes('client');
+      
+      if (isClientUser) {
+        console.log('🔄 Redirigiendo cliente a /client-dashboard');
+        window.location.href = '/client-dashboard';
+      } else {
+        console.log('🔄 Redirigiendo usuario administrativo a /dashboard');
+        window.location.href = '/dashboard';
+      }
+      
       toast.success('Inicio de sesión exitoso');
     } catch (error: any) {
       console.error('Error en login:', error);

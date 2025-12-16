@@ -50,17 +50,21 @@ export const hasPermission = (user: any, permission: Permission): boolean => {
       case 'employee':
         // Empleado tiene permisos limitados
         if (permission.resource === 'clients' && permission.action === 'delete') return false;
+        if (permission.resource === 'employees' && ['create', 'update', 'delete'].includes(permission.action)) return false;
         if (permission.resource === 'reports') return false;
         if (permission.resource === 'settings' && permission.action !== 'read') return false;
         if (permission.resource === 'inventory' && ['create', 'delete'].includes(permission.action)) return false;
         if (permission.resource === 'invoices' && ['create', 'delete'].includes(permission.action)) return false;
-        return ['clients', 'appointments', 'treatments', 'inventory', 'invoices', 'payments'].includes(permission.resource);
+        return ['clients', 'appointments', 'treatments', 'employees', 'inventory', 'invoices', 'payments'].includes(permission.resource);
         
       case 'cliente':
       case 'client':
-        // Cliente solo puede ver su propia información
+        // Cliente puede ver su propia información y citas (filtradas automáticamente en el controlador)
+        if (permission.resource === 'appointments') {
+          // Los clientes pueden leer y actualizar (cancelar) sus citas (el filtro se aplica en el controlador)
+          return permission.action === 'read' || permission.action === 'update';
+        }
         return permission.resource === 'profile' || 
-               (permission.resource === 'appointments' && permission.scope === 'own') ||
                (permission.resource === 'treatments' && permission.action === 'read');
     }
   }
@@ -94,7 +98,20 @@ export const requireCompanyAccess = (req: AuthenticatedRequest, res: Response, n
     return next();
   }
 
-  // Verificar que el usuario tenga una empresa actual
+  // Verificar si es cliente - los clientes obtienen su companyId desde la tabla clients
+  const userRoles = req.user.roles || [];
+  const isClient = userRoles.some((role: any) => 
+    (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
+    (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
+  );
+
+  if (isClient) {
+    // Para clientes, el companyId se obtendrá en el controlador desde la tabla clients
+    console.log(`🔍 Cliente detectado: ${req.user.id}, permitiendo acceso sin companyId`);
+    return next();
+  }
+
+  // Para otros roles, verificar que el usuario tenga una empresa actual
   if (!req.user.companies?.current?.id) {
     return next(new AppError('Usuario no tiene empresa asignada', 403));
   }
