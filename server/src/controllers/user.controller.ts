@@ -461,26 +461,45 @@ export const updateUser = async (
 
     console.log(`✏️ Actualizando usuario: ${existingUser.firstName} ${existingUser.lastName}`);
 
-    // Actualizar datos del usuario
-    const updateData: any = {};
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
-    if (isActive !== undefined) updateData.isActive = isActive ? 1 : 0;
-    updateData.updatedAt = new Date();
+    // Actualizar datos del usuario - Método compatible con Railway MySQL
+    const updates: string[] = [];
+    const values: any[] = [];
 
-    console.log('📊 Datos a actualizar:', updateData);
+    if (firstName !== undefined) {
+      updates.push('firstName = ?');
+      values.push(firstName);
+    }
+    if (lastName !== undefined) {
+      updates.push('lastName = ?');
+      values.push(lastName);
+    }
+    if (email !== undefined) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+    if (phone !== undefined) {
+      updates.push('phone = ?');
+      values.push(phone);
+    }
+    if (isActive !== undefined) {
+      updates.push('isActive = ?');
+      values.push(isActive ? 1 : 0);
+    }
+    
+    // Siempre actualizar updatedAt
+    updates.push('updatedAt = NOW()');
 
-    // Construir consulta de actualización dinámicamente
-    const updateFields = Object.keys(updateData).map(field => `${field} = ?`).join(', ');
-    const updateValues = Object.values(updateData);
+    console.log('📊 Campos a actualizar:', updates);
+    console.log('📊 Valores:', values);
 
-    console.log('🔧 Consulta SQL:', `UPDATE users SET ${updateFields} WHERE id = ?`);
-    console.log('🔧 Valores:', [...updateValues, id]);
-
-    if (updateFields) {
-      const result = await query(`UPDATE users SET ${updateFields} WHERE id = ?`, [...updateValues, id]);
+    if (updates.length > 0) {
+      const updateSQL = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+      values.push(id);
+      
+      console.log('🔧 Consulta SQL final:', updateSQL);
+      console.log('🔧 Valores finales:', values);
+      
+      const result = await query(updateSQL, values);
       console.log('✅ Actualización de datos básicos completada');
     } else {
       console.log('ℹ️ No hay datos básicos para actualizar');
@@ -518,7 +537,8 @@ export const updateUser = async (
 
       // 1. Actualizar user_roles (roles globales)
       await query('DELETE FROM user_roles WHERE userId = ?', [id]);
-      await query('INSERT INTO user_roles (userId, roleId) VALUES (?, ?)', [id, roleId]);
+      const userRoleId = generateId();
+      await query('INSERT INTO user_roles (id, userId, roleId, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())', [userRoleId, id, roleId]);
       console.log('✅ Rol global actualizado en user_roles');
 
       // 2. Actualizar user_companies (roles por empresa)
@@ -746,17 +766,45 @@ export const createUser = async (
     const hashedPassword = await hashPassword(password);
 
     // Crear usuario
-    await query(`
+    console.log(`🔄 Creando usuario en tabla users:`);
+    console.log(`   - userId: ${userId}`);
+    console.log(`   - email: ${email}`);
+    
+    const userInsertResult = await query(`
       INSERT INTO users (id, firstName, lastName, email, phone, password, isActive, isMaster, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())
     `, [userId, firstName, lastName, email, phone || null, hashedPassword, isActive ? 1 : 0]);
+    
+    console.log('✅ Usuario creado en tabla users');
+    console.log('📊 Resultado de inserción usuario:', userInsertResult);
 
     // Usar empresa del formulario
     const companyId = userCompanyId;
 
     // 1. Asignar rol global
-    await query('INSERT INTO user_roles (userId, roleId) VALUES (?, ?)', [userId, roleId]);
-    console.log('✅ Rol global asignado en user_roles');
+    console.log(`🔄 Intentando asignar rol global:`);
+    console.log(`   - userId: ${userId}`);
+    console.log(`   - roleId: ${roleId}`);
+    console.log(`   - roleName: ${roleExists.name}`);
+    
+    try {
+      const userRoleId = generateId();
+      const roleInsertResult = await query('INSERT INTO user_roles (id, userId, roleId, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())', [userRoleId, userId, roleId]);
+      console.log('✅ Rol global asignado en user_roles');
+      console.log('📊 Resultado de inserción:', roleInsertResult);
+      
+      // Verificar que el rol se insertó correctamente
+      const verifyRole = await queryOne('SELECT * FROM user_roles WHERE userId = ? AND roleId = ?', [userId, roleId]);
+      if (verifyRole) {
+        console.log('✅ VERIFICACIÓN: Rol encontrado en user_roles:', verifyRole);
+      } else {
+        console.error('❌ VERIFICACIÓN: Rol NO encontrado en user_roles después de inserción');
+        throw new AppError('Error: El rol no se insertó correctamente en user_roles', 500);
+      }
+    } catch (roleError: any) {
+      console.error('❌ ERROR al asignar rol global:', roleError);
+      throw new AppError(`Error al asignar rol: ${roleError?.message || 'Error desconocido'}`, 500);
+    }
 
     // 2. Crear relación usuario-empresa con rol específico
     if (companyId) {
