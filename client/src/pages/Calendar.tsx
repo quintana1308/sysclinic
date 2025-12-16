@@ -482,33 +482,33 @@ const Calendar: React.FC = () => {
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-pink-800">📅 Calendario de Citas</h1>
-            <p className="text-gray-600">Visualiza las citas y disponibilidad</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">📅 Calendario de Citas</h1>
+            <p className="text-sm sm:text-base text-gray-600">Visualiza las citas y disponibilidad</p>
           </div>
           
           {/* Controles de navegación */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-4">
             <button
               onClick={goToToday}
-              className="px-4 py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition-colors font-medium"
+              className="px-3 py-2 sm:px-4 sm:py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition-colors font-medium text-sm sm:text-base"
             >
               Hoy
             </button>
             
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button
                 onClick={() => navigateMonth('prev')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronLeftIcon className="h-5 w-5 text-gray-600" />
+                <ChevronLeftIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
               
-              <h2 className="text-xl font-semibold text-gray-900 min-w-[200px] text-center">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 min-w-[140px] sm:min-w-[200px] text-center">
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               
@@ -516,7 +516,7 @@ const Calendar: React.FC = () => {
                 onClick={() => navigateMonth('next')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronRightIcon className="h-5 w-5 text-gray-600" />
+                <ChevronRightIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
             </div>
           </div>
@@ -562,8 +562,9 @@ const Calendar: React.FC = () => {
         {/* Días de la semana */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-pink-50 to-purple-50 border-b border-gray-200">
           {dayNames.map((day) => (
-            <div key={day} className="p-4 text-center">
-              <span className="text-sm font-semibold text-gray-700">{day}</span>
+            <div key={day} className="p-2 sm:p-3 text-center text-xs sm:text-sm font-medium text-gray-700">
+              <span className="hidden sm:inline">{day}</span>
+              <span className="sm:hidden">{day.slice(0, 3)}</span>
             </div>
           ))}
         </div>
@@ -574,32 +575,32 @@ const Calendar: React.FC = () => {
             <div
               key={index}
               className={`
-                min-h-[120px] p-2 border-b border-r border-gray-100 relative
+                min-h-[80px] sm:min-h-[120px] p-1 sm:p-2 border-b border-r border-gray-100 relative
                 ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
                 ${day.isToday ? 'bg-blue-50' : ''}
               `}
             >
               {/* Número del día */}
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-1 sm:mb-2">
                 <span
                   className={`
-                    text-sm font-medium
+                    text-xs sm:text-sm font-medium
                     ${day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
-                    ${day.isToday ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs' : ''}
+                    ${day.isToday ? 'bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs' : ''}
                   `}
                 >
                   {day.date.getDate()}
                 </span>
                 
                 {/* Indicadores de citas y disponibilidad */}
-                <div className="flex flex-col space-y-1">
+                <div className="flex flex-col space-y-0.5 sm:space-y-1">
                   {day.appointments.length > 0 && (
-                    <span className="bg-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="bg-pink-600 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                       {day.appointments.length}
                     </span>
                   )}
                   {day.isCurrentMonth && (
-                    <span className={`text-xs px-1 py-0.5 rounded ${
+                    <span className={`text-xs px-1 py-0.5 rounded hidden sm:inline ${
                       day.availableSlots > 5 ? 'bg-green-100 text-green-700' :
                       day.availableSlots > 2 ? 'bg-yellow-100 text-yellow-700' :
                       day.availableSlots > 0 ? 'bg-orange-100 text-orange-700' :
@@ -612,26 +613,25 @@ const Calendar: React.FC = () => {
               </div>
 
               {/* Citas del día */}
-              <div className="space-y-1">
-                {day.appointments.slice(0, 3).map((appointment, aptIndex) => (
+              <div className="space-y-0.5 sm:space-y-1">
+                {day.appointments.slice(0, 2).map((appointment, aptIndex) => (
                   <button
                     key={appointment.id || aptIndex}
                     onClick={() => navigateToAppointment(appointment)}
                     className={`
-                      w-full text-left p-1 rounded text-xs text-white font-medium
-                      hover:opacity-80 hover:scale-105 transition-all duration-200 cursor-pointer
-                      transform hover:shadow-lg
+                      w-full text-left p-0.5 sm:p-1 rounded text-xs text-white font-medium
+                      hover:opacity-80 transition-opacity cursor-pointer
                       ${getAppointmentColor(appointment.status)}
                     `}
                     title="Haz clic para ver los detalles de la cita"
                   >
-                    <div className="truncate">
+                    <div className="truncate text-xs">
                       {(appointment as any).clientFirstName || appointment.client?.firstName} {(appointment as any).clientLastName || appointment.client?.lastName}
                     </div>
-                    <div className="text-xs opacity-90">
+                    <div className="text-xs opacity-90 hidden sm:block">
                       {formatTimeInCaracas(appointment.startTime)}
                     </div>
-                    <div className="text-xs opacity-75 truncate">
+                    <div className="text-xs opacity-75 truncate sm:hidden">
                       {appointment.status === 'SCHEDULED' && '📅'}
                       {appointment.status === 'CONFIRMED' && '✅'}
                       {appointment.status === 'IN_PROGRESS' && '⏳'}
@@ -643,9 +643,9 @@ const Calendar: React.FC = () => {
                 ))}
                 
                 {/* Indicador de más citas */}
-                {day.appointments.length > 3 && (
+                {day.appointments.length > 2 && (
                   <div className="text-xs text-gray-500 text-center">
-                    +{day.appointments.length - 3} más
+                    +{day.appointments.length - 2} más
                   </div>
                 )}
               </div>
@@ -655,61 +655,61 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Leyenda */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Estados de Citas */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">🏷️ Estados de Citas</h3>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">🏷️ Estados de Citas</h3>
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-blue-500 rounded"></div>
-              <span className="text-sm text-gray-700">Programada</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Programada</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-green-500 rounded"></div>
-              <span className="text-sm text-gray-700">Confirmada</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Confirmada</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-              <span className="text-sm text-gray-700">En Progreso</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">En Progreso</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-purple-500 rounded"></div>
-              <span className="text-sm text-gray-700">Completada</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-purple-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Completada</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-red-500 rounded"></div>
-              <span className="text-sm text-gray-700">Cancelada</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Cancelada</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-gray-500 rounded"></div>
-              <span className="text-sm text-gray-700">No Asistió</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-500 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">No Asistió</span>
             </div>
           </div>
         </div>
 
         {/* Disponibilidad de Horarios */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">⏰ Disponibilidad de Horarios</h3>
-          <div className="space-y-3">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">⏰ Disponibilidad</h3>
+          <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-              <span className="text-sm text-gray-700">Alta disponibilidad (5+ libres)</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 border border-green-300 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Alta (5+ libres)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
-              <span className="text-sm text-gray-700">Disponibilidad media (3-4 libres)</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Media (3-4 libres)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-orange-100 border border-orange-300 rounded"></div>
-              <span className="text-sm text-gray-700">Poca disponibilidad (1-2 libres)</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-100 border border-orange-300 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Poca (1-2 libres)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-              <span className="text-sm text-gray-700">Sin disponibilidad (Lleno)</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-100 border border-red-300 rounded"></div>
+              <span className="text-xs sm:text-sm text-gray-700">Lleno</span>
             </div>
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800">
-                💡 <strong>Capacidad diaria:</strong> 7 pacientes por día
+                💡 <strong>Capacidad:</strong> 7 pacientes/día
               </p>
             </div>
           </div>
