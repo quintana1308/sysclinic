@@ -5,6 +5,7 @@ import { useCompany } from '../contexts/CompanyContext';
 import { usePermissions } from '../hooks/usePermissions';
 import CompanySelector from '../components/CompanySelector';
 import Appointments from './Appointments';
+import Calendar from './Calendar';
 import Clients from './Clients';
 import Employees from './Employees';
 import Companies from './Companies';
@@ -110,6 +111,12 @@ const WrenchScrewdriverIcon = ({ className }: { className?: string }) => (
 const CreditCardIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+  </svg>
+);
+
+const CalendarDaysIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25m3 6.75H3.75m15.75 0v8.25a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18.75V9.75a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 9.75zM9 12.75h.008v.008H9V12.75zM12 12.75h.008v.008H12V12.75zM15 12.75h.008v.008H15V12.75zM9 15.75h.008v.008H9V15.75zM12 15.75h.008v.008H12V15.75zM15 15.75h.008v.008H15V15.75z" />
   </svg>
 );
 
@@ -599,6 +606,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
 
   const allMenuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: HomeIcon, page: 'dashboard' },
+    { name: 'Calendario', path: '/dashboard/calendar', icon: CalendarDaysIcon, page: 'calendar' },
     { name: 'Citas', path: '/dashboard/appointments', icon: CalendarIcon, page: 'appointments' },
     { name: 'Clientes', path: '/dashboard/clients', icon: UsersIcon, page: 'clients' },
     { name: 'Empleados', path: '/dashboard/employees', icon: UsersIcon, page: 'employees' },
@@ -791,6 +799,8 @@ const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/calendar/*" element={<Calendar />} />
             <Route path="/appointments" element={<Appointments />} />
             <Route path="/appointments/*" element={<Appointments />} />
             <Route path="/clients" element={<Clients />} />

@@ -94,6 +94,9 @@ export const usePermissions = () => {
       case 'dashboard':
         return true; // Todos los usuarios autenticados
 
+      case 'calendar':
+        return hasPermission({ resource: 'appointments', action: 'read' });
+
       case 'appointments':
         return hasPermission({ resource: 'appointments', action: 'read' });
 
