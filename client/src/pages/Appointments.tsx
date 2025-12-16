@@ -1214,38 +1214,40 @@ const Appointments: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      {/* Header Mejorado */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-pink-800">📅 Gestión de Citas</h1>
-          <p className="text-gray-600 mt-1">Administra y programa todas las citas de la clínica</p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleClearFilters}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            🔄 Limpiar Filtros
-          </button>
-          <button
-            onClick={handleNewAppointment}
-            className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-          >
-            📅 Nueva Cita
-          </button>
+    <div className="p-4 sm:p-6">
+      {/* Header Mejorado para Mobile */}
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">📅 Gestión de Citas</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Administra y programa todas las citas de la clínica</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleClearFilters}
+              className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              🔄 Limpiar Filtros
+            </button>
+            <button
+              onClick={handleNewAppointment}
+              className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+            >
+              📅 Nueva Cita
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        <div className="p-6">
+      {/* Filtros Mejorados para Mobile */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+        <div className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Buscar */}
             <div>
               <label className="block text-sm font-medium text-pink-700 mb-2">
@@ -1313,34 +1315,35 @@ const Appointments: React.FC = () => {
             </div>
 
             {/* Rango de Fechas */}
-            <div className="lg:col-span-2 grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm font-medium text-pink-700 mb-2">
-                  📅 Desde
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => {
-                    setFilters({ ...filters, dateFrom: e.target.value });
-                    setCurrentPage(1); // Resetear página al cambiar fecha
-                  }}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-pink-700 mb-2">
-                  📅 Hasta
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => {
-                    setFilters({ ...filters, dateTo: e.target.value });
-                    setCurrentPage(1); // Resetear página al cambiar fecha
-                  }}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                />
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📅 Rango de Fechas
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Desde</label>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => {
+                      setFilters({ ...filters, dateFrom: e.target.value });
+                      setCurrentPage(1);
+                    }}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Hasta</label>
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) => {
+                      setFilters({ ...filters, dateTo: e.target.value });
+                      setCurrentPage(1);
+                    }}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1348,182 +1351,178 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tratamiento
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha y Hora
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Empleado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {appointments.map((appointment) => (
-                <tr key={appointment.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-pink-600">
-                          {appointment.client?.firstName?.charAt(0) || 'C'}
-                        </span>
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {appointment.client?.firstName || ''} {appointment.client?.lastName || ''}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.client?.email || ''}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {(appointment.treatments || []).map((treatment, index) => (
-                        <div key={index} className="mb-1">
-                          {treatment.name}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      ⏱ {appointment.duration} min
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      📅 {formatDate(appointment.appointmentDate || '')}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {appointment.employee?.firstName} {appointment.employee?.lastName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(appointment.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      ${appointment.totalAmount.toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => handleViewDetails(appointment)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Ver detalles"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleEditAppointment(appointment)}
-                        className="text-green-600 hover:text-green-900" 
-                        title="Editar"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleCancelAppointment(appointment)}
-                        disabled={!canCancelAppointment(appointment)}
-                        className={`${
-                          canCancelAppointment(appointment) 
-                            ? 'text-red-600 hover:text-red-900' 
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          canCancelAppointment(appointment) 
-                            ? "Cancelar cita" 
-                            : appointment.hasPayments 
-                              ? "No se puede cancelar: tiene pagos relacionados"
-                              : "No se puede cancelar"
-                        }
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Paginación */}
-        {!loading && !error && appointments.length > 0 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ← Anterior
-              </button>
-              <button
-                onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
-                disabled={currentPage === pagination.totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente →
-              </button>
+      {/* Grid de Citas Mejorado para Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {appointments.map((appointment) => (
+          <div key={appointment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
+            {/* Header de la tarjeta con gradiente */}
+            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 bg-pink-100 rounded-full flex items-center justify-center shadow-sm">
+                  <CalendarIcon className="h-5 w-5 text-pink-700" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    📅 {formatDate(appointment.appointmentDate || '')}
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    🕐 {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {getStatusBadge(appointment.status)}
+                </div>
+              </div>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Mostrando <span className="font-medium">{((currentPage - 1) * pagination.limit) + 1}</span> a{' '}
-                  <span className="font-medium">{Math.min(currentPage * pagination.limit, pagination.total)}</span> de{' '}
-                  <span className="font-medium">{pagination.total}</span> citas
+
+            {/* Contenido de la tarjeta */}
+            <div className="p-4 space-y-3">
+              {/* Cliente */}
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-pink-600">
+                    {appointment.client?.firstName?.charAt(0) || 'C'}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    👤 {appointment.client?.firstName || ''} {appointment.client?.lastName || ''}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    📧 {appointment.client?.email || ''}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tratamiento */}
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs font-medium text-gray-500 mb-1">💊 Tratamiento(s)</p>
+                <div className="space-y-1">
+                  {(appointment.treatments || []).map((treatment, index) => (
+                    <div key={index} className="text-sm text-gray-900">
+                      {treatment.name}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  ⏱ {appointment.duration} minutos
                 </p>
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+
+              {/* Empleado y Monto */}
+              <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-medium text-gray-500">👨‍⚕️ Empleado</p>
+                  <p className="text-sm text-gray-900">
+                    {appointment.employee?.firstName} {appointment.employee?.lastName}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium text-gray-500">💰 Total</p>
+                  <p className="text-lg font-bold text-pink-600">
+                    ${appointment.totalAmount.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer con botones de acción */}
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => handleViewDetails(appointment)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                    title="Ver detalles"
                   >
-                    <ChevronLeftIcon className="h-5 w-5" />
+                    <EyeIcon className="h-3 w-3 mr-1" />
+                    Ver
                   </button>
-                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                    Página {currentPage} de {pagination.totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
-                    disabled={currentPage === pagination.totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <button 
+                    onClick={() => handleEditAppointment(appointment)}
+                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                    title="Editar"
                   >
-                    <ChevronRightIcon className="h-5 w-5" />
+                    <PencilIcon className="h-3 w-3 mr-1" />
+                    Editar
                   </button>
-                </nav>
+                </div>
+                <button 
+                  onClick={() => handleCancelAppointment(appointment)}
+                  disabled={!canCancelAppointment(appointment)}
+                  className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                    canCancelAppointment(appointment) 
+                      ? 'text-red-700 bg-red-100 hover:bg-red-200' 
+                      : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                  }`}
+                  title={
+                    canCancelAppointment(appointment) 
+                      ? "Cancelar cita" 
+                      : appointment.hasPayments 
+                        ? "No se puede cancelar: tiene pagos relacionados"
+                        : "No se puede cancelar"
+                  }
+                >
+                  <TrashIcon className="h-3 w-3 mr-1" />
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Paginación Mejorada para Mobile */}
+      {!loading && !error && appointments.length > 0 && (
+        <div className="mt-4 sm:mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
+              disabled={currentPage === pagination.totalPages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Página <span className="font-medium">{currentPage}</span> de{' '}
+                <span className="font-medium">{pagination.totalPages}</span> - Total:{' '}
+                <span className="font-medium">{pagination.total}</span> citas
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeftIcon className="h-5 w-5" />
+                </button>
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Página {currentPage} de {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
+                  disabled={currentPage === pagination.totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Nueva Cita */}
       {showNewAppointmentModal && (
