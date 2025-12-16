@@ -33,6 +33,15 @@ CREATE TABLE `appointment_treatments` (
 
 /*Data for the table `appointment_treatments` */
 
+insert  into `appointment_treatments`(`id`,`appointmentId`,`treatmentId`,`quantity`,`price`,`notes`) values 
+('075d01a4-0ba3-4f7b-9eef-2f66609d5e53','1e4e8a7a-a3c4-46f2-a4d4-a8ed90048fb0','4e249690-8add-455c-85cb-d49671a01bf1',1,100.00,NULL),
+('2bce54e5-4dbf-4a44-92c3-e395b5bf8b0c','b7db38c3-cf4d-4da2-a9fb-47a15798fef3','4e249690-8add-455c-85cb-d49671a01bf1',1,100.00,NULL),
+('312edcef-a4d4-4095-a85d-b6d31e1a5570','2a93538a-981e-48a3-968d-7f102a25ce18','feb291bb-7b8a-4dce-8c48-9be85d8ecfae',1,50.00,NULL),
+('39fece9a-1d06-4931-8b2d-77479ae2a2a5','8b31a2e4-3fc0-439d-a5e7-09cb18b4297f','4e249690-8add-455c-85cb-d49671a01bf1',1,100.00,NULL),
+('4cc55f1c-12e9-45ce-9221-68e210c2be62','d54a6a37-ab9f-409c-b394-13b957f54068','4e249690-8add-455c-85cb-d49671a01bf1',1,100.00,NULL),
+('9d8ef81c-4568-4a02-8484-b14c7fbd5b4f','d764291d-206e-4b6b-af88-a3f330959bf5','feb291bb-7b8a-4dce-8c48-9be85d8ecfae',1,50.00,NULL),
+('d367c4ea-1c6c-4f2a-a744-533150c47ddb','86e61cc7-436f-4ba0-a341-bb2eac33f75b','feb291bb-7b8a-4dce-8c48-9be85d8ecfae',1,50.00,NULL);
+
 /*Table structure for table `appointments` */
 
 CREATE TABLE `appointments` (
@@ -57,11 +66,19 @@ CREATE TABLE `appointments` (
   KEY `idx_appointments_date_status` (`date`,`status`),
   KEY `idx_appointments_company` (`companyId`),
   CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`clientId`) REFERENCES `clients` (`id`),
-  CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`employeeId`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_appointments_company` FOREIGN KEY (`companyId`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*Data for the table `appointments` */
+
+insert  into `appointments`(`id`,`companyId`,`clientId`,`employeeId`,`date`,`startTime`,`endTime`,`status`,`notes`,`totalAmount`,`createdAt`,`updatedAt`) values 
+('1e4e8a7a-a3c4-46f2-a4d4-a8ed90048fb0','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','2026-10-10','2026-10-10 14:00:00','2026-10-10 15:00:00','CONFIRMED','dwdwdwdw\n--- CONFIRMADA POR EL CLIENTE ---\nFecha de confirmación: 2025-12-15 16:55:37',100.00,'2025-12-15 16:22:22','2025-12-15 16:55:37'),
+('2a93538a-981e-48a3-968d-7f102a25ce18','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','2025-12-20','2025-12-20 14:00:00','2025-12-20 15:00:00','CANCELLED','Cita de prueba\n--- CANCELADA ---\nMotivo: Cancelada por el cliente',50.00,'2025-12-15 15:10:54','2025-12-15 15:59:36'),
+('86e61cc7-436f-4ba0-a341-bb2eac33f75b','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','2026-02-05','2026-02-05 14:00:00','2026-02-05 15:00:00','CONFIRMED','Nueva\n--- CONFIRMADA POR EL CLIENTE ---\nFecha de confirmación: 2025-12-15 16:16:30',50.00,'2025-12-15 16:12:33','2025-12-15 16:16:30'),
+('8b31a2e4-3fc0-439d-a5e7-09cb18b4297f','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','2026-05-05','2026-05-05 16:00:00','2026-05-05 17:00:00','CONFIRMED','Nueva cita para factura\n--- CONFIRMADA POR EL CLIENTE ---\nFecha de confirmación: 2025-12-15 16:20:24',100.00,'2025-12-15 16:20:06','2025-12-15 16:20:24'),
+('b7db38c3-cf4d-4da2-a9fb-47a15798fef3','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','a7c9a4d1-af65-4352-890b-1b23da20305d','2026-12-12','2026-12-12 02:00:00','2026-12-12 03:00:00','SCHEDULED','aa',100.00,'2025-12-16 09:40:35','2025-12-16 09:40:35'),
+('d54a6a37-ab9f-409c-b394-13b957f54068','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','2026-01-12','2026-01-12 14:00:00','2026-01-12 15:00:00','CONFIRMED','ss\n--- CONFIRMADA POR EL CLIENTE ---\nFecha de confirmación: 2025-12-15 17:01:00',100.00,'2025-12-15 17:00:47','2025-12-15 17:01:00'),
+('d764291d-206e-4b6b-af88-a3f330959bf5','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','21ba1c31-491a-43fc-826d-bc5fe8546913','a7c9a4d1-af65-4352-890b-1b23da20305d','2025-12-20','2025-12-20 16:00:00','2025-12-20 17:00:00','SCHEDULED','a',50.00,'2025-12-16 16:52:31','2025-12-16 16:52:31');
 
 /*Table structure for table `audit_logs` */
 
@@ -117,6 +134,9 @@ CREATE TABLE `clients` (
 
 /*Data for the table `clients` */
 
+insert  into `clients`(`id`,`userId`,`companyId`,`clientCode`,`dateOfBirth`,`age`,`gender`,`address`,`emergencyContact`,`medicalConditions`,`allergies`,`createdAt`,`updatedAt`) values 
+('21ba1c31-491a-43fc-826d-bc5fe8546913','97b3c054-66cd-47fd-b957-c2698d45a586','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','CLI-MJ7H7ZOJ-A6GE','1998-07-18',27,'M',NULL,NULL,NULL,NULL,'2025-12-15 14:17:44','2025-12-15 14:17:44');
+
 /*Table structure for table `companies` */
 
 CREATE TABLE `companies` (
@@ -145,7 +165,7 @@ CREATE TABLE `companies` (
 /*Data for the table `companies` */
 
 insert  into `companies`(`id`,`name`,`slug`,`email`,`phone`,`address`,`website`,`logo`,`isActive`,`licenseType`,`licenseExpiry`,`maxUsers`,`maxClients`,`createdAt`,`updatedAt`) values 
-('7af09fd6-2fab-4542-ad9e-6a80d1b3a773',"Clínica Estética Dr Karina Di' Stefano",'clinica-estetica-bella','karinadistefano@clinicaestetica.com','04147114721','Clinica San Sebastián, San Cristóbal, Estado Táchira','https://www.instagram.com/drkarinadistefano',NULL,1,'enterprise',NULL,4,500,'2025-12-02 10:47:37','2025-12-12 12:35:49');
+('7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Clínica Estética Dr Karina Di\' Stefano','clinica-estetica-bella','karinadistefano@clinicaestetica.com','04147114721','Clinica San Sebastián, San Cristóbal, Estado Táchira','https://www.instagram.com/drkarinadistefano',NULL,1,'enterprise',NULL,4,500,'2025-12-02 10:47:37','2025-12-12 12:35:49');
 
 /*Table structure for table `company_licenses` */
 
@@ -229,8 +249,7 @@ CREATE TABLE `employees` (
 /*Data for the table `employees` */
 
 insert  into `employees`(`id`,`userId`,`companyId`,`position`,`specialties`,`schedule`,`salary`,`hireDate`,`isActive`,`role`,`createdAt`,`updatedAt`) values 
-('35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','0e131c9b-7eea-48c5-9052-567418d32d49','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Licenciada','Licenciada en Enfermeria','\"\\\"\\\\\\\"{\\\\\\\\\\\\\\\"lunes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"martes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"miercoles\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"jueves\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"viernes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"}}\\\\\\\"\\\"\"',30.00,'2021-01-01',1,'employee','2025-12-02 10:47:39','2025-12-12 15:23:54'),
-('373c9472-b205-415c-985c-9d72b3e7dea3','745e05e7-726a-49f8-b10d-f5f8dd0ab529','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Asistente','','\"{\\\"lunes\\\":{\\\"inicio\\\":\\\"08:00\\\",\\\"fin\\\":\\\"17:00\\\"},\\\"martes\\\":{\\\"inicio\\\":\\\"08:00\\\",\\\"fin\\\":\\\"17:00\\\"},\\\"miercoles\\\":{\\\"inicio\\\":\\\"08:00\\\",\\\"fin\\\":\\\"17:00\\\"},\\\"jueves\\\":{\\\"inicio\\\":\\\"08:00\\\",\\\"fin\\\":\\\"17:00\\\"},\\\"viernes\\\":{\\\"inicio\\\":\\\"08:00\\\",\\\"fin\\\":\\\"17:00\\\"}}\"',40000.00,'2025-08-01',1,'employee','2025-12-02 10:47:39','2025-12-12 15:24:19');
+('35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','0e131c9b-7eea-48c5-9052-567418d32d49','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Licenciada','Licenciada en Enfermeria','\"\\\"\\\\\\\"{\\\\\\\\\\\\\\\"lunes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"martes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"miercoles\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"jueves\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"viernes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"}}\\\\\\\"\\\"\"',30.00,'2021-01-01',1,'employee','2025-12-02 10:47:39','2025-12-12 15:23:54');
 
 /*Table structure for table `invoices` */
 
@@ -254,6 +273,9 @@ CREATE TABLE `invoices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*Data for the table `invoices` */
+
+insert  into `invoices`(`id`,`clientId`,`appointmentId`,`amount`,`status`,`description`,`dueDate`,`createdAt`,`updatedAt`) values 
+('661ce99e-96bf-4c24-a403-9b677dc80b42','21ba1c31-491a-43fc-826d-bc5fe8546913','2a93538a-981e-48a3-968d-7f102a25ce18',50.00,'PARTIAL','Factura por Hidrafacial - Anthony Quintana','2026-01-19','2025-12-15 15:11:03','2025-12-16 10:15:09');
 
 /*Table structure for table `licenses` */
 
@@ -339,6 +361,9 @@ CREATE TABLE `payments` (
 
 /*Data for the table `payments` */
 
+insert  into `payments`(`id`,`clientId`,`appointmentId`,`invoiceId`,`amount`,`method`,`status`,`description`,`transactionId`,`dueDate`,`paidDate`,`createdAt`,`updatedAt`) values 
+('65aa5035-680c-441c-936f-dd69f989c528','21ba1c31-491a-43fc-826d-bc5fe8546913','2a93538a-981e-48a3-968d-7f102a25ce18','661ce99e-96bf-4c24-a403-9b677dc80b42',20.00,'CASH','PAID','egervreve','325325',NULL,'2025-12-16 10:15:09','2025-12-16 10:15:09','2025-12-16 10:15:09');
+
 /*Table structure for table `roles` */
 
 CREATE TABLE `roles` (
@@ -388,6 +413,9 @@ CREATE TABLE `supplies` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*Data for the table `supplies` */
+
+insert  into `supplies`(`id`,`name`,`description`,`category`,`unit`,`stock`,`minStock`,`maxStock`,`unitCost`,`supplier`,`expiryDate`,`status`,`createdAt`,`updatedAt`) values 
+('ebadaf62-f7e3-4849-9347-c181d756019a','Crema de prueba ','Es una crema de prueba ','Limpieza','unidad',20,2,100,2.00,'Nuevo proveedor','2026-01-16','ACTIVE','2025-12-16 10:14:55','2025-12-16 10:14:55');
 
 /*Table structure for table `supply_movements` */
 
@@ -460,6 +488,10 @@ CREATE TABLE `treatments` (
 
 /*Data for the table `treatments` */
 
+insert  into `treatments`(`id`,`companyId`,`name`,`description`,`duration`,`price`,`category`,`isActive`,`supplies`,`createdAt`,`updatedAt`) values 
+('4e249690-8add-455c-85cb-d49671a01bf1','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Limpieza profunda','Nuevo',60,100.00,'Facial',1,'[]','2025-12-15 16:18:06','2025-12-15 16:18:06'),
+('feb291bb-7b8a-4dce-8c48-9be85d8ecfae','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Hidrafacial','Nuevo',30,50.00,'Facial',1,'[\"Guantes\",\"Crema\"]','2025-12-15 15:03:21','2025-12-15 15:03:21');
+
 /*Table structure for table `user_companies` */
 
 CREATE TABLE `user_companies` (
@@ -488,7 +520,8 @@ insert  into `user_companies`(`id`,`userId`,`companyId`,`role`,`isActive`,`permi
 ('09b6c2fd-643c-41d1-bd82-b8cb7e68247c','a7c9a4d1-af65-4352-890b-1b23da20305d','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','admin',1,NULL,'2025-12-02 10:47:38',NULL,'2025-12-02 10:47:38','2025-12-02 10:47:38'),
 ('161a6ba7-5b56-4c82-89be-7aff727efe5b','745e05e7-726a-49f8-b10d-f5f8dd0ab529','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','employee',1,NULL,'2025-12-02 10:47:38',NULL,'2025-12-02 10:47:38','2025-12-02 10:47:38'),
 ('23f8ec5d-e59b-4cd7-a18c-6b190fdd3644','0e131c9b-7eea-48c5-9052-567418d32d49','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','employee',1,NULL,'2025-12-02 10:47:38',NULL,'2025-12-02 10:47:38','2025-12-02 10:47:38'),
-('4ee86888-6411-4bd1-aef0-4c6cdd7dd0ec','a19f292d-c4e3-42dc-b53f-bf228fa4f03a','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','master',1,NULL,'2025-12-02 10:47:38',NULL,'2025-12-02 10:47:38','2025-12-02 10:47:38');
+('4ee86888-6411-4bd1-aef0-4c6cdd7dd0ec','a19f292d-c4e3-42dc-b53f-bf228fa4f03a','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','master',1,NULL,'2025-12-02 10:47:38',NULL,'2025-12-02 10:47:38','2025-12-02 10:47:38'),
+('9961b4ae-98d9-4d63-9378-fcac1c93b793','97b3c054-66cd-47fd-b957-c2698d45a586','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','client',1,NULL,'2025-12-15 14:17:44',NULL,'2025-12-15 14:17:44','2025-12-15 14:17:44');
 
 /*Table structure for table `user_roles` */
 
@@ -510,9 +543,10 @@ CREATE TABLE `user_roles` (
 /*Data for the table `user_roles` */
 
 insert  into `user_roles`(`id`,`userId`,`roleId`,`createdAt`,`updatedAt`) values 
-('00ef2c6d-6f67-4128-9cd8-242c055be078','745e05e7-726a-49f8-b10d-f5f8dd0ab529','employee-role-id','2025-12-02 10:47:38','2025-12-02 10:47:38'),
 ('7f196b04-504f-4fc2-a555-eb986551e57f','a19f292d-c4e3-42dc-b53f-bf228fa4f03a','master-role-id','2025-12-02 10:47:37','2025-12-02 10:47:37'),
+('a719ee74-d9e5-11f0-9ad3-b999d4594038','97b3c054-66cd-47fd-b957-c2698d45a586','client-role-id','2025-12-15 14:40:49','2025-12-15 14:40:49'),
 ('a7ad73e7-d777-11f0-9ad3-b999d4594038','a7c9a4d1-af65-4352-890b-1b23da20305d','admin-role-id','2025-12-12 12:28:26','2025-12-12 12:28:26'),
+('c23a2670-da7d-11f0-9ad3-b999d4594038','745e05e7-726a-49f8-b10d-f5f8dd0ab529','employee-role-id','2025-12-16 08:49:36','2025-12-16 08:49:36'),
 ('ce1d6e04-d777-11f0-9ad3-b999d4594038','0e131c9b-7eea-48c5-9052-567418d32d49','employee-role-id','2025-12-12 12:29:30','2025-12-12 12:29:30');
 
 /*Table structure for table `users` */
@@ -544,7 +578,8 @@ CREATE TABLE `users` (
 
 insert  into `users`(`id`,`email`,`password`,`firstName`,`lastName`,`phone`,`avatar`,`isActive`,`isMaster`,`currentCompanyId`,`lastLoginCompanyId`,`createdAt`,`updatedAt`) values 
 ('0e131c9b-7eea-48c5-9052-567418d32d49','alissongomezperez10@gmail.com','$2a$10$7QvRCKMK1i4ckFbfZiRAPe4kp4pwpCCqJM9ieXf9hFhJCFkNo6Bwq','Alisson','Gomez','04247129490',NULL,1,0,'7af09fd6-2fab-4542-ad9e-6a80d1b3a773',NULL,'2025-12-02 10:47:37','2025-12-12 15:23:54'),
-('745e05e7-726a-49f8-b10d-f5f8dd0ab529','carlos.rodriguez@clinicabella.com','$2a$10$tHuvbti3TdSh6whF5n/xx.JqMTWuYwu/O1MS24ScqNAhYpeWQwlFa','Paola','Rodríguez','04140811363',NULL,1,0,'7af09fd6-2fab-4542-ad9e-6a80d1b3a773',NULL,'2025-12-02 10:47:37','2025-12-12 15:24:19'),
+('745e05e7-726a-49f8-b10d-f5f8dd0ab529','carlos.rodriguez@clinicabella.com','$2a$10$tHuvbti3TdSh6whF5n/xx.JqMTWuYwu/O1MS24ScqNAhYpeWQwlFa','Paola','Rodríguez','04140811363',NULL,1,0,'7af09fd6-2fab-4542-ad9e-6a80d1b3a773',NULL,'2025-12-02 10:47:37','2025-12-16 12:49:36'),
+('97b3c054-66cd-47fd-b957-c2698d45a586','quintana@gmail.com','$2a$10$w51UuvFB87hcKg7mpojvC./VmV1xW4KJ14dIhZPC7ZMqzPDZUcSI6','Anthony','Quintana','04147268222',NULL,1,0,'7af09fd6-2fab-4542-ad9e-6a80d1b3a773',NULL,'2025-12-15 14:17:44','2025-12-15 18:40:49'),
 ('a19f292d-c4e3-42dc-b53f-bf228fa4f03a','master@sistema.com','$2a$10$hRoIN0LBafsZGPlX2KCDpewE9yne6uwLkTYn4BFzl53t/FJio9q4S','Usuario','Master','+1-555-0000',NULL,1,1,NULL,NULL,'2025-12-02 10:47:37','2025-12-02 10:47:37'),
 ('a7c9a4d1-af65-4352-890b-1b23da20305d','karinadistefano@gmail.com','$2a$10$2rIJV7Rru0SkEmeWk9VoXOJu.rb6bvYtiv18GlmZWNaTdanl.UpOS','Karina','Di Stefano','+17863523671',NULL,1,0,'7af09fd6-2fab-4542-ad9e-6a80d1b3a773',NULL,'2025-12-02 10:47:37','2025-12-12 12:43:08');
 
