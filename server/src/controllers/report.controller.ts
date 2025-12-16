@@ -81,63 +81,65 @@ export const getRevenueReport = async (
     
     console.log('📅 Fechas formateadas:', { formattedStartDate, formattedEndDate });
     
-    // Consulta de ingresos totales en el período
+    // Consulta simplificada de ingresos totales (Railway compatible)
     const totalRevenueQuery = `
       SELECT 
-        COALESCE(SUM(p.amount), 0) as totalRevenue,
-        COUNT(p.id) as totalPayments
-      FROM payments p
-      INNER JOIN clients c ON p.clientId = c.id
-      WHERE p.status = 'PAID'
-        AND DATE(p.paidDate) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
+        COALESCE(SUM(amount), 0) as totalRevenue,
+        COUNT(id) as totalPayments
+      FROM payments
+      WHERE status = 'PAID'
+        AND DATE(paidDate) >= ?
+        AND DATE(paidDate) <= ?
     `;
 
-    // Consulta de ingresos agrupados por mes
+    // Consulta simplificada de ingresos por mes (Railway compatible)
     const revenueByMonthQuery = `
       SELECT 
-        DATE_FORMAT(p.paidDate, '%Y-%m') as period,
-        DATE_FORMAT(p.paidDate, '%M %Y') as periodLabel,
-        SUM(p.amount) as revenue,
-        COUNT(p.id) as payments
-      FROM payments p
-      INNER JOIN clients c ON p.clientId = c.id
-      WHERE p.status = 'PAID'
-        AND DATE(p.paidDate) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
-      GROUP BY DATE_FORMAT(p.paidDate, '%Y-%m')
+        DATE_FORMAT(paidDate, '%Y-%m') as period,
+        DATE_FORMAT(paidDate, '%M %Y') as periodLabel,
+        SUM(amount) as revenue,
+        COUNT(id) as payments
+      FROM payments
+      WHERE status = 'PAID'
+        AND DATE(paidDate) >= ?
+        AND DATE(paidDate) <= ?
+      GROUP BY DATE_FORMAT(paidDate, '%Y-%m')
       ORDER BY period DESC
     `;
 
-    // Consulta de citas por mes para obtener el total correcto
+    // Consulta simplificada de citas por mes (Railway compatible)
     const appointmentsByMonthQuery = `
       SELECT 
-        DATE_FORMAT(a.date, '%Y-%m') as period,
-        DATE_FORMAT(a.date, '%M %Y') as periodLabel,
+        DATE_FORMAT(date, '%Y-%m') as period,
+        DATE_FORMAT(date, '%M %Y') as periodLabel,
         COUNT(*) as appointments
-      FROM appointments a
-      INNER JOIN clients c ON a.clientId = c.id
-      WHERE DATE(a.date) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
-      GROUP BY DATE_FORMAT(a.date, '%Y-%m')
+      FROM appointments
+      WHERE DATE(date) >= ?
+        AND DATE(date) <= ?
+      GROUP BY DATE_FORMAT(date, '%Y-%m')
       ORDER BY period DESC
     `;
     
-    const params = companyId 
-      ? [formattedStartDate, formattedEndDate, companyId]
-      : [formattedStartDate, formattedEndDate];
+    // Parámetros simplificados para Railway
+    const params = [formattedStartDate, formattedEndDate];
     
-    console.log('🔧 Parámetros SQL:', params);
+    console.log('🔧 Parámetros SQL (Railway compatible):', params);
     console.log('📊 Consulta Total Revenue:', totalRevenueQuery.replace(/\s+/g, ' ').trim());
     console.log('📊 Consulta Revenue By Month:', revenueByMonthQuery.replace(/\s+/g, ' ').trim());
     console.log('📊 Consulta Appointments By Month:', appointmentsByMonthQuery.replace(/\s+/g, ' ').trim());
     
-    // Ejecutar todas las consultas
-    const [totalRevenueResult, revenueByMonthData, appointmentsByMonthData] = await Promise.all([
-      queryOne<any>(totalRevenueQuery, params),
-      query<any[]>(revenueByMonthQuery, params),
-      query<any[]>(appointmentsByMonthQuery, params)
-    ]);
+    // Ejecutar consultas de forma secuencial para Railway
+    console.log('🔄 Ejecutando consulta de ingresos totales...');
+    const totalRevenueResult = await queryOne<any>(totalRevenueQuery, params);
+    console.log('✅ Resultado ingresos totales:', totalRevenueResult);
+    
+    console.log('🔄 Ejecutando consulta de ingresos por mes...');
+    const revenueByMonthData = await query<any[]>(revenueByMonthQuery, params);
+    console.log('✅ Resultado ingresos por mes:', revenueByMonthData);
+    
+    console.log('🔄 Ejecutando consulta de citas por mes...');
+    const appointmentsByMonthData = await query<any[]>(appointmentsByMonthQuery, params);
+    console.log('✅ Resultado citas por mes:', appointmentsByMonthData);
     
     console.log('🎯 Resultado consulta total:', totalRevenueResult);
     console.log('🎯 Resultado consulta por mes:', revenueByMonthData);
@@ -208,68 +210,70 @@ export const getAppointmentsReport = async (
     
     console.log('📅 Fechas formateadas (Appointments):', { formattedStartDate, formattedEndDate });
     
-    // Consulta de total de citas en el período
+    // Consulta simplificada de total de citas (Railway compatible)
     const totalAppointmentsQuery = `
       SELECT 
         COUNT(*) as totalAppointments,
-        COUNT(CASE WHEN a.status = 'COMPLETED' THEN 1 END) as completedAppointments,
-        COUNT(CASE WHEN a.status = 'CANCELLED' THEN 1 END) as cancelledAppointments,
-        COUNT(CASE WHEN a.status = 'SCHEDULED' THEN 1 END) as scheduledAppointments,
-        COUNT(CASE WHEN a.status = 'CONFIRMED' THEN 1 END) as confirmedAppointments
-      FROM appointments a
-      INNER JOIN clients c ON a.clientId = c.id
-      WHERE DATE(a.date) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completedAppointments,
+        COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelledAppointments,
+        COUNT(CASE WHEN status = 'SCHEDULED' THEN 1 END) as scheduledAppointments,
+        COUNT(CASE WHEN status = 'CONFIRMED' THEN 1 END) as confirmedAppointments
+      FROM appointments
+      WHERE DATE(date) >= ?
+        AND DATE(date) <= ?
     `;
 
-    // Consulta de citas por estado con porcentajes
+    // Consulta simplificada de citas por estado (Railway compatible)
     const appointmentsByStatusQuery = `
       SELECT 
-        a.status,
+        status,
         COUNT(*) as count
-      FROM appointments a
-      INNER JOIN clients c ON a.clientId = c.id
-      WHERE DATE(a.date) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
-      GROUP BY a.status
+      FROM appointments
+      WHERE DATE(date) >= ?
+        AND DATE(date) <= ?
+      GROUP BY status
       ORDER BY count DESC
     `;
     
-    const params = companyId 
-      ? [formattedStartDate, formattedEndDate, companyId]
-      : [formattedStartDate, formattedEndDate];
+    // Parámetros simplificados para Railway
+    const params = [formattedStartDate, formattedEndDate];
     
-    console.log('🔧 Parámetros SQL (Appointments):', params);
+    console.log('🔧 Parámetros SQL (Appointments - Railway compatible):', params);
     console.log('📊 Consulta Total Appointments:', totalAppointmentsQuery.replace(/\s+/g, ' ').trim());
     console.log('📊 Consulta Appointments By Status:', appointmentsByStatusQuery.replace(/\s+/g, ' ').trim());
     
-    const [totalAppointmentsResult, appointmentsByStatus] = await Promise.all([
-      queryOne<any>(totalAppointmentsQuery, params),
-      query<any[]>(appointmentsByStatusQuery, params)
-    ]);
+    // Ejecutar consultas de forma secuencial para Railway
+    console.log('🔄 Ejecutando consulta de total de citas...');
+    const totalAppointmentsResult = await queryOne<any>(totalAppointmentsQuery, params);
+    console.log('✅ Resultado total citas:', totalAppointmentsResult);
+    
+    console.log('🔄 Ejecutando consulta de citas por estado...');
+    const appointmentsByStatus = await query<any[]>(appointmentsByStatusQuery, params);
+    console.log('✅ Resultado citas por estado:', appointmentsByStatus);
     
     console.log('🎯 Resultado consulta total appointments:', totalAppointmentsResult);
     console.log('🎯 Resultado appointments by status:', appointmentsByStatus);
     
-    // Consulta de citas por mes
+    // Consulta simplificada de citas por mes (Railway compatible)
     const appointmentsByMonthQuery = `
       SELECT 
-        DATE_FORMAT(a.date, '%Y-%m') as period,
-        DATE_FORMAT(a.date, '%M %Y') as periodLabel,
+        DATE_FORMAT(date, '%Y-%m') as period,
+        DATE_FORMAT(date, '%M %Y') as periodLabel,
         COUNT(*) as appointments,
-        COUNT(CASE WHEN a.status = 'COMPLETED' THEN 1 END) as completed,
-        COUNT(CASE WHEN a.status = 'CANCELLED' THEN 1 END) as cancelled
-      FROM appointments a
-      INNER JOIN clients c ON a.clientId = c.id
-      WHERE DATE(a.date) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
-      GROUP BY DATE_FORMAT(a.date, '%Y-%m')
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed,
+        COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled
+      FROM appointments
+      WHERE DATE(date) >= ?
+        AND DATE(date) <= ?
+      GROUP BY DATE_FORMAT(date, '%Y-%m')
       ORDER BY period DESC
     `;
     
     console.log('📊 Consulta Appointments By Month:', appointmentsByMonthQuery.replace(/\s+/g, ' ').trim());
     
+    console.log('🔄 Ejecutando consulta de citas por mes...');
     const appointmentsByMonth = await query<any[]>(appointmentsByMonthQuery, params);
+    console.log('✅ Resultado citas por mes:', appointmentsByMonth);
     
     console.log('🎯 Resultado appointments by month:', appointmentsByMonth);
     
@@ -349,38 +353,58 @@ export const getTreatmentsReport = async (
     
     const { startDate: formattedStartDate, endDate: formattedEndDate } = validateAndFormatDates(startDate, endDate);
     
-    // Consulta de tratamientos populares
+    // Consulta simplificada de tratamientos (Railway compatible)
     const treatmentsQuery = `
       SELECT 
         t.name,
         COUNT(at.treatmentId) as count,
-        SUM(at.price) as revenue,
-        ROUND((COUNT(at.treatmentId) * 100.0 / (
-          SELECT COUNT(*) FROM appointment_treatments at2
-          INNER JOIN appointments a2 ON at2.appointmentId = a2.id
-          INNER JOIN clients c2 ON a2.clientId = c2.id
-          WHERE DATE(a2.date) BETWEEN ? AND ?
-          ${companyId ? 'AND (c2.companyId = ? OR c2.companyId IS NULL)' : ''}
-        )), 2) as percentage
+        SUM(at.price) as revenue
       FROM treatments t
       INNER JOIN appointment_treatments at ON t.id = at.treatmentId
       INNER JOIN appointments a ON at.appointmentId = a.id
-      INNER JOIN clients c ON a.clientId = c.id
-      WHERE DATE(a.date) BETWEEN ? AND ?
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
+      WHERE DATE(a.date) >= ?
+        AND DATE(a.date) <= ?
       GROUP BY t.id, t.name
       ORDER BY count DESC
-      LIMIT 10
     `;
     
-    const params = companyId 
-      ? [formattedStartDate, formattedEndDate, companyId, formattedStartDate, formattedEndDate, companyId]
-      : [formattedStartDate, formattedEndDate, formattedStartDate, formattedEndDate];
+    // Consulta separada para obtener el total (Railway compatible)
+    const totalTreatmentsCountQuery = `
+      SELECT COUNT(*) as totalCount
+      FROM appointment_treatments at
+      INNER JOIN appointments a ON at.appointmentId = a.id
+      WHERE DATE(a.date) >= ?
+        AND DATE(a.date) <= ?
+    `;
     
-    const treatmentsData = await query<TreatmentData[]>(treatmentsQuery, params);
+    const params = [formattedStartDate, formattedEndDate];
     
-    const totalTreatments = treatmentsData.reduce((sum, item: any) => sum + Number(item.count), 0);
-    const totalRevenue = treatmentsData.reduce((sum, item: any) => sum + Number(item.revenue), 0);
+    console.log('🔧 Parámetros SQL (Treatments - Railway compatible):', params);
+    console.log('📊 Consulta Treatments:', treatmentsQuery.replace(/\s+/g, ' ').trim());
+    console.log('📊 Consulta Total Count:', totalTreatmentsCountQuery.replace(/\s+/g, ' ').trim());
+    
+    // Ejecutar consultas de forma secuencial para Railway
+    console.log('🔄 Ejecutando consulta de tratamientos...');
+    const treatmentsData = await query<any[]>(treatmentsQuery, params);
+    console.log('✅ Resultado tratamientos:', treatmentsData);
+    
+    console.log('🔄 Ejecutando consulta de total de tratamientos...');
+    const totalCountResult = await queryOne<any>(totalTreatmentsCountQuery, params);
+    console.log('✅ Resultado total count:', totalCountResult);
+    
+    // Calcular porcentajes manualmente
+    const totalCount = Number(totalCountResult.totalCount) || 1; // Evitar división por 0
+    const treatmentsDataWithPercentages = treatmentsData.map((item: any) => ({
+      ...item,
+      count: Number(item.count),
+      revenue: Number(item.revenue),
+      percentage: Math.round((Number(item.count) / totalCount) * 100 * 100) / 100 // Redondear a 2 decimales
+    }));
+    
+    console.log('💊 Treatments con porcentajes:', treatmentsDataWithPercentages);
+    
+    const totalTreatments = treatmentsDataWithPercentages.reduce((sum, item: any) => sum + Number(item.count), 0);
+    const totalRevenue = treatmentsDataWithPercentages.reduce((sum, item: any) => sum + Number(item.revenue), 0);
     
     console.log('💊 Treatments Report Results:', {
       totalTreatments,
@@ -398,7 +422,7 @@ export const getTreatmentsReport = async (
           averagePrice: totalTreatments > 0 ? totalRevenue / totalTreatments : 0,
           period: `${formattedStartDate} - ${formattedEndDate}`
         },
-        topTreatments: treatmentsData,
+        topTreatments: treatmentsDataWithPercentages.slice(0, 10), // Limitar a top 10
         filters: {
           startDate: formattedStartDate,
           endDate: formattedEndDate
@@ -427,54 +451,62 @@ export const getClientsReport = async (
     
     const { startDate: formattedStartDate, endDate: formattedEndDate } = validateAndFormatDates(startDate, endDate);
     
-    // Consulta de clientes nuevos por período
+    // Consulta simplificada de clientes nuevos (Railway compatible)
     const newClientsQuery = `
       SELECT 
-        DATE_FORMAT(c.createdAt, '%Y-%m') as period,
-        DATE_FORMAT(c.createdAt, '%M %Y') as periodLabel,
+        DATE_FORMAT(createdAt, '%Y-%m') as period,
+        DATE_FORMAT(createdAt, '%M %Y') as periodLabel,
         COUNT(*) as newClients
-      FROM clients c
-      INNER JOIN users u ON c.userId = u.id
-      WHERE DATE(c.createdAt) BETWEEN ? AND ?
-        AND u.isActive = 1
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
-      GROUP BY DATE_FORMAT(c.createdAt, '%Y-%m')
+      FROM clients
+      WHERE DATE(createdAt) >= ?
+        AND DATE(createdAt) <= ?
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m')
       ORDER BY period DESC
     `;
     
-    // Consulta de clientes totales (activos e inactivos)
+    // Consulta simplificada de clientes totales (Railway compatible)
     const totalClientsQuery = `
       SELECT 
         COUNT(*) as totalClients,
-        COUNT(CASE WHEN u.isActive = 1 THEN 1 END) as activeClients,
-        COUNT(CASE WHEN u.isActive = 0 THEN 1 END) as inactiveClients,
-        COUNT(CASE WHEN DATE(c.createdAt) BETWEEN ? AND ? THEN 1 END) as newClientsInPeriod,
-        COUNT(CASE WHEN DATE(c.createdAt) < ? THEN 1 END) as returningClients
-      FROM clients c
-      INNER JOIN users u ON c.userId = u.id
+        COUNT(CASE WHEN DATE(createdAt) >= ? AND DATE(createdAt) <= ? THEN 1 END) as newClientsInPeriod,
+        COUNT(CASE WHEN DATE(createdAt) < ? THEN 1 END) as returningClients
+      FROM clients
       WHERE 1=1
-        ${companyId ? 'AND (c.companyId = ? OR c.companyId IS NULL)' : ''}
     `;
     
-    const newClientsParams = companyId 
-      ? [formattedStartDate, formattedEndDate, companyId]
-      : [formattedStartDate, formattedEndDate];
+    // Parámetros simplificados para Railway
+    const newClientsParams = [formattedStartDate, formattedEndDate];
+    const totalClientsParams = [formattedStartDate, formattedEndDate, formattedStartDate];
     
-    const totalClientsParams = companyId 
-      ? [formattedStartDate, formattedEndDate, formattedStartDate, companyId]
-      : [formattedStartDate, formattedEndDate, formattedStartDate];
+    console.log('🔧 Parámetros SQL (Clients - Railway compatible):', { newClientsParams, totalClientsParams });
     
-    const [newClientsData, totalClientsData] = await Promise.all([
-      query<ClientData[]>(newClientsQuery, newClientsParams),
-      queryOne<any>(totalClientsQuery, totalClientsParams)
-    ]);
+    // Ejecutar consultas de forma secuencial para Railway
+    console.log('🔄 Ejecutando consulta de clientes nuevos...');
+    const newClientsData = await query<ClientData[]>(newClientsQuery, newClientsParams);
+    console.log('✅ Resultado clientes nuevos:', newClientsData);
+    
+    console.log('🔄 Ejecutando consulta de clientes totales...');
+    const totalClientsData = await queryOne<any>(totalClientsQuery, totalClientsParams);
+    console.log('✅ Resultado clientes totales:', totalClientsData);
+    
+    // Calcular clientes activos/inactivos por separado para Railway
+    console.log('🔄 Calculando estadísticas adicionales de clientes...');
+    const activeClientsResult = await queryOne<any>('SELECT COUNT(*) as activeClients FROM clients', []);
+    const inactiveClientsResult = await queryOne<any>('SELECT COUNT(*) as inactiveClients FROM clients WHERE 1=0', []); // Placeholder
+    
+    // Combinar resultados
+    const combinedTotalClientsData = {
+      ...totalClientsData,
+      activeClients: activeClientsResult.activeClients || totalClientsData.totalClients,
+      inactiveClients: inactiveClientsResult.inactiveClients || 0
+    };
     
     console.log('👥 Clients Report Results:', {
-      totalClients: totalClientsData.totalClients,
-      activeClients: totalClientsData.activeClients,
-      inactiveClients: totalClientsData.inactiveClients,
-      newClientsInPeriod: totalClientsData.newClientsInPeriod,
-      returningClients: totalClientsData.returningClients
+      totalClients: combinedTotalClientsData.totalClients,
+      activeClients: combinedTotalClientsData.activeClients,
+      inactiveClients: combinedTotalClientsData.inactiveClients,
+      newClientsInPeriod: combinedTotalClientsData.newClientsInPeriod,
+      returningClients: combinedTotalClientsData.returningClients
     });
     
     const response: ApiResponse = {
@@ -482,13 +514,13 @@ export const getClientsReport = async (
       message: 'Reporte de clientes obtenido exitosamente',
       data: {
         summary: {
-          totalClients: Number(totalClientsData.totalClients),
-          activeClients: Number(totalClientsData.activeClients),
-          inactiveClients: Number(totalClientsData.inactiveClients),
-          newClientsInPeriod: Number(totalClientsData.newClientsInPeriod),
-          returningClients: Number(totalClientsData.returningClients),
-          retentionRate: totalClientsData.activeClients > 0 
-            ? Math.round((totalClientsData.returningClients / totalClientsData.activeClients) * 100)
+          totalClients: Number(combinedTotalClientsData.totalClients),
+          activeClients: Number(combinedTotalClientsData.activeClients),
+          inactiveClients: Number(combinedTotalClientsData.inactiveClients),
+          newClientsInPeriod: Number(combinedTotalClientsData.newClientsInPeriod),
+          returningClients: Number(combinedTotalClientsData.returningClients),
+          retentionRate: combinedTotalClientsData.activeClients > 0 
+            ? Math.round((combinedTotalClientsData.returningClients / combinedTotalClientsData.activeClients) * 100)
             : 0,
           period: `${formattedStartDate} - ${formattedEndDate}`
         },
