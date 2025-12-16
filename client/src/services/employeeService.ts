@@ -2,7 +2,7 @@ import api from './api';
 
 export interface Employee {
   id: string;
-  userId: string;
+  userId?: string;
   companyId?: string;
   position: string;
   specialties?: string | null;
@@ -23,6 +23,9 @@ export interface Employee {
   // Estadísticas adicionales
   totalAppointments?: number;
   completedAppointments?: number;
+  // Propiedades para encargados (empleados + administradores)
+  companyRole?: 'admin' | 'employee' | string;
+  type?: 'admin' | 'employee' | string;
   // Mantener compatibilidad con estructura anidada por si acaso
   user?: {
     id: string;
@@ -148,6 +151,38 @@ class EmployeeService {
   async getEmployeeSchedule(id: string): Promise<{ success: boolean; data: any }> {
     const response = await api.get(`/employees/${id}/schedule`);
     return response.data;
+  }
+
+  // Obtener encargados (empleados + administradores) para citas
+  async getEncargados(): Promise<{ success: boolean; data: Employee[] }> {
+    try {
+      console.log('🔍 Llamando al endpoint de encargados (empleados + administradores)...');
+      const response = await api.get('/employees/encargados');
+      console.log('📋 Respuesta del servidor de encargados:', response.data);
+      
+      if (response.data && response.data.success) {
+        console.log('✅ Encargados obtenidos exitosamente:', response.data.data);
+        return response.data;
+      } else {
+        console.log('❌ Respuesta del servidor no exitosa:', response.data);
+        return {
+          success: false,
+          data: []
+        };
+      }
+    } catch (error: any) {
+      console.error('❌ Error fetching encargados:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      // Retornar estructura consistente en caso de error
+      return {
+        success: false,
+        data: []
+      };
+    }
   }
 }
 

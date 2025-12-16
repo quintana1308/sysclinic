@@ -8,7 +8,8 @@ import {
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  getEmployeeSchedule
+  getEmployeeSchedule,
+  getEncargados
 } from '../controllers/employee.controller';
 
 const router = Router();
@@ -22,6 +23,12 @@ router.use(validateLicense);
 router.get('/', 
   requirePermission({ resource: 'employees', action: 'read' }),
   getEmployees
+);
+
+// Obtener encargados (empleados + administradores) para citas
+router.get('/encargados', 
+  requirePermission({ resource: 'employees', action: 'read' }),
+  getEncargados
 );
 
 // Crear nuevo empleado (solo admin y master)

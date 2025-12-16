@@ -89,7 +89,7 @@ export const getAppointments = async (
       params.push(endDate);
     }
 
-    // Obtener total de registros
+    // Obtener total de registros (actualizado para incluir administradores)
     const totalResult = await queryOne<{ total: number }>(`
       SELECT COUNT(*) as total
       FROM appointments a
@@ -97,12 +97,13 @@ export const getAppointments = async (
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN employees e ON a.employeeId = e.id
       LEFT JOIN users ue ON e.userId = ue.id
+      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
       ${whereClause}
     `, params);
 
     const total = totalResult?.total || 0;
 
-    // Consulta simplificada sin GROUP BY para compatibilidad Railway MySQL
+    // Consulta actualizada para incluir tanto empleados como administradores
     const allAppointments = await query<any>(`
       SELECT 
         a.*,
@@ -111,14 +112,20 @@ export const getAppointments = async (
         uc.lastName as clientLastName,
         uc.email as clientEmail,
         uc.phone as clientPhone,
-        e.position as employeePosition,
-        ue.firstName as employeeFirstName,
-        ue.lastName as employeeLastName
+        COALESCE(e.position, 'Administrador') as employeePosition,
+        COALESCE(ue.firstName, ua.firstName) as employeeFirstName,
+        COALESCE(ue.lastName, ua.lastName) as employeeLastName,
+        CASE 
+          WHEN e.id IS NOT NULL THEN 'employee'
+          WHEN ua.id IS NOT NULL THEN 'admin'
+          ELSE NULL
+        END as employeeType
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN employees e ON a.employeeId = e.id
       LEFT JOIN users ue ON e.userId = ue.id
+      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
       ${whereClause}
       ORDER BY a.date DESC, a.startTime DESC
     `, params);
@@ -192,14 +199,20 @@ export const getAppointmentById = async (
         uc.lastName as clientLastName,
         uc.email as clientEmail,
         uc.phone as clientPhone,
-        e.position as employeePosition,
-        ue.firstName as employeeFirstName,
-        ue.lastName as employeeLastName
+        COALESCE(e.position, 'Administrador') as employeePosition,
+        COALESCE(ue.firstName, ua.firstName) as employeeFirstName,
+        COALESCE(ue.lastName, ua.lastName) as employeeLastName,
+        CASE 
+          WHEN e.id IS NOT NULL THEN 'employee'
+          WHEN ua.id IS NOT NULL THEN 'admin'
+          ELSE NULL
+        END as employeeType
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN employees e ON a.employeeId = e.id
       LEFT JOIN users ue ON e.userId = ue.id
+      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
       WHERE a.id = ?
     `, [id]);
 
@@ -327,24 +340,43 @@ export const createAppointment = async (
       throw new AppError('Cliente no pertenece a tu empresa', 403);
     }
 
-    // Verificar que el empleado existe y pertenece a la empresa (si se especifica)
+    // Verificar que el encargado (empleado o administrador) existe y pertenece a la empresa
     if (employeeId) {
-      console.log('Validating employee:', { employeeId, companyId });
+      console.log('Validating encargado:', { employeeId, companyId });
       
-      const employee = await queryOne(`
-        SELECT id, companyId FROM employees WHERE id = ? AND isActive = 1
+      // Primero buscar en la tabla de empleados
+      let encargado = await queryOne(`
+        SELECT e.id, e.companyId, e.userId, 'employee' as type
+        FROM employees e 
+        WHERE e.id = ? AND e.isActive = 1
       `, [employeeId]);
       
-      console.log('Employee found:', employee);
+      // Si no se encuentra como empleado, buscar como usuario con rol admin
+      if (!encargado) {
+        encargado = await queryOne(`
+          SELECT u.id, uc.companyId, u.id as userId, 'admin' as type
+          FROM users u
+          INNER JOIN user_companies uc ON u.id = uc.userId
+          WHERE u.id = ? AND u.isActive = 1 AND uc.role = 'admin' AND uc.isActive = 1
+        `, [employeeId]);
+      }
       
-      if (!employee) {
-        throw new AppError('Empleado no encontrado o inactivo', 404);
+      console.log('Encargado found:', encargado);
+      
+      if (!encargado) {
+        throw new AppError('Encargado no encontrado o inactivo', 404);
       }
       
       // Verificar empresa (más flexible para usuarios master)
-      if (!req.user?.isMaster && employee.companyId !== companyId) {
-        throw new AppError('Empleado no pertenece a tu empresa', 403);
+      if (!req.user?.isMaster && encargado.companyId !== companyId) {
+        throw new AppError('Encargado no pertenece a tu empresa', 403);
       }
+      
+      console.log('✅ Encargado validado:', {
+        id: encargado.id,
+        type: encargado.type,
+        companyId: encargado.companyId
+      });
     }
 
     // Verificar disponibilidad del empleado
@@ -365,7 +397,7 @@ export const createAppointment = async (
       `, [employeeId, date, startDateTimeStr, startDateTimeStr, endDateTimeStr, endDateTimeStr, startDateTimeStr, endDateTimeStr]);
 
       if (conflictingAppointment) {
-        throw new AppError('El empleado ya tiene una cita en ese horario', 400);
+        throw new AppError('El encargado ya tiene una cita en ese horario', 400);
       }
     }
 
@@ -480,7 +512,35 @@ export const updateAppointment = async (
       }
     }
 
-    // Verificar disponibilidad del empleado si se cambia
+    // Verificar que el encargado existe si se especifica
+    if (employeeId) {
+      console.log('Validating encargado for update:', { employeeId });
+      
+      // Primero buscar en la tabla de empleados
+      let encargado = await queryOne(`
+        SELECT e.id, e.companyId, e.userId, 'employee' as type
+        FROM employees e 
+        WHERE e.id = ? AND e.isActive = 1
+      `, [employeeId]);
+      
+      // Si no se encuentra como empleado, buscar como usuario con rol admin
+      if (!encargado) {
+        encargado = await queryOne(`
+          SELECT u.id, uc.companyId, u.id as userId, 'admin' as type
+          FROM users u
+          INNER JOIN user_companies uc ON u.id = uc.userId
+          WHERE u.id = ? AND u.isActive = 1 AND uc.role = 'admin' AND uc.isActive = 1
+        `, [employeeId]);
+      }
+      
+      console.log('Encargado found for update:', encargado);
+      
+      if (!encargado) {
+        throw new AppError('Encargado no encontrado o inactivo', 404);
+      }
+    }
+
+    // Verificar disponibilidad del encargado si se cambia
     if (employeeId && (date || startTime || endTime)) {
       const checkDate = date || appointment.date.toISOString().split('T')[0];
       const checkStartTime = startTime || appointment.startTime.toTimeString().slice(0, 5);
@@ -500,7 +560,7 @@ export const updateAppointment = async (
       `, [employeeId, id, checkDate, checkStartTime, checkStartTime, checkEndTime, checkEndTime, checkStartTime, checkEndTime]);
 
       if (conflictingAppointment) {
-        throw new AppError('El empleado ya tiene una cita en ese horario', 400);
+        throw new AppError('El encargado ya tiene una cita en ese horario', 400);
       }
     }
 

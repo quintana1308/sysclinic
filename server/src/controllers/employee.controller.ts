@@ -689,11 +689,92 @@ export const getEmployeeSchedule = async (
   }
 };
 
+// Nueva función para obtener empleados y administradores (encargados)
+export const getEncargados = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log('🔍 Obteniendo encargados (empleados + administradores)...');
+
+    // Obtener empresa actual para filtrar
+    const companyId = req.user?.isMaster && req.companyId 
+      ? req.companyId 
+      : req.user?.companies?.current?.id;
+
+    if (!companyId && !req.user?.isMaster) {
+      throw new AppError('No se puede determinar la empresa', 400);
+    }
+
+    let whereClause = 'WHERE u.isActive = 1';
+    const params: any[] = [];
+
+    // Filtrar por empresa si no es master o si master ha seleccionado una empresa
+    if (companyId) {
+      whereClause += ` AND uc.companyId = ?`;
+      params.push(companyId);
+    }
+
+    console.log('🏢 Empresa filtro:', companyId);
+    console.log('📋 Parámetros consulta:', params);
+
+    // Consulta que obtiene tanto empleados como administradores
+    const encargados = await query<any>(`
+      SELECT DISTINCT
+        u.id,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.phone,
+        u.isActive,
+        uc.role as companyRole,
+        CASE 
+          WHEN uc.role = 'admin' THEN 'Administrador'
+          WHEN uc.role = 'employee' THEN COALESCE(e.position, 'Empleado')
+          ELSE 'Encargado'
+        END as position,
+        CASE 
+          WHEN uc.role = 'admin' THEN 'admin'
+          WHEN uc.role = 'employee' THEN 'employee'
+          ELSE 'other'
+        END as type
+      FROM users u
+      INNER JOIN user_companies uc ON u.id = uc.userId
+      LEFT JOIN employees e ON u.id = e.userId AND uc.companyId = e.companyId
+      ${whereClause}
+      AND uc.role IN ('admin', 'employee')
+      AND uc.isActive = 1
+      ORDER BY 
+        CASE WHEN uc.role = 'admin' THEN 1 ELSE 2 END,
+        u.firstName, u.lastName
+    `, params);
+
+    console.log('✅ Encargados encontrados:', encargados.length);
+    console.log('📊 Desglose por tipo:', {
+      administradores: encargados.filter(e => e.type === 'admin').length,
+      empleados: encargados.filter(e => e.type === 'employee').length
+    });
+
+    const response: ApiResponse = {
+      success: true,
+      data: encargados,
+      message: `${encargados.length} encargados encontrados`
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Error obteniendo encargados:', error);
+    next(error);
+  }
+};
+
 export default {
   getEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  getEmployeeSchedule
+  getEmployeeSchedule,
+  getEncargados
 };

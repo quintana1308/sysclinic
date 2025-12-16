@@ -95,7 +95,15 @@ interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  position?: string;
+  email: string;
+  position: string;
+  hireDate: string;
+  isActive: number | boolean;
+  createdAt: string;
+  updatedAt: string;
+  // Propiedades para encargados (empleados + administradores)
+  companyRole?: 'admin' | 'employee' | string;
+  type?: 'admin' | 'employee' | string;
 }
 
 interface NewAppointmentForm {
@@ -308,60 +316,82 @@ const Appointments: React.FC = () => {
     }
   };
 
-  // Cargar empleados activos
+  // Cargar encargados (empleados + administradores)
   const loadActiveEmployees = async () => {
     try {
-      console.log('🔍 Cargando empleados activos...');
+      console.log('🔍 Cargando encargados (empleados + administradores)...');
       
       // Verificar si hay token de autenticación
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('⚠️ No hay token de autenticación, usando empleados de fallback');
+        console.log('⚠️ No hay token de autenticación, usando encargados de fallback');
         throw new Error('No authenticated');
       }
       
-      const response = await employeeService.getActiveEmployees();
-      console.log('📋 Respuesta del servicio de empleados:', response);
+      const response = await employeeService.getEncargados();
+      console.log('📋 Respuesta del servicio de encargados:', response);
       
       if (response.success && response.data && response.data.length > 0) {
-        // Mapear empleados para asegurar compatibilidad con la interfaz
-        const mappedEmployees: Employee[] = response.data.map((employee: any) => {
-          console.log('🔄 Mapeando empleado:', employee);
+        // Mapear encargados para asegurar compatibilidad con la interfaz
+        const mappedEmployees: Employee[] = response.data.map((encargado: any) => {
+          console.log('🔄 Mapeando encargado:', encargado);
           
-          // Manejar diferentes estructuras de datos
-          const firstName = employee.firstName || employee.user?.firstName || '';
-          const lastName = employee.lastName || employee.user?.lastName || '';
-          const position = employee.position || '';
-          
+          // Los datos ya vienen directamente del JOIN en la consulta
           return {
-            id: employee.id,
-            firstName,
-            lastName,
-            position
+            id: encargado.id, // Este es el userId
+            userId: encargado.id,
+            firstName: encargado.firstName,
+            lastName: encargado.lastName,
+            email: encargado.email,
+            phone: encargado.phone || '',
+            position: encargado.position, // "Administrador" o cargo específico
+            hireDate: new Date().toISOString(),
+            isActive: encargado.isActive,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            companyRole: encargado.companyRole, // 'admin' o 'employee'
+            type: encargado.type // 'admin' o 'employee'
           };
         });
         
-        console.log('✅ Empleados mapeados:', mappedEmployees);
+        console.log('✅ Encargados mapeados:', mappedEmployees);
+        console.log('📊 Tipos de encargados:', {
+          administradores: mappedEmployees.filter(e => e.type === 'admin').length,
+          empleados: mappedEmployees.filter(e => e.type === 'employee').length
+        });
+        
         setEmployees(mappedEmployees);
         
-        // Seleccionar el primer empleado por defecto
-        if (mappedEmployees.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            employeeId: mappedEmployees[0].id
-          }));
-        }
+        // No seleccionar ninguno por defecto para que el usuario elija
+        setFormData(prev => ({
+          ...prev,
+          employeeId: ''
+        }));
         
       } else {
-        console.log('❌ No se encontraron empleados activos o respuesta inválida');
-        throw new Error('No employees found');
+        console.log('❌ No se encontraron encargados o respuesta inválida');
+        throw new Error('No encargados found');
       }
     } catch (error) {
-      console.error('❌ Error loading active employees:', error);
-      // No usar fallback - mantener lista vacía en caso de error
-      setEmployees([]);
+      console.error('❌ Error loading encargados:', error);
       
-      // Limpiar selecciones
+      // Usar encargados de fallback en caso de error
+      const fallbackEmployees: Employee[] = [
+        {
+          id: 'fallback-1',
+          firstName: 'Encargado',
+          lastName: 'Demo',
+          email: 'encargado@demo.com',
+          position: 'Especialista',
+          hireDate: new Date().toISOString(),
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      
+      console.log('🔄 Usando encargados de fallback:', fallbackEmployees);
+      setEmployees(fallbackEmployees);
       setFormData(prev => ({
         ...prev,
         employeeId: ''
@@ -1295,7 +1325,7 @@ const Appointments: React.FC = () => {
             {/* Empleado */}
             <div>
               <label className="block text-sm font-medium text-pink-700 mb-2">
-                👨‍⚕️ Empleado
+                👨‍⚕️ Encargado
               </label>
               <select
                 value={filters.employee}
@@ -1412,7 +1442,7 @@ const Appointments: React.FC = () => {
               {/* Empleado y Monto */}
               <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
                 <div>
-                  <p className="text-xs font-medium text-gray-500">👨‍⚕️ Empleado</p>
+                  <p className="text-xs font-medium text-gray-500">👨‍⚕️ Encargado</p>
                   <p className="text-sm text-gray-900">
                     {appointment.employee?.firstName} {appointment.employee?.lastName}
                   </p>
@@ -1636,13 +1666,15 @@ const Appointments: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Empleado
+                      Encargado <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={formData.employeeId}
                       onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
                     >
+                      <option value="">Seleccionar encargado...</option>
                       {employees.map(employee => (
                         <option key={employee.id} value={employee.id}>
                           {employee.firstName} {employee.lastName}
@@ -1846,7 +1878,7 @@ const Appointments: React.FC = () => {
                     </span>
                   </div>
                   <div className="bg-white p-3 rounded border border-gray-200">
-                    <span className="text-sm font-medium text-gray-700 block mb-1">Empleado:</span>
+                    <span className="text-sm font-medium text-gray-700 block mb-1">Encargado:</span>
                     <span className="text-sm font-semibold text-gray-900">
                       {selectedAppointment.employee?.firstName} {selectedAppointment.employee?.lastName}
                     </span>
@@ -1997,13 +2029,15 @@ const Appointments: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Empleado
+                      Encargado <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={editFormData.employeeId}
                       onChange={(e) => setEditFormData({ ...editFormData, employeeId: e.target.value })}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      required
                     >
+                      <option value="">Seleccionar encargado...</option>
                       {employees.map(employee => (
                         <option key={employee.id} value={employee.id}>
                           {employee.firstName} {employee.lastName}
