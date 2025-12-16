@@ -494,99 +494,164 @@ const Employees: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEmployees.map((employee) => (
-            <div key={employee.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-              {/* Header de la tarjeta con gradiente */}
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                      <span className="text-lg font-medium text-pink-700">
-                        {getEmployeeInitials(employee)}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {getEmployeeName(employee)}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Empleado #{employee.id.slice(-6).toUpperCase()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      (employee.isActive === 1 || employee.isActive === true)
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {(employee.isActive === 1 || employee.isActive === true) ? '✅ Activo' : '❌ Inactivo'}
-                    </span>
-                  </div>
-                </div>
+        /* Tabla de Empleados */
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header de la tabla */}
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                👥
               </div>
-
-              {/* Información del empleado */}
-              <div className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">📧</span>
-                    <span className="text-sm text-gray-700 truncate">{getEmployeeEmail(employee)}</span>
-                  </div>
-                  {employee.phone && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-pink-500">☎️</span>
-                      <span className="text-sm text-gray-700">{employee.phone}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">👔</span>
-                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {employee.position}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">📅</span>
-                    <span className="text-sm text-gray-700">
-                      Desde {formatDateVenezuela(employee.hireDate || employee.createdAt, 'short')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="bg-white border-t border-gray-100 p-4">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedEmployee(employee);
-                      setShowViewModal(true);
-                    }}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-                  >
-                    👁️ Ver
-                  </button>
-                  {canEditEmployee() && (
-                    <button
-                      onClick={() => openEditModal(employee)}
-                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                  {canDeleteEmployee() && (
-                    <button
-                      onClick={() => openDeleteModal(employee)}
-                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Empleados</h3>
+              <span className="text-sm text-gray-600">{filteredEmployees.length} empleado{filteredEmployees.length !== 1 ? 's' : ''} encontrado{filteredEmployees.length !== 1 ? 's' : ''}</span>
             </div>
-          ))}
+          </div>
+
+          {/* Tabla responsive */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    👤 Empleado
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📧 Contacto
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    👔 Posición
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📊 Estado
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📅 Contratación
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⚡ Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEmployees.map((employee) => (
+                  <tr key={employee.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* Empleado */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-pink-600">
+                            {getEmployeeInitials(employee)}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {getEmployeeName(employee)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            #{employee.id.slice(-6).toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Contacto */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <div className="text-sm text-gray-900 truncate max-w-48">
+                          📧 {getEmployeeEmail(employee)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          📞 {employee.phone || 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Posición */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            {employee.position}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Estado */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        (employee.isActive === 1 || employee.isActive === true)
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {(employee.isActive === 1 || employee.isActive === true) ? '✅ Activo' : '❌ Inactivo'}
+                      </span>
+                    </td>
+
+                    {/* Contratación */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatDateVenezuela(employee.hireDate || employee.createdAt, 'short')}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          📅 Contratación
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setShowViewModal(true);
+                          }}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                          title="Ver detalles del empleado"
+                        >
+                          <EyeIcon className="h-3 w-3 mr-1" />
+                          Ver
+                        </button>
+                        {canEditEmployee() && (
+                          <button 
+                            onClick={() => openEditModal(employee)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                            title="Editar empleado"
+                          >
+                            <PencilIcon className="h-3 w-3 mr-1" />
+                            Editar
+                          </button>
+                        )}
+                        {canDeleteEmployee() && (
+                          <button 
+                            onClick={() => openDeleteModal(employee)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                            title="Eliminar empleado"
+                          >
+                            <TrashIcon className="h-3 w-3 mr-1" />
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer de la tabla */}
+          {filteredEmployees.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <span className="mx-auto h-12 w-12 text-gray-400 text-4xl">👥</span>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay empleados</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No se encontraron empleados con los filtros aplicados.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

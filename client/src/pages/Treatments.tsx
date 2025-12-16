@@ -5,6 +5,7 @@ import {
   TreatmentFormData as ApiTreatmentFormData,
 } from '../services/treatmentService';
 import toast, { Toaster } from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG
 const PlusIcon = ({ className }: { className?: string }) => (
@@ -19,37 +20,6 @@ const PlusIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-    />
-  </svg>
-);
-
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    strokeWidth={1.5}
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-    />
-  </svg>
-);
 
 const ClockIcon = ({ className }: { className?: string }) => (
   <svg
@@ -921,138 +891,189 @@ const Treatments: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {treatments.map((treatment) => (
-            <div key={treatment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-              {/* Header de la tarjeta con gradiente */}
-              <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                      <span className="text-lg font-medium text-pink-700">
-                        ✨
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {treatment.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Tratamiento #{treatment.id.slice(-6).toUpperCase()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      treatment.status === 'active'
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {treatment.status === 'active' ? '✅ Activo' : '❌ Inactivo'}
-                    </span>
-                    <button
-                      onClick={() => handleToggleStatus(treatment)}
-                      className={`text-xs hover:underline font-medium px-2 py-1 rounded ${
-                        treatment.status === 'active'
-                          ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                          : 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                      }`}
-                    >
-                      {treatment.status === 'active' ? '⏸️ Desactivar' : '▶️ Activar'}
-                    </button>
-                  </div>
-                </div>
+        /* Tabla de Tratamientos */
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header de la tabla */}
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                ✨
               </div>
-
-              {/* Información del tratamiento */}
-              <div className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">📋</span>
-                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {treatment.category}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">⏱️</span>
-                    <span className="text-sm text-gray-700">{treatment.duration} minutos</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-pink-500">💰</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      ${formatPrice(treatment.price)}
-                    </span>
-                  </div>
-                  {treatment.description && (
-                    <div className="flex items-start space-x-2">
-                      <span className="text-pink-500">📝</span>
-                      <span className="text-sm text-gray-700 line-clamp-2">
-                        {treatment.description.length > 80 
-                          ? `${treatment.description.substring(0, 80)}...` 
-                          : treatment.description}
-                      </span>
-                    </div>
-                  )}
-                  {treatment.supplies && Array.isArray(treatment.supplies) && treatment.supplies.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-pink-500">🧴</span>
-                      <span className="text-sm text-gray-700">
-                        {treatment.supplies.length} insumo{treatment.supplies.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="bg-white border-t border-gray-100 p-4">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedTreatment(treatment);
-                      setShowViewTreatmentModal(true);
-                    }}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-                  >
-                    👁️ Ver
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedTreatment(treatment);
-                      setEditFormData({
-                        name: treatment.name,
-                        category: treatment.category,
-                        duration: treatment.duration,
-                        price: treatment.price,
-                        description: treatment.description || '',
-                        supplies: Array.isArray(treatment.supplies) ? treatment.supplies : [],
-                      });
-                      setShowEditTreatmentModal(true);
-                    }}
-                    className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTreatment(treatment)}
-                    disabled={!canDeleteTreatment(treatment)}
-                    className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
-                      canDeleteTreatment(treatment)
-                        ? 'text-red-600 bg-red-100 border-red-300 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
-                        : 'text-gray-400 bg-gray-50 border-gray-300 cursor-not-allowed'
-                    }`}
-                    title={
-                      canDeleteTreatment(treatment)
-                        ? 'Eliminar tratamiento'
-                        : getDeleteRestrictionMessage(treatment)
-                    }
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Tratamientos</h3>
+              <span className="text-sm text-gray-600">{treatments.length} tratamiento{treatments.length !== 1 ? 's' : ''} encontrado{treatments.length !== 1 ? 's' : ''}</span>
             </div>
-          ))}
+          </div>
+
+          {/* Tabla responsive */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ✨ Tratamiento
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📋 Categoría
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⏱️ Duración
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💰 Precio
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📊 Estado
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⚡ Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {treatments.map((treatment) => (
+                  <tr key={treatment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* Tratamiento */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-pink-600">✨</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {treatment.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            #{treatment.id.slice(-6).toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Categoría */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          {treatment.category}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Duración */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {treatment.duration}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            minutos
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Precio */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div className="text-md font-bold text-green-600">
+                            ${formatPrice(treatment.price)}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Estado */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        treatment.status === 'active'
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {treatment.status === 'active' ? '✅ Activo' : '❌ Inactivo'}
+                      </span>
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedTreatment(treatment);
+                            setShowViewTreatmentModal(true);
+                          }}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                          title="Ver detalles del tratamiento"
+                        >
+                          <EyeIcon className="h-3 w-3 mr-1" />
+                          Ver
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setSelectedTreatment(treatment);
+                            setEditFormData({
+                              name: treatment.name,
+                              category: treatment.category,
+                              duration: treatment.duration,
+                              price: treatment.price,
+                              description: treatment.description || '',
+                              supplies: Array.isArray(treatment.supplies) ? treatment.supplies : [],
+                            });
+                            setShowEditTreatmentModal(true);
+                          }}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                          title="Editar tratamiento"
+                        >
+                          <PencilIcon className="h-3 w-3 mr-1" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(treatment)}
+                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            treatment.status === 'active'
+                              ? 'text-orange-700 bg-orange-100 hover:bg-orange-200'
+                              : 'text-green-700 bg-green-100 hover:bg-green-200'
+                          }`}
+                          title={treatment.status === 'active' ? 'Desactivar tratamiento' : 'Activar tratamiento'}
+                        >
+                          {treatment.status === 'active' ? '⏸️' : '▶️'}
+                          {treatment.status === 'active' ? 'Desactivar' : 'Activar'}
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTreatment(treatment)}
+                          disabled={!canDeleteTreatment(treatment)}
+                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            canDeleteTreatment(treatment)
+                              ? 'text-red-700 bg-red-100 hover:bg-red-200'
+                              : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                          }`}
+                          title={
+                            canDeleteTreatment(treatment)
+                              ? 'Eliminar tratamiento'
+                              : getDeleteRestrictionMessage(treatment)
+                          }
+                        >
+                          <TrashIcon className="h-3 w-3 mr-1" />
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer de la tabla */}
+          {treatments.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <span className="mx-auto h-12 w-12 text-gray-400 text-4xl">✨</span>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay tratamientos</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No se encontraron tratamientos con los filtros aplicados.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

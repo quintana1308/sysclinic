@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { paymentService, Payment } from '../services/paymentService';
 import { invoiceService } from '../services/invoiceService';
 import toast, { Toaster } from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG
 const DocumentIcon = ({ className }: { className?: string }) => (
@@ -28,12 +29,6 @@ const BanknotesIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const EyeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
 
 const ArrowTopRightOnSquareIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -541,74 +536,94 @@ const Payments: React.FC = () => {
           </div>
         </div>
       ) : (
+        /* Tabla de Pagos */
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header de la tabla */}
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                💳
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Pagos</h3>
+              <span className="text-sm text-gray-600">{payments.length} pago{payments.length !== 1 ? 's' : ''} encontrado{payments.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+
+          {/* Tabla responsive */}
           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💳 Pago
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💰 Monto
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Método
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💳 Método
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📊 Estado
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📅 Fecha
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⚡ Acciones
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {getCurrentPagePayments().map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
-                    {/* Cliente */}
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {payment.clientName}
+                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* Pago */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-pink-600">💳</span>
                         </div>
-                        {payment.clientEmail && (
-                          <div className="text-sm text-gray-500">
-                            {payment.clientEmail}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {payment.clientName}
                           </div>
-                        )}
-                        <div className="text-xs text-gray-400 mt-1">
-                          Pago #{payment.id.slice(-6).toUpperCase()}
+                          <div className="text-xs text-gray-500">
+                            #{payment.id.slice(-6).toUpperCase()}
+                          </div>
+                          {payment.clientEmail && (
+                            <div className="text-xs text-gray-400">
+                              {payment.clientEmail}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     
                     {/* Monto */}
-                    <td className="px-6 py-4">
-                      <div className="text-lg font-bold text-gray-900 mb-1">
-                        ${payment.amount.toFixed(2)}
-                      </div>
-                      {payment.treatments.length > 0 && (
-                        <div className="text-xs text-gray-500">
-                          {payment.treatments.slice(0, 2).map((treatment, index) => (
-                            <div key={index} className="truncate">
-                              {treatment}
-                            </div>
-                          ))}
-                          {payment.treatments.length > 2 && (
-                            <div className="text-xs text-gray-400">
-                              +{payment.treatments.length - 2} más
-                            </div>
-                          )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-md font-bold text-green-600">
+                          ${payment.amount.toFixed(2)}
                         </div>
-                      )}
+                        {payment.treatments.length > 0 && (
+                          <div className="text-xs text-gray-500">
+                            {payment.treatments.slice(0, 2).map((treatment, index) => (
+                              <div key={index} className="truncate">
+                                {treatment}
+                              </div>
+                            ))}
+                            {payment.treatments.length > 2 && (
+                              <div className="text-xs text-gray-400">
+                                +{payment.treatments.length - 2} más
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     
                     {/* Método */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {payment.method === 'Efectivo' && <span className="text-green-500 mr-2">💵</span>}
                         {payment.method === 'Transferencia' && <span className="text-blue-500 mr-2">🏦</span>}
@@ -619,34 +634,41 @@ const Payments: React.FC = () => {
                     </td>
                     
                     {/* Estado */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                         ✅ Pagado
                       </span>
                     </td>
                     
                     {/* Fecha */}
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {payment.date}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900">
+                          {payment.date}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          📅 Pago
+                        </div>
                       </div>
                     </td>
                     
                     {/* Acciones */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button 
                           onClick={() => handleViewDetails(payment)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                          title="Ver detalles del pago"
                         >
-                          <EyeIcon className="h-4 w-4 mr-1" />
+                          <EyeIcon className="h-3 w-3 mr-1" />
                           Ver
                         </button>
-                        <button
+                        <button 
                           onClick={() => handleViewInvoice(payment)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                          title="Ver factura asociada"
                         >
-                          <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1" />
+                          <ArrowTopRightOnSquareIcon className="h-3 w-3 mr-1" />
                           Factura
                         </button>
                       </div>
@@ -656,6 +678,17 @@ const Payments: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Footer de la tabla */}
+          {getCurrentPagePayments().length === 0 && !loading && (
+            <div className="text-center py-12">
+              <span className="mx-auto h-12 w-12 text-gray-400 text-4xl">💳</span>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay pagos</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No se encontraron pagos con los filtros aplicados.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

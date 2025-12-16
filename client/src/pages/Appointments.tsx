@@ -6,6 +6,7 @@ import { clientService, Client as ApiClient } from '../services/clientService';
 import { employeeService, Employee as ApiEmployee } from '../services/employeeService';
 import { invoiceService, InvoiceFormData } from '../services/invoiceService';
 import toast from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG personalizados
 const CalendarIcon = ({ className }: { className?: string }) => (
@@ -20,24 +21,6 @@ const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const EyeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-  </svg>
-);
-
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-  </svg>
-);
-
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-  </svg>
-);
 
 const ChevronLeftIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -1381,128 +1364,193 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid de Citas Mejorado para Mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {appointments.map((appointment) => (
-          <div key={appointment.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-            {/* Header de la tarjeta con gradiente */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-pink-100 rounded-full flex items-center justify-center shadow-sm">
-                  <CalendarIcon className="h-5 w-5 text-pink-700" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-gray-900">
-                    📅 {formatDate(appointment.appointmentDate || '')}
-                  </h3>
-                  <p className="text-xs text-gray-600">
-                    🕐 {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  {getStatusBadge(appointment.status)}
-                </div>
-              </div>
+      {/* Tabla de Citas */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header de la tabla */}
+        <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+              📅 
             </div>
-
-            {/* Contenido de la tarjeta */}
-            <div className="p-4 space-y-3">
-              {/* Cliente */}
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-pink-600">
-                    {appointment.client?.firstName?.charAt(0) || 'C'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    👤 {appointment.client?.firstName || ''} {appointment.client?.lastName || ''}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    📧 {appointment.client?.email || ''}
-                  </p>
-                </div>
-              </div>
-
-              {/* Tratamiento */}
-              <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs font-medium text-gray-500 mb-1">💊 Tratamiento(s)</p>
-                <div className="space-y-1">
-                  {(appointment.treatments || []).map((treatment, index) => (
-                    <div key={index} className="text-sm text-gray-900">
-                      {treatment.name}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  ⏱ {appointment.duration} minutos
-                </p>
-              </div>
-
-              {/* Empleado y Monto */}
-              <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
-                <div>
-                  <p className="text-xs font-medium text-gray-500">👨‍⚕️ Encargado</p>
-                  <p className="text-sm text-gray-900">
-                    {appointment.employee?.firstName} {appointment.employee?.lastName}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium text-gray-500">💰 Total</p>
-                  <p className="text-lg font-bold text-pink-600">
-                    ${appointment.totalAmount.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer con botones de acción */}
-            <div className="bg-gray-50 px-4 py-3 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => handleViewDetails(appointment)}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
-                    title="Ver detalles"
-                  >
-                    <EyeIcon className="h-3 w-3 mr-1" />
-                    Ver
-                  </button>
-                  <button 
-                    onClick={() => handleEditAppointment(appointment)}
-                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
-                    title="Editar"
-                  >
-                    <PencilIcon className="h-3 w-3 mr-1" />
-                    Editar
-                  </button>
-                </div>
-                <button 
-                  onClick={() => handleCancelAppointment(appointment)}
-                  disabled={!canCancelAppointment(appointment)}
-                  className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
-                    canCancelAppointment(appointment) 
-                      ? 'text-red-700 bg-red-100 hover:bg-red-200' 
-                      : 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                  }`}
-                  title={
-                    canCancelAppointment(appointment) 
-                      ? "Cancelar cita" 
-                      : appointment.hasPayments 
-                        ? "No se puede cancelar: tiene pagos relacionados"
-                        : "No se puede cancelar"
-                  }
-                >
-                  <TrashIcon className="h-3 w-3 mr-1" />
-                  Cancelar
-                </button>
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Lista de Citas</h3>
+            <span className="text-sm text-gray-600">({appointments.length} citas encontradas)</span>
           </div>
-        ))}
+        </div>
+
+        {/* Tabla responsive */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  📅 Fecha & Hora
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  👤 Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  👨‍⚕️ Encargado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  💊 Tratamientos
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  📊 Estado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  💰 Total
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ⚡ Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {appointments.map((appointment) => (
+                <tr key={appointment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  {/* Fecha & Hora */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatDate(appointment.appointmentDate || '')}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        🕐 {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        ⏱ {appointment.duration} min
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Cliente */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-sm font-medium text-pink-600">
+                          {appointment.client?.firstName?.charAt(0) || 'C'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {appointment.client?.firstName || ''} {appointment.client?.lastName || ''}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          📧 {appointment.client?.email || ''}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Encargado */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-sm font-medium text-blue-600">
+                          {appointment.employee?.firstName?.charAt(0) || 'E'}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {appointment.employee?.firstName} {appointment.employee?.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {appointment.employee?.position || 'Encargado'}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Tratamientos */}
+                  <td className="px-6 py-4">
+                    <div className="max-w-xs">
+                      {(appointment.treatments || []).slice(0, 2).map((treatment, index) => (
+                        <div key={index} className="text-sm text-gray-900 truncate">
+                          💊 {treatment.name}
+                        </div>
+                      ))}
+                      {(appointment.treatments || []).length > 2 && (
+                        <div className="text-xs text-gray-500">
+                          +{(appointment.treatments || []).length - 2} más...
+                        </div>
+                      )}
+                      {!(appointment.treatments || []).length && (
+                        <span className="text-sm text-gray-400">Sin tratamientos</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Estado */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatusBadge(appointment.status)}
+                  </td>
+
+                  {/* Total */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      ${appointment.totalAmount.toFixed(2)}
+                    </div>
+                  </td>
+
+                  {/* Acciones */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button 
+                        onClick={() => handleViewDetails(appointment)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                        title="Ver detalles"
+                      >
+                        <EyeIcon className="h-3 w-3 mr-1" />
+                        Ver
+                      </button>
+                      <button 
+                        onClick={() => handleEditAppointment(appointment)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                        title="Editar"
+                      >
+                        <PencilIcon className="h-3 w-3 mr-1" />
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => handleCancelAppointment(appointment)}
+                        disabled={!canCancelAppointment(appointment)}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                          canCancelAppointment(appointment) 
+                            ? 'text-red-700 bg-red-100 hover:bg-red-200' 
+                            : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                        }`}
+                        title={
+                          canCancelAppointment(appointment) 
+                            ? "Cancelar cita" 
+                            : appointment.hasPayments 
+                              ? "No se puede cancelar: tiene pagos relacionados"
+                              : "No se puede cancelar"
+                        }
+                      >
+                        <TrashIcon className="h-3 w-3 mr-1" />
+                        Cancelar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer de la tabla */}
+        {appointments.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay citas</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No se encontraron citas con los filtros aplicados.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Paginación Mejorada para Mobile */}
+      {/* Paginación */}
       {!loading && !error && appointments.length > 0 && (
         <div className="mt-4 sm:mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
           <div className="flex flex-1 justify-between sm:hidden">

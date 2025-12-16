@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { invoiceService, Invoice as ApiInvoice, InvoiceFormData, InvoiceFilters } from '../services/invoiceService';
 import { paymentService, PaymentFormData } from '../services/paymentService';
 import toast from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG
 const DocumentIcon = ({ className }: { className?: string }) => (
@@ -22,24 +23,6 @@ const PlusIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const EyeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-  </svg>
-);
-
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-  </svg>
-);
 
 const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -623,73 +606,93 @@ const Invoices: React.FC = () => {
           </div>
         </div>
       ) : (
+        /* Tabla de Facturas */
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header de la tabla */}
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                📄
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Facturas</h3>
+              <span className="text-sm text-gray-600">{invoices.length} factura{invoices.length !== 1 ? 's' : ''} encontrada{invoices.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+
+          {/* Tabla responsive */}
           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📄 Factura
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Monto
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💰 Monto
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📊 Estado
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Progreso
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📈 Progreso
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📅 Fecha
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⚡ Acciones
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
-                    {/* Cliente */}
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {invoice.clientName || 'Cliente no disponible'}
+                  <tr key={invoice.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {/* Factura */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-pink-600">📄</span>
                         </div>
-                        {invoice.clientEmail && (
-                          <div className="text-sm text-gray-500">
-                            {invoice.clientEmail}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {invoice.clientName || 'Cliente no disponible'}
                           </div>
-                        )}
-                        <div className="text-xs text-gray-400 mt-1">
-                          Factura #{invoice.id.slice(-6).toUpperCase()}
+                          <div className="text-xs text-gray-500">
+                            #{invoice.id.slice(-6).toUpperCase()}
+                          </div>
+                          {invoice.clientEmail && (
+                            <div className="text-xs text-gray-400">
+                              {invoice.clientEmail}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     
                     {/* Monto */}
-                    <td className="px-6 py-4">
-                      <div className="text-lg font-bold text-gray-900 mb-1">
-                        ${formatAmount(invoice.amount)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Pagado: ${formatAmount(invoice.totalPaid || 0)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Pendiente: ${formatAmount(calculateRemainingAmount(invoice))}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-md font-bold text-green-600">
+                          ${formatAmount(invoice.amount)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Pagado: ${formatAmount(invoice.totalPaid || 0)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Pendiente: ${formatAmount(calculateRemainingAmount(invoice))}
+                        </div>
                       </div>
                     </td>
                     
                     {/* Estado */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(invoice.status)}`}>
                         {getStatusLabel(invoice.status)}
                       </span>
                     </td>
                     
                     {/* Progreso */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {(() => {
                         const percentage = calculatePaymentPercentage(invoice);
                         const progressColor = percentage === 100 ? 'bg-green-500' : percentage > 0 ? 'bg-pink-500' : 'bg-gray-300';
@@ -699,7 +702,7 @@ const Invoices: React.FC = () => {
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs font-medium text-gray-700">
-                                  {percentage.toFixed(1)}% pagado
+                                  {percentage.toFixed(1)}%
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -715,30 +718,38 @@ const Invoices: React.FC = () => {
                     </td>
                     
                     {/* Fecha */}
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium text-gray-900">
+                          {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          📅 Creación
+                        </div>
                       </div>
                     </td>
                     
                     {/* Acciones */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <button
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button 
                           onClick={() => openDetailsModal(invoice)}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                          title="Ver detalles de la factura"
                         >
+                          <EyeIcon className="h-3 w-3 mr-1" />
                           Ver
                         </button>
-                        <button
+                        <button 
                           onClick={() => {
                             setSelectedInvoice(invoice);
                             setShowPaymentModal(true);
                           }}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 border border-green-300 rounded-lg hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                          title="Registrar pago"
                         >
-                          <CurrencyDollarIcon className="h-4 w-4 mr-1" />
-                          Abonar pago
+                          <CurrencyDollarIcon className="h-3 w-3 mr-1" />
+                          Abonar
                         </button>
                       </div>
                     </td>
@@ -747,6 +758,17 @@ const Invoices: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Footer de la tabla */}
+          {invoices.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <span className="mx-auto h-12 w-12 text-gray-400 text-4xl">📄</span>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay facturas</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No se encontraron facturas con los filtros aplicados.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

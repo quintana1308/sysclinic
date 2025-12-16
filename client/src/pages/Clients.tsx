@@ -4,6 +4,7 @@ import { clientService, Client as ApiClient, ClientFormData, ClientFilters } fro
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import toast, { Toaster } from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG personalizados
 const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
@@ -18,24 +19,6 @@ const UserIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const EyeIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-  </svg>
-);
-
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-  </svg>
-);
-
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-  </svg>
-);
 
 const ClockIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -1322,120 +1305,188 @@ const Clients: React.FC = () => {
         {searchInput && <span className="ml-2">(filtrados de {allClients.length} totales)</span>}
       </div>
 
-      {/* Grid de Clientes Mejorado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clients.map((client) => (
-          <div key={client.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-            {/* Header de la tarjeta con gradiente */}
-            <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`h-12 w-12 ${getAvatarColor(client.id)} rounded-full flex items-center justify-center shadow-sm`}>
-                    <span className="text-white font-semibold text-lg">
-                      {getInitials(client.firstName, client.lastName)}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {client.firstName} {client.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Cliente #{client.id.slice(-6).toUpperCase()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-2">
-                  {getStatusBadge(client.status)}
-                  <button
-                    onClick={() => handleToggleStatus(client)}
-                    className={`px-2 py-1 text-xs font-medium rounded-full transition-colors ${
-                      client.status === 'active'
-                        ? 'text-orange-700 bg-orange-100 hover:bg-orange-200'
-                        : 'text-green-700 bg-green-100 hover:bg-green-200'
-                    }`}
-                    title={client.status === 'active' ? 'Desactivar' : 'Activar'}
-                  >
-                    {client.status === 'active' ? '⏸️ Desactivar' : '▶️ Activar'}
-                  </button>
-                </div>
-              </div>
+      {/* Tabla de Clientes */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Header de la tabla */}
+        <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+              👥 
             </div>
-
-            {/* Información del cliente */}
-            <div className="p-4">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-pink-500">📧</span>
-                  <span className="text-sm text-gray-700 truncate">{client.email}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-pink-500">📞</span>
-                  <span className="text-sm text-gray-700">{client.phone || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Estadísticas */}
-            <div className="border-t border-gray-100 bg-gray-50 p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-pink-600">{client.totalAppointments || 0}</div>
-                  <div className="text-xs text-gray-600">📅 Citas totales</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-700">{client.clientSince}</div>
-                  <div className="text-xs text-gray-600">🗓️ Cliente desde</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botones de acción */}
-            <div className="bg-white border-t border-gray-100 p-4">
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleViewClient(client)}
-                  className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-                >
-                  👁️ Ver Historial
-                </button>
-                <button
-                  onClick={() => handleEditClient(client)}
-                  disabled={!canEditSpecificClient(client)}
-                  className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    canEditSpecificClient(client)
-                      ? 'text-blue-700 bg-blue-100 border border-blue-300 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                      : 'text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed'
-                  }`}
-                  title={
-                    canEditSpecificClient(client)
-                      ? 'Editar cliente'
-                      : 'No tienes permisos para editar este cliente'
-                  }
-                >
-                  <PencilIcon className="h-4 w-4" />
-                </button>
-                {(isMaster() || isAdmin()) && (
-                  <button
-                    onClick={() => handleDeleteClient(client)}
-                    disabled={client.totalAppointments > 0}
-                    className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      client.totalAppointments > 0
-                        ? 'text-gray-400 bg-gray-100 border border-gray-300 cursor-not-allowed'
-                        : 'text-red-700 bg-red-100 border border-red-300 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500'
-                    }`}
-                    title={
-                      client.totalAppointments > 0
-                        ? `No se puede eliminar: tiene ${client.totalAppointments} cita(s) registrada(s)`
-                        : 'Eliminar cliente'
-                    }
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Lista de Clientes</h3>
+            <span className="text-sm text-gray-600">{clients.length} cliente{clients.length !== 1 ? 's' : ''} encontrado{clients.length !== 1 ? 's' : ''}</span>
           </div>
-        ))}
+        </div>
+
+        {/* Tabla responsive */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  👤 Cliente
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  📧 Contacto
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  📊 Estado
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  📅 Citas
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  🗓️ Cliente desde
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ⚡ Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {clients.map((client) => (
+                <tr key={client.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  {/* Cliente */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-sm font-medium text-pink-600">
+                          {getInitials(client.firstName, client.lastName)}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {client.firstName} {client.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          #{client.id.slice(-6).toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Contacto */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-900 truncate max-w-48">
+                        📧 {client.email}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        📞 {client.phone || 'N/A'}
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Estado */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col space-y-2 text-center">
+                      {getStatusBadge(client.status)}
+                    </div>
+                  </td>
+
+                  {/* Citas */}
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center">
+                      <div>
+                        <div className="text-lg font-bold text-pink-600">
+                          {client.totalAppointments || 0} citas
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          citas
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Cliente desde */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <div className="text-sm font-medium text-gray-900">
+                        {client.clientSince}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        📅 Registro
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Acciones */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button 
+                        onClick={() => handleViewClient(client)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                        title="Ver historial del cliente"
+                      >
+                        <EyeIcon className="h-3 w-3 mr-1" />
+                        Ver
+                      </button>
+                      <button 
+                        onClick={() => handleEditClient(client)}
+                        disabled={!canEditSpecificClient(client)}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                          canEditSpecificClient(client)
+                            ? 'text-green-700 bg-green-100 hover:bg-green-200'
+                            : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                        }`}
+                        title={
+                          canEditSpecificClient(client)
+                            ? 'Editar cliente'
+                            : 'No tienes permisos para editar este cliente'
+                        }
+                      >
+                        <PencilIcon className="h-3 w-3 mr-1" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(client)}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                          client.status === 'active'
+                            ? 'text-orange-700 bg-orange-100 hover:bg-orange-200'
+                            : 'text-green-700 bg-green-100 hover:bg-green-200'
+                        }`}
+                        title={client.status === 'active' ? 'Desactivar cliente' : 'Activar cliente'}
+                      >
+                        {client.status === 'active' ? '⏸️' : '▶️'}
+                        {client.status === 'active' ? 'Desactivar' : 'Activar'}
+                      </button>
+                      {(isMaster() || isAdmin()) && (
+                        <button 
+                          onClick={() => handleDeleteClient(client)}
+                          disabled={client.totalAppointments > 0}
+                          className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            client.totalAppointments > 0
+                              ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                              : 'text-red-700 bg-red-100 hover:bg-red-200'
+                          }`}
+                          title={
+                            client.totalAppointments > 0
+                              ? 'No se puede eliminar: tiene citas registradas'
+                              : 'Eliminar cliente'
+                          }
+                        >
+                          <TrashIcon className="h-3 w-3 mr-1" />
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer de la tabla */}
+        {clients.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay clientes</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No se encontraron clientes con los filtros aplicados.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Paginación */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService, Supply as ApiSupply, SupplyFormData, InventoryFilters, InventoryMovement } from '../services/inventoryService';
 import toast from 'react-hot-toast';
+import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG mejorados
 const PlusIcon = ({ className }: { className?: string }) => (
@@ -15,11 +16,6 @@ const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const PencilIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-  </svg>
-);
 
 const ArchiveBoxIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -529,116 +525,160 @@ const Inventory: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {supplies.map((supply) => {
-            const status = getStockStatus(supply);
-            return (
-              <div key={supply.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                {/* Header de la tarjeta con gradiente */}
-                <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-4 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-                        <span className="text-lg font-medium text-pink-700">
-                          📦
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {supply.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Insumo #{supply.id.slice(-6).toUpperCase()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        status === 'out_of_stock' ? 'bg-red-100 text-red-800' :
-                        status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {status === 'out_of_stock' ? '🚫 Sin Stock' : 
-                         status === 'low_stock' ? '⚠️ Stock Bajo' : '✅ Normal'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Información del insumo */}
-                <div className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-pink-500">📋</span>
-                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                        {supply.category || 'Sin categoría'}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-pink-500">📏</span>
-                      <span className="text-sm text-gray-700">{supply.unit || 'Sin unidad'}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-pink-500">📊</span>
-                        <span className="text-sm text-gray-700">Stock: <span className="font-semibold">{supply.stock || 0}</span></span>
-                      </div>
-                      <span className="text-xs text-gray-500">Min: {supply.minStock || 0}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-pink-500">💰</span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        ${(Number(supply.unitPrice) || 0).toFixed(2)}
-                      </span>
-                    </div>
-                    {supply.description && (
-                      <div className="flex items-start space-x-2">
-                        <span className="text-pink-500">📝</span>
-                        <span className="text-sm text-gray-700 line-clamp-2">
-                          {supply.description.length > 80 
-                            ? `${supply.description.substring(0, 80)}...` 
-                            : supply.description}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Botones de acción */}
-                <div className="bg-white border-t border-gray-100 p-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => openStockModal(supply)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
-                    >
-                      📦 Stock
-                    </button>
-                    <button
-                      onClick={() => openEditModal(supply)}
-                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => openMovementsModal(supply)}
-                      disabled={!supply.movementsCount || supply.movementsCount === 0}
-                      className={`inline-flex items-center justify-center px-3 py-2 text-sm font-medium border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
-                        supply.movementsCount && supply.movementsCount > 0
-                          ? 'text-gray-700 bg-gray-100 border-gray-300 hover:bg-gray-200 focus:ring-gray-500'
-                          : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'
-                      }`}
-                      title={supply.movementsCount && supply.movementsCount > 0 
-                        ? `Ver ${supply.movementsCount} movimiento${supply.movementsCount > 1 ? 's' : ''}`
-                        : 'Sin movimientos registrados'
-                      }
-                    >
-                      <ClockIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header de la tabla */}
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center">
+                📦
               </div>
-            );
-          })}
+              <h3 className="text-lg font-semibold text-gray-900">Lista de Inventario</h3>
+              <span className="text-sm text-gray-600">{supplies.length} insumo{supplies.length !== 1 ? 's' : ''} encontrado{supplies.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+
+          {/* Tabla responsive */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📦 Insumo
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📋 Categoría
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📊 Stock
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    💰 Precio
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    📈 Estado
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ⚡ Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {supplies.map((supply) => {
+                  const status = getStockStatus(supply);
+                  return (
+                    <tr key={supply.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      {/* Insumo */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-sm font-medium text-pink-600">📦</span>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {supply.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              #{supply.id.slice(-6).toUpperCase()}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Categoría */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          {supply.category || 'Sin categoría'}
+                        </span>
+                      </td>
+
+                      {/* Stock */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {supply.stock || 0} {supply.unit || ''}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Min: {supply.minStock || 0}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Precio */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-md font-bold text-green-600">
+                          ${(Number(supply.unitPrice) || 0).toFixed(2)}
+                        </div>
+                      </td>
+
+                      {/* Estado */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          status === 'out_of_stock' ? 'bg-red-100 text-red-800' :
+                          status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {status === 'out_of_stock' ? '🚫 Sin Stock' : 
+                           status === 'low_stock' ? '⚠️ Stock Bajo' : '✅ Normal'}
+                        </span>
+                      </td>
+
+                      {/* Acciones */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <div className="flex items-center justify-center space-x-2">
+                          <button 
+                            onClick={() => openStockModal(supply)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                            title="Gestionar stock del insumo"
+                          >
+                            <EyeIcon className="h-3 w-3 mr-1" />
+                            Stock
+                          </button>
+                          <button 
+                            onClick={() => openEditModal(supply)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                            title="Editar insumo"
+                          >
+                            <PencilIcon className="h-3 w-3 mr-1" />
+                            Editar
+                          </button>
+                          <button 
+                            onClick={() => openMovementsModal(supply)}
+                            disabled={!supply.movementsCount || supply.movementsCount === 0}
+                            className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                              supply.movementsCount && supply.movementsCount > 0
+                                ? 'text-purple-700 bg-purple-100 hover:bg-purple-200'
+                                : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                            }`}
+                            title={
+                              supply.movementsCount && supply.movementsCount > 0
+                                ? 'Ver historial de movimientos'
+                                : 'No hay movimientos registrados'
+                            }
+                          >
+                            <TrashIcon className="h-3 w-3 mr-1" />
+                            Historial
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer de la tabla */}
+          {supplies.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <span className="mx-auto h-12 w-12 text-gray-400 text-4xl">📦</span>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay insumos</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No se encontraron insumos con los filtros aplicados.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
