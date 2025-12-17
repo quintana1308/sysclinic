@@ -740,17 +740,19 @@ const Invoices: React.FC = () => {
                           <EyeIcon className="h-3 w-3 mr-1" />
                           Ver
                         </button>
-                        <button 
-                          onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setShowPaymentModal(true);
-                          }}
-                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
-                          title="Registrar pago"
-                        >
-                          <CurrencyDollarIcon className="h-3 w-3 mr-1" />
-                          Abonar
-                        </button>
+                        {invoice.status !== 'PAID' && (
+                          <button 
+                            onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setShowPaymentModal(true);
+                            }}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
+                            title="Registrar pago"
+                          >
+                            <CurrencyDollarIcon className="h-3 w-3 mr-1" />
+                            Abonar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

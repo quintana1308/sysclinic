@@ -1556,8 +1556,13 @@ const Appointments: React.FC = () => {
                       </button>
                       <button 
                         onClick={() => handleEditAppointment(appointment)}
-                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 transition-colors"
-                        title="Editar"
+                        disabled={appointment.status === 'COMPLETED'}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                          appointment.status === 'COMPLETED'
+                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                            : 'text-green-700 bg-green-100 hover:bg-green-200'
+                        }`}
+                        title={appointment.status === 'COMPLETED' ? 'No se puede editar una cita completada' : 'Editar'}
                       >
                         <PencilIcon className="h-3 w-3 mr-1" />
                         Editar
