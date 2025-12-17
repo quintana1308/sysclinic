@@ -1267,6 +1267,7 @@ const Appointments: React.FC = () => {
           </div>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
+            type="button"
             onClick={loadAppointments}
             className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
           >
@@ -1289,12 +1290,14 @@ const Appointments: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
+              type="button"
               onClick={handleClearFilters}
               className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
             >
               🔄 Limpiar Filtros
             </button>
             <button
+              type="button"
               onClick={handleNewAppointment}
               className="inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors"
             >
@@ -1547,6 +1550,7 @@ const Appointments: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       <button 
+                        type="button"
                         onClick={() => handleViewDetails(appointment)}
                         className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
                         title="Ver detalles"
@@ -1555,6 +1559,7 @@ const Appointments: React.FC = () => {
                         Ver
                       </button>
                       <button 
+                        type="button"
                         onClick={() => handleEditAppointment(appointment)}
                         disabled={appointment.status === 'COMPLETED'}
                         className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
@@ -1568,6 +1573,7 @@ const Appointments: React.FC = () => {
                         Editar
                       </button>
                       <button 
+                        type="button"
                         onClick={() => handleCancelAppointment(appointment)}
                         disabled={!canCancelAppointment(appointment)}
                         className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-md transition-colors ${
@@ -1611,6 +1617,7 @@ const Appointments: React.FC = () => {
         <div className="mt-4 sm:mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
           <div className="flex flex-1 justify-between sm:hidden">
             <button
+              type="button"
               onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               disabled={currentPage === 1}
               className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1618,6 +1625,7 @@ const Appointments: React.FC = () => {
               ← Anterior
             </button>
             <button
+              type="button"
               onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
               disabled={currentPage === pagination.totalPages}
               className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1636,6 +1644,7 @@ const Appointments: React.FC = () => {
             <div>
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 <button
+                  type="button"
                   onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
                   disabled={currentPage === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1646,6 +1655,7 @@ const Appointments: React.FC = () => {
                   Página {currentPage} de {pagination.totalPages}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
                   disabled={currentPage === pagination.totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1666,6 +1676,7 @@ const Appointments: React.FC = () => {
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">📅 Crear Nueva Cita</h2>
               <button
+                type="button"
                 onClick={handleCloseModal}
                 className="text-pink-400 hover:text-pink-600"
               >

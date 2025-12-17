@@ -509,15 +509,7 @@ export const updateAppointment = async (
       throw new AppError('No se puede modificar una cita completada o cancelada', 400);
     }
 
-    // Validar fecha si se proporciona
-    if (date && startTime) {
-      const appointmentDate = new Date(`${date}T${startTime}`);
-      const now = new Date();
-      
-      if (appointmentDate < now) {
-        throw new AppError('No se pueden programar citas en el pasado', 400);
-      }
-    }
+    // Nota: No validamos fecha pasada en edición para permitir correcciones administrativas
 
     // Verificar que el encargado existe si se especifica
     let validatedUserId = undefined; // El userId del encargado (admin o empleado)
