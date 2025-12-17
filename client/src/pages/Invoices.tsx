@@ -89,6 +89,7 @@ const Invoices: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   
@@ -116,6 +117,13 @@ const Invoices: React.FC = () => {
     paymentMethod: 'CASH',
     notes: '',
     transactionId: ''
+  });
+
+  // Formulario de descuento
+  const [discountData, setDiscountData] = useState({
+    discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
+    discountValue: 0,
+    discountReason: ''
   });
 
   // Cargar facturas
@@ -237,6 +245,83 @@ const Invoices: React.FC = () => {
       description: '',
       dueDate: ''
     });
+  };
+
+  const resetDiscountForm = () => {
+    setDiscountData({
+      discountType: 'PERCENTAGE',
+      discountValue: 0,
+      discountReason: ''
+    });
+  };
+
+  const openDiscountModal = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    resetDiscountForm();
+    setShowDiscountModal(true);
+  };
+
+  const handleApplyDiscount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+
+    try {
+      const response = await invoiceService.applyDiscount(selectedInvoice.id, discountData);
+      if (response.success) {
+        toast.success('Descuento aplicado exitosamente');
+        setShowDiscountModal(false);
+        resetDiscountForm();
+        loadInvoices();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      toast.error('Error al aplicar el descuento');
+    }
+  };
+
+  const handleRemoveDiscount = async (invoiceId: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas remover el descuento de esta factura?')) return;
+    
+    try {
+      const response = await invoiceService.removeDiscount(invoiceId);
+      if (response.success) {
+        toast.success('Descuento removido exitosamente');
+        loadInvoices();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Error removing discount:', error);
+      toast.error('Error al remover el descuento');
+    }
+  };
+
+  const calculateDiscountAmount = (invoice: Invoice): number => {
+    if (!invoice.discountValue || !invoice.subtotal) return 0;
+    
+    if (invoice.discountType === 'PERCENTAGE') {
+      return (invoice.subtotal * invoice.discountValue) / 100;
+    } else {
+      return invoice.discountValue;
+    }
+  };
+
+  const calculateDiscountPreview = (): { discountAmount: number; finalAmount: number } => {
+    if (!selectedInvoice || !discountData.discountValue) {
+      return { discountAmount: 0, finalAmount: selectedInvoice?.amount || 0 };
+    }
+
+    const subtotal = selectedInvoice.subtotal || selectedInvoice.amount;
+    let discountAmount = 0;
+
+    if (discountData.discountType === 'PERCENTAGE') {
+      discountAmount = (subtotal * discountData.discountValue) / 100;
+    } else {
+      discountAmount = discountData.discountValue;
+    }
+
+    const finalAmount = subtotal - discountAmount;
+    return { discountAmount, finalAmount };
   };
 
   const openDetailsModal = async (invoice: Invoice) => {
@@ -731,7 +816,7 @@ const Invoices: React.FC = () => {
                     
                     {/* Acciones */}
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                      <div className="flex items-center justify-center space-x-2">
+                      <div className="flex items-center justify-center space-x-1">
                         <button 
                           onClick={() => openDetailsModal(invoice)}
                           className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
@@ -740,6 +825,7 @@ const Invoices: React.FC = () => {
                           <EyeIcon className="h-3 w-3 mr-1" />
                           Ver
                         </button>
+                        
                         {invoice.status !== 'PAID' && (
                           <button 
                             onClick={() => {
@@ -751,6 +837,27 @@ const Invoices: React.FC = () => {
                           >
                             <CurrencyDollarIcon className="h-3 w-3 mr-1" />
                             Abonar
+                          </button>
+                        )}
+
+                        {/* Botón de descuento */}
+                        {(!invoice.discountValue || invoice.discountValue === 0) ? (
+                          <button 
+                            onClick={() => openDiscountModal(invoice)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors"
+                            title="Aplicar descuento"
+                          >
+                            <ReceiptPercentIcon className="h-3 w-3 mr-1" />
+                            Descuento
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleRemoveDiscount(invoice.id)}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                            title="Remover descuento"
+                          >
+                            <XMarkIcon className="h-3 w-3 mr-1" />
+                            Quitar
                           </button>
                         )}
                       </div>
@@ -913,20 +1020,67 @@ const Invoices: React.FC = () => {
               {/* Información Financiera */}
               <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-pink-800 mb-4">💰 Información Financiera</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h5 className="text-sm font-medium text-pink-700 mb-2">Monto Total:</h5>
-                    <p className="text-2xl font-bold text-pink-800">${formatAmount(selectedInvoice.amount)}</p>
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-medium text-pink-700 mb-2">Monto Pendiente:</h5>
-                    <p className="text-2xl font-bold text-red-600">
-                      ${formatAmount(calculateRemainingAmount(selectedInvoice))}
-                    </p>
-                  </div>
-                </div>
+                
+                {/* Mostrar subtotal y descuento si existe */}
+                {selectedInvoice.discountValue && selectedInvoice.discountValue > 0 ? (
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-pink-700">Subtotal:</span>
+                      <span className="text-lg font-semibold text-pink-800">
+                        ${formatAmount(selectedInvoice.subtotal || selectedInvoice.amount)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-green-600">
+                      <span className="text-sm font-medium flex items-center">
+                        <span className="mr-2">🏷️</span>
+                        Descuento ({selectedInvoice.discountType === 'PERCENTAGE' ? `${selectedInvoice.discountValue}%` : `$${selectedInvoice.discountValue}`}):
+                      </span>
+                      <span className="text-lg font-semibold">
+                        -${formatAmount(calculateDiscountAmount(selectedInvoice))}
+                      </span>
+                    </div>
+                    
+                    <hr className="border-pink-200" />
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-pink-800">Total Final:</span>
+                      <span className="text-2xl font-bold text-pink-800">
+                        ${formatAmount(selectedInvoice.amount)}
+                      </span>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-6 mt-4">
+                    {/* Información del descuento */}
+                    <div className="bg-green-50 border border-green-200 rounded p-3 text-sm">
+                      <div className="font-medium text-green-800 mb-1">📝 Motivo del descuento:</div>
+                      <div className="text-green-700">{selectedInvoice.discountReason}</div>
+                      {selectedInvoice.discountAppliedAt && (
+                        <div className="text-green-600 text-xs mt-1">
+                          Aplicado el: {new Date(selectedInvoice.discountAppliedAt).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-6 mb-4">
+                    <div>
+                      <h5 className="text-sm font-medium text-pink-700 mb-2">Monto Total:</h5>
+                      <p className="text-2xl font-bold text-pink-800">${formatAmount(selectedInvoice.amount)}</p>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium text-pink-700 mb-2">Monto Pendiente:</h5>
+                      <p className="text-2xl font-bold text-red-600">
+                        ${formatAmount(calculateRemainingAmount(selectedInvoice))}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-6">
                   <div>
                     <h5 className="text-sm font-medium text-pink-700 mb-2">Monto Pagado:</h5>
                     <p className="text-lg font-semibold text-green-600">
@@ -939,8 +1093,8 @@ const Invoices: React.FC = () => {
                       {calculatePaymentPercentage(selectedInvoice).toFixed(1)}%
                     </p>
                   </div>
+                </div>
               </div>
-</div>
               {/* Información de la Cita */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-800 mb-4">📅 Información de la Cita</h3>
@@ -1463,6 +1617,164 @@ const Invoices: React.FC = () => {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Aplicar Descuento */}
+      {showDiscountModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center shadow-sm">
+                  <ReceiptPercentIcon className="h-6 w-6 text-green-700" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">💰 Aplicar Descuento a Factura</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Aplica un descuento especial y registra el motivo
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleApplyDiscount} className="p-6 space-y-6">
+              {/* Información de la factura */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">📋 Información de la Factura</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Cliente:</span>
+                    <span className="ml-2 font-medium">{selectedInvoice.clientName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="ml-2 font-medium">${formatAmount(selectedInvoice.subtotal || selectedInvoice.amount)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tipo de descuento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🏷️ Tipo de Descuento *
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    type="button"
+                    className={`p-3 border rounded-lg transition-colors ${
+                      discountData.discountType === 'PERCENTAGE' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => setDiscountData({ ...discountData, discountType: 'PERCENTAGE' })}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">📊</div>
+                      <div className="font-medium">Porcentaje</div>
+                      <div className="text-xs text-gray-500">Ej: 10%, 25%</div>
+                    </div>
+                  </button>
+                  <button 
+                    type="button"
+                    className={`p-3 border rounded-lg transition-colors ${
+                      discountData.discountType === 'FIXED' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onClick={() => setDiscountData({ ...discountData, discountType: 'FIXED' })}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-1">💵</div>
+                      <div className="font-medium">Monto Fijo</div>
+                      <div className="text-xs text-gray-500">Ej: $10, $50</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Valor del descuento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {discountData.discountType === 'PERCENTAGE' ? '📊 Porcentaje de Descuento *' : '💵 Monto del Descuento *'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max={discountData.discountType === 'PERCENTAGE' ? '100' : (selectedInvoice.subtotal || selectedInvoice.amount)}
+                    step={discountData.discountType === 'PERCENTAGE' ? '0.1' : '0.01'}
+                    value={discountData.discountValue}
+                    onChange={(e) => setDiscountData({ ...discountData, discountValue: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={discountData.discountType === 'PERCENTAGE' ? 'Ej: 15' : 'Ej: 25.00'}
+                    required
+                  />
+                  <div className="absolute right-3 top-2 text-gray-500">
+                    {discountData.discountType === 'PERCENTAGE' ? '%' : '$'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Motivo del descuento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  📝 Motivo del Descuento *
+                </label>
+                <textarea
+                  value={discountData.discountReason}
+                  onChange={(e) => setDiscountData({ ...discountData, discountReason: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej: Cliente frecuente, Promoción especial, Cortesía por inconveniente..."
+                  required
+                />
+              </div>
+
+              {/* Vista previa del cálculo */}
+              {discountData.discountValue > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">🧮 Vista Previa del Descuento</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal:</span>
+                      <span>${formatAmount(selectedInvoice.subtotal || selectedInvoice.amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Descuento ({discountData.discountType === 'PERCENTAGE' ? `${discountData.discountValue}%` : `$${discountData.discountValue}`}):</span>
+                      <span>-${formatAmount(calculateDiscountPreview().discountAmount)}</span>
+                    </div>
+                    <hr className="border-blue-200" />
+                    <div className="flex justify-between font-medium text-blue-900">
+                      <span>Total Final:</span>
+                      <span>${formatAmount(calculateDiscountPreview().finalAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones */}
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDiscountModal(false);
+                    resetDiscountForm();
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                >
+                  💰 Aplicar Descuento
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -607,3 +607,205 @@ export const markOverdueInvoices = async (
     next(error);
   }
 };
+
+// Aplicar descuento a factura
+export const applyDiscountToInvoice = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { discountType, discountValue, discountReason } = req.body;
+
+    console.log('💰 Aplicando descuento a factura:', {
+      invoiceId: id,
+      discountType,
+      discountValue,
+      discountReason,
+      userId: req.user?.id
+    });
+
+    // Validaciones
+    if (!discountType || discountValue === undefined || !discountReason) {
+      throw new AppError('Tipo de descuento, valor y motivo son requeridos', 400);
+    }
+
+    if (!['PERCENTAGE', 'FIXED'].includes(discountType)) {
+      throw new AppError('Tipo de descuento inválido', 400);
+    }
+
+    if (discountValue < 0) {
+      throw new AppError('El valor del descuento no puede ser negativo', 400);
+    }
+
+    // Obtener factura actual
+    const invoice = await queryOne<any>(`
+      SELECT * FROM invoices WHERE id = ?
+    `, [id]);
+
+    if (!invoice) {
+      throw new AppError('Factura no encontrada', 404);
+    }
+
+    console.log('📋 Factura encontrada:', {
+      id: invoice.id,
+      currentAmount: invoice.amount,
+      currentSubtotal: invoice.subtotal,
+      hasDiscount: !!invoice.discountValue
+    });
+
+    // Calcular subtotal si no existe (para facturas existentes)
+    // Si subtotal es 0 o null, usar el amount como subtotal
+    let subtotal = parseFloat(invoice.subtotal) || parseFloat(invoice.amount);
+    
+    console.log('🔍 Debugging validación de descuento:', {
+      discountType,
+      discountValue,
+      invoiceAmount: invoice.amount,
+      invoiceSubtotal: invoice.subtotal,
+      calculatedSubtotal: subtotal,
+      discountValueType: typeof discountValue,
+      subtotalType: typeof subtotal
+    });
+
+    // Validaciones específicas por tipo de descuento
+    if (discountType === 'PERCENTAGE') {
+      if (discountValue > 100) {
+        throw new AppError('El porcentaje de descuento no puede ser mayor al 100%', 400);
+      }
+    } else if (discountType === 'FIXED') {
+      console.log('🔍 Validando descuento fijo:', {
+        discountValue,
+        subtotal,
+        comparison: `${discountValue} > ${subtotal}`,
+        result: discountValue > subtotal
+      });
+      
+      if (discountValue > subtotal) {
+        throw new AppError(`El descuento fijo ($${discountValue}) no puede ser mayor al subtotal ($${subtotal})`, 400);
+      }
+    }
+
+    // Calcular nuevo monto
+    let discountAmount = 0;
+    if (discountType === 'PERCENTAGE') {
+      discountAmount = (subtotal * discountValue) / 100;
+    } else {
+      discountAmount = discountValue;
+    }
+
+    const finalAmount = subtotal - discountAmount;
+
+    console.log('🧮 Cálculos de descuento:', {
+      subtotal,
+      discountType,
+      discountValue,
+      discountAmount,
+      finalAmount
+    });
+
+    // Actualizar factura con descuento
+    await query(`
+      UPDATE invoices 
+      SET 
+        subtotal = ?,
+        discountType = ?,
+        discountValue = ?,
+        discountReason = ?,
+        discountAppliedBy = ?,
+        discountAppliedAt = NOW(),
+        amount = ?,
+        updatedAt = NOW()
+      WHERE id = ?
+    `, [subtotal, discountType, discountValue, discountReason, req.user?.id, finalAmount, id]);
+
+    console.log('✅ Descuento aplicado exitosamente a factura:', id);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Descuento aplicado exitosamente',
+      data: {
+        invoiceId: id,
+        subtotal,
+        discountType,
+        discountValue,
+        discountAmount,
+        finalAmount,
+        discountReason
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Error aplicando descuento:', error);
+    next(error);
+  }
+};
+
+// Remover descuento de factura
+export const removeDiscountFromInvoice = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    console.log('🗑️ Removiendo descuento de factura:', id);
+
+    // Obtener factura actual
+    const invoice = await queryOne<any>(`
+      SELECT * FROM invoices WHERE id = ?
+    `, [id]);
+
+    if (!invoice) {
+      throw new AppError('Factura no encontrada', 404);
+    }
+
+    if (!invoice.discountValue || invoice.discountValue === 0) {
+      throw new AppError('Esta factura no tiene descuento aplicado', 400);
+    }
+
+    console.log('📋 Factura con descuento encontrada:', {
+      id: invoice.id,
+      currentAmount: invoice.amount,
+      subtotal: invoice.subtotal,
+      discountType: invoice.discountType,
+      discountValue: invoice.discountValue
+    });
+
+    // Restaurar monto original (subtotal)
+    const originalAmount = invoice.subtotal || invoice.amount;
+
+    await query(`
+      UPDATE invoices 
+      SET 
+        discountType = NULL,
+        discountValue = 0,
+        discountReason = NULL,
+        discountAppliedBy = NULL,
+        discountAppliedAt = NULL,
+        amount = ?,
+        updatedAt = NOW()
+      WHERE id = ?
+    `, [originalAmount, id]);
+
+    console.log('✅ Descuento removido exitosamente de factura:', id);
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Descuento removido exitosamente',
+      data: {
+        invoiceId: id,
+        originalAmount,
+        discountRemoved: true
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Error removiendo descuento:', error);
+    next(error);
+  }
+};

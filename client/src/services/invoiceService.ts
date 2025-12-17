@@ -11,6 +11,13 @@ export interface Invoice {
   createdAt: string;
   updatedAt: string;
   isOverdue?: boolean;
+  // Campos de descuento
+  subtotal?: number;
+  discountType?: 'PERCENTAGE' | 'FIXED';
+  discountValue?: number;
+  discountReason?: string;
+  discountAppliedBy?: string;
+  discountAppliedAt?: string;
   // Datos relacionados del cliente
   clientName?: string;
   clientEmail?: string;
@@ -58,6 +65,12 @@ export interface InvoiceFilters {
   clientId?: string;
 }
 
+export interface DiscountData {
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number;
+  discountReason: string;
+}
+
 class InvoiceService {
   async getInvoices(filters: InvoiceFilters = {}) {
     const params = new URLSearchParams();
@@ -100,6 +113,20 @@ class InvoiceService {
 
   async getInvoiceStats() {
     const response = await api.get('/invoices/stats');
+    return response.data;
+  }
+
+  async applyDiscount(id: string, discountData: DiscountData) {
+    console.log('💰 Aplicando descuento a factura:', { id, discountData });
+    const response = await api.patch(`/invoices/${id}/apply-discount`, discountData);
+    console.log('✅ Descuento aplicado exitosamente:', response.data);
+    return response.data;
+  }
+
+  async removeDiscount(id: string) {
+    console.log('🗑️ Removiendo descuento de factura:', id);
+    const response = await api.patch(`/invoices/${id}/remove-discount`);
+    console.log('✅ Descuento removido exitosamente:', response.data);
     return response.data;
   }
 }

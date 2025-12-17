@@ -8,7 +8,9 @@ import {
   updateInvoice,
   deleteInvoice,
   getInvoiceStats,
-  markOverdueInvoices
+  markOverdueInvoices,
+  applyDiscountToInvoice,
+  removeDiscountFromInvoice
 } from '../controllers/invoice.controller';
 import { debugPayments } from '../controllers/payment.controller';
 
@@ -57,6 +59,18 @@ router.get('/:id',
 router.put('/:id', 
   requirePermission({ resource: 'invoices', action: 'update' }),
   updateInvoice
+);
+
+// Aplicar descuento a factura
+router.patch('/:id/apply-discount', 
+  requirePermission({ resource: 'invoices', action: 'update' }),
+  applyDiscountToInvoice
+);
+
+// Remover descuento de factura
+router.patch('/:id/remove-discount', 
+  requirePermission({ resource: 'invoices', action: 'update' }),
+  removeDiscountFromInvoice
 );
 
 // Eliminar factura
