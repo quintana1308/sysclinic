@@ -40,6 +40,13 @@ const XMarkIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const EyeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
 interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
@@ -59,6 +66,14 @@ interface AppointmentModalProps {
   appointment: Appointment | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface DayAppointmentsModalProps {
+  appointments: Appointment[];
+  selectedDate: Date | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onViewAppointment: (appointment: Appointment) => void;
 }
 
 const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen, onClose }) => {
@@ -115,12 +130,16 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">📅 Detalles de la Cita</h3>
                 <p className="text-sm text-gray-600">
-                  {new Date(appointment.date).toLocaleDateString('es-ES', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  {(() => {
+                    const { year, month, day } = extractDateComponents(appointment.date);
+                    const date = new Date(year, month, day);
+                    return date.toLocaleDateString('es-ES', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    });
+                  })()}
                 </p>
               </div>
             </div>
@@ -148,7 +167,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
               <div>
                 <h4 className="text-sm font-medium text-blue-900">⏰ Horario</h4>
                 <p className="text-sm text-blue-800">
-                  {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                  {formatTimeInCaracas(appointment.startTime)} - {formatTimeInCaracas(appointment.endTime)}
                 </p>
               </div>
             </div>
@@ -179,7 +198,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
               <div className="flex items-center space-x-3">
                 <UserIcon className="h-5 w-5 text-purple-600" />
                 <div>
-                  <h4 className="text-sm font-medium text-purple-900">👩‍⚕️ Profesional</h4>
+                  <h4 className="text-sm font-medium text-purple-900">👩‍⚕️ Encargado</h4>
                   <p className="text-sm text-purple-800">
                     {(appointment as any).employeeFirstName || appointment.employee?.firstName} {(appointment as any).employeeLastName || appointment.employee?.lastName}
                   </p>
@@ -192,7 +211,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
           {/* Tratamientos */}
           {appointment.treatments && appointment.treatments.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-yellow-900 mb-2">🔧 Tratamientos</h4>
+              <h4 className="text-sm font-medium text-yellow-900 mb-2">💊 Tratamientos</h4>
               <div className="space-y-2">
                 {appointment.treatments.map((treatment, index) => (
                   <div key={index} className="flex justify-between items-center text-sm">
@@ -200,7 +219,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
                     <div className="text-right">
                       <span className="text-yellow-700">{treatment.duration} min</span>
                       <span className="text-yellow-900 font-medium ml-2">
-                        ${treatment.price.toFixed(2)}
+                        ${Number(treatment.price).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -209,7 +228,7 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
               <div className="mt-3 pt-3 border-t border-yellow-300">
                 <div className="flex justify-between items-center font-medium">
                   <span className="text-yellow-900">Total:</span>
-                  <span className="text-yellow-900">${appointment.totalAmount.toFixed(2)}</span>
+                  <span className="text-yellow-900">${Number(appointment.totalAmount).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -232,6 +251,188 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ appointment, isOpen
           >
             Cerrar
           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DayAppointmentsModal: React.FC<DayAppointmentsModalProps> = ({ 
+  appointments, 
+  selectedDate, 
+  isOpen, 
+  onClose, 
+  onViewAppointment 
+}) => {
+  if (!isOpen || !selectedDate) return null;
+
+  const formatDateForModal = (date: Date): string => {
+    return date.toLocaleDateString('es-ES', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      SCHEDULED: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Programada', emoji: '📅' },
+      CONFIRMED: { bg: 'bg-green-100', text: 'text-green-800', label: 'Confirmada', emoji: '✅' },
+      IN_PROGRESS: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'En Progreso', emoji: '⏳' },
+      COMPLETED: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Completada', emoji: '✨' },
+      CANCELLED: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada', emoji: '❌' },
+      NO_SHOW: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'No Asistió', emoji: '👻' }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.SCHEDULED;
+    
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        {config.emoji} {config.label}
+      </span>
+    );
+  };
+
+  // Ordenar citas por hora
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+                <CalendarIcon className="h-6 w-6 text-pink-700" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">📅 Citas del Día</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {formatDateForModal(selectedDate)}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {appointments.length === 0 ? (
+            // Sin citas
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-6xl mb-4">📅</div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">No hay citas programadas</h4>
+              <p className="text-gray-600">
+                No se encontraron citas para {formatDateForModal(selectedDate)}
+              </p>
+            </div>
+          ) : (
+            // Lista de citas
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-medium text-gray-900">
+                  {appointments.length} cita{appointments.length !== 1 ? 's' : ''} programada{appointments.length !== 1 ? 's' : ''}
+                </h4>
+                <span className="text-sm text-gray-500">
+                  Ordenadas por hora
+                </span>
+              </div>
+
+              {sortedAppointments.map((appointment, index) => (
+                <div
+                  key={appointment.id || index}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {/* Cliente y hora */}
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-gray-900">
+                            {(appointment as any).clientFirstName || appointment.client?.firstName} {(appointment as any).clientLastName || appointment.client?.lastName}
+                          </h5>
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <ClockIcon className="h-4 w-4" />
+                            <span>
+                              {formatTimeInCaracas(appointment.startTime)} - {formatTimeInCaracas(appointment.endTime)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información adicional */}
+                      <div className="ml-13 space-y-1">
+                        {/* Tratamientos */}
+                        {appointment.treatments && appointment.treatments.length > 0 && (
+                          <div className="text-sm text-gray-600">
+                            💊 {appointment.treatments.map(t => t.name).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Estado y acciones */}
+                    <div className="flex flex-col items-end space-y-2">
+                      {getStatusBadge(appointment.status)}
+                      
+                      <button
+                        onClick={() => onViewAppointment(appointment)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors"
+                        title="Ver detalles"
+                      >
+                        <EyeIcon className="h-3 w-3 mr-1" />
+                        Ver
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Total amount */}
+                  {appointment.totalAmount && Number(appointment.totalAmount) > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">Total:</span>
+                        <span className="text-sm font-bold text-gray-900">
+                          ${Number(appointment.totalAmount).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 rounded-b-xl">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              {appointments.length > 0 && (
+                <>
+                  💡 Haz clic en "Ver Detalles" para abrir la cita completa
+                </>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -300,6 +501,11 @@ const Calendar: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showModal, setShowModal] = useState(false);
+  
+  // Estados para el modal de citas del día
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDayAppointments, setSelectedDayAppointments] = useState<Appointment[]>([]);
+  const [showDayModal, setShowDayModal] = useState(false);
 
   // Generar días del calendario
   const generateCalendarDays = (): CalendarDay[] => {
@@ -474,6 +680,27 @@ const Calendar: React.FC = () => {
     setShowModal(true);
   };
 
+  // Abrir modal de citas del día
+  const openDayAppointmentsModal = (date: Date, dayAppointments: Appointment[]) => {
+    setSelectedDate(date);
+    setSelectedDayAppointments(dayAppointments);
+    setShowDayModal(true);
+  };
+
+  // Cerrar modal de citas del día
+  const closeDayAppointmentsModal = () => {
+    setShowDayModal(false);
+    setSelectedDate(null);
+    setSelectedDayAppointments([]);
+  };
+
+  // Manejar clic en "Ver Detalles" desde el modal de citas del día
+  const handleViewAppointmentFromModal = (appointment: Appointment) => {
+    closeDayAppointmentsModal();
+    setSelectedAppointment(appointment);
+    setShowModal(true);
+  };
+
   const calendarDays = generateCalendarDays();
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -548,9 +775,10 @@ const Calendar: React.FC = () => {
                 Los datos se obtienen directamente de la base de datos en tiempo real
               </p>
               {appointments.length > 0 && (
-                <p className="text-xs text-blue-700 mt-1 font-medium">
-                  💡 <strong>Tip:</strong> Haz clic en cualquier cita para ver sus detalles completos
-                </p>
+                <div className="text-xs text-blue-700 mt-1 font-medium space-y-1">
+                  <p>💡 <strong>Tip:</strong> Haz clic en cualquier cita para ver sus detalles completos</p>
+                  <p>📅 <strong>Nuevo:</strong> Haz clic en el cuadro de la fecha para ver todas las citas del día</p>
+                </div>
               )}
             </div>
           </div>
@@ -574,11 +802,14 @@ const Calendar: React.FC = () => {
           {calendarDays.map((day, index) => (
             <div
               key={index}
+              onClick={() => openDayAppointmentsModal(day.date, day.appointments)}
               className={`
-                min-h-[80px] sm:min-h-[120px] p-1 sm:p-2 border-b border-r border-gray-100 relative
+                min-h-[80px] sm:min-h-[120px] p-1 sm:p-2 border-b border-r border-gray-100 relative cursor-pointer
+                hover:bg-gray-50 transition-colors
                 ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                ${day.isToday ? 'bg-blue-50' : ''}
+                ${day.isToday ? 'bg-blue-50 hover:bg-blue-100' : ''}
               `}
+              title={`Ver todas las citas del ${day.date.getDate()} de ${monthNames[day.date.getMonth()]}`}
             >
               {/* Número del día */}
               <div className="flex justify-between items-start mb-1 sm:mb-2">
@@ -615,15 +846,12 @@ const Calendar: React.FC = () => {
               {/* Citas del día */}
               <div className="space-y-0.5 sm:space-y-1">
                 {day.appointments.slice(0, 2).map((appointment, aptIndex) => (
-                  <button
+                  <div
                     key={appointment.id || aptIndex}
-                    onClick={() => navigateToAppointment(appointment)}
                     className={`
                       w-full text-left p-0.5 sm:p-1 rounded text-xs text-white font-medium
-                      hover:opacity-80 transition-opacity cursor-pointer
                       ${getAppointmentColor(appointment.status)}
                     `}
-                    title="Haz clic para ver los detalles de la cita"
                   >
                     <div className="truncate text-xs">
                       {(appointment as any).clientFirstName || appointment.client?.firstName} {(appointment as any).clientLastName || appointment.client?.lastName}
@@ -639,7 +867,7 @@ const Calendar: React.FC = () => {
                       {appointment.status === 'CANCELLED' && '❌'}
                       {appointment.status === 'NO_SHOW' && '👻'}
                     </div>
-                  </button>
+                  </div>
                 ))}
                 
                 {/* Indicador de más citas */}
@@ -724,6 +952,15 @@ const Calendar: React.FC = () => {
           setShowModal(false);
           setSelectedAppointment(null);
         }}
+      />
+
+      {/* Modal de citas del día */}
+      <DayAppointmentsModal
+        appointments={selectedDayAppointments}
+        selectedDate={selectedDate}
+        isOpen={showDayModal}
+        onClose={closeDayAppointmentsModal}
+        onViewAppointment={handleViewAppointmentFromModal}
       />
     </div>
   );
