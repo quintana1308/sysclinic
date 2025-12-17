@@ -341,7 +341,7 @@ export const createAppointment = async (
     }
 
     // Verificar que el encargado (empleado o administrador) existe y pertenece a la empresa
-    let validatedEmployeeId = null; // El ID real de employees.id para la FK
+    let validatedUserId = null; // El userId del encargado (admin o empleado)
     
     if (employeeId) {
       console.log('Validating encargado:', { employeeId, companyId });
@@ -361,11 +361,6 @@ export const createAppointment = async (
           FROM employees e 
           WHERE e.userId = ? AND e.isActive = 1
         `, [employeeId]);
-        
-        // Si es empleado, guardar el employees.id para la FK
-        if (encargado) {
-          validatedEmployeeId = encargado.id;
-        }
       }
       
       console.log('Encargado found:', encargado);
@@ -379,17 +374,20 @@ export const createAppointment = async (
         throw new AppError('Encargado no pertenece a tu empresa', 403);
       }
       
+      // Guardar el userId para usar en la cita (tanto admin como empleado)
+      validatedUserId = encargado.userId || encargado.id;
+      
       console.log('✅ Encargado validado:', {
         id: encargado.id,
         userId: encargado.userId,
         type: encargado.type,
         companyId: encargado.companyId,
-        validatedEmployeeId
+        validatedUserId
       });
     }
 
-    // Verificar disponibilidad del empleado (solo si es empleado real)
-    if (validatedEmployeeId) {
+    // Verificar disponibilidad del encargado (admin o empleado)
+    if (validatedUserId) {
       const startDateTimeStr = `${date} ${startTime}`;
       const endDateTimeStr = `${date} ${endTime}`;
       
@@ -403,7 +401,7 @@ export const createAppointment = async (
           (startTime < ? AND endTime >= ?) OR
           (startTime >= ? AND endTime <= ?)
         )
-      `, [validatedEmployeeId, date, startDateTimeStr, startDateTimeStr, endDateTimeStr, endDateTimeStr, startDateTimeStr, endDateTimeStr]);
+      `, [validatedUserId, date, startDateTimeStr, startDateTimeStr, endDateTimeStr, endDateTimeStr, startDateTimeStr, endDateTimeStr]);
 
       if (conflictingAppointment) {
         throw new AppError('El encargado ya tiene una cita en ese horario', 400);
@@ -443,7 +441,7 @@ export const createAppointment = async (
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?, NOW(), NOW())
     `, [
-      appointmentId, companyId, clientId, validatedEmployeeId, date, 
+      appointmentId, companyId, clientId, validatedUserId, date, 
       `${date} ${startTime}`, `${date} ${endTime}`, 
       notes || null, totalAmount
     ]);
@@ -522,7 +520,7 @@ export const updateAppointment = async (
     }
 
     // Verificar que el encargado existe si se especifica
-    let validatedEmployeeId = undefined; // El ID real de employees.id para la FK
+    let validatedUserId = undefined; // El userId del encargado (admin o empleado)
     
     if (employeeId) {
       console.log('Validating encargado for update:', { employeeId });
@@ -542,14 +540,6 @@ export const updateAppointment = async (
           FROM employees e 
           WHERE e.userId = ? AND e.isActive = 1
         `, [employeeId]);
-        
-        // Si es empleado, guardar el employees.id para la FK
-        if (encargado) {
-          validatedEmployeeId = encargado.id;
-        }
-      } else {
-        // Si es admin, el employeeId debe ser null
-        validatedEmployeeId = null;
       }
       
       console.log('Encargado found for update:', encargado);
@@ -557,10 +547,13 @@ export const updateAppointment = async (
       if (!encargado) {
         throw new AppError('Encargado no encontrado o inactivo', 404);
       }
+      
+      // Guardar el userId para usar en la cita (tanto admin como empleado)
+      validatedUserId = encargado.userId || encargado.id;
     }
 
-    // Verificar disponibilidad del encargado si se cambia (solo si es empleado real)
-    if (validatedEmployeeId && (date || startTime || endTime)) {
+    // Verificar disponibilidad del encargado si se cambia
+    if (validatedUserId && (date || startTime || endTime)) {
       const checkDate = date || appointment.date.toISOString().split('T')[0];
       const checkStartTime = startTime || appointment.startTime.toTimeString().slice(0, 5);
       const checkEndTime = endTime || appointment.endTime.toTimeString().slice(0, 5);
@@ -576,7 +569,7 @@ export const updateAppointment = async (
           (startTime < ? AND endTime >= ?) OR
           (startTime >= ? AND endTime <= ?)
         )
-      `, [validatedEmployeeId, id, checkDate, checkStartTime, checkStartTime, checkEndTime, checkEndTime, checkStartTime, checkEndTime]);
+      `, [validatedUserId, id, checkDate, checkStartTime, checkStartTime, checkEndTime, checkEndTime, checkStartTime, checkEndTime]);
 
       if (conflictingAppointment) {
         throw new AppError('El encargado ya tiene una cita en ese horario', 400);
@@ -637,7 +630,7 @@ export const updateAppointment = async (
           notes = ?, totalAmount = ?, updatedAt = NOW()
       WHERE id = ?
     `, [
-      validatedEmployeeId !== undefined ? validatedEmployeeId : appointment.employeeId,
+      validatedUserId !== undefined ? validatedUserId : appointment.employeeId,
       updateDate,
       updateStartTime,
       updateEndTime,
