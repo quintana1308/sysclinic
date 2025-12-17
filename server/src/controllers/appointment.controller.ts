@@ -639,6 +639,64 @@ export const updateAppointment = async (
       id
     ]);
 
+    // Actualizar factura asociada si existe y si se modificaron los tratamientos
+    if (treatments && treatments.length > 0) {
+      console.log('🔄 Verificando si existe factura asociada para actualizar...');
+      
+      const existingInvoice = await queryOne<any>(`
+        SELECT id, amount, subtotal, discountType, discountValue FROM invoices WHERE appointmentId = ?
+      `, [id]);
+
+      if (existingInvoice) {
+        console.log('📄 Factura encontrada, actualizando monto...', {
+          invoiceId: existingInvoice.id,
+          oldAmount: existingInvoice.amount,
+          newTotalAmount: totalAmount
+        });
+
+        // Si la factura tiene descuento aplicado, mantener el descuento pero actualizar el subtotal
+        if (existingInvoice.discountValue && existingInvoice.discountValue > 0) {
+          console.log('💰 Factura tiene descuento aplicado, recalculando...');
+          
+          let newDiscountAmount = 0;
+          if (existingInvoice.discountType === 'PERCENTAGE') {
+            newDiscountAmount = (totalAmount * existingInvoice.discountValue) / 100;
+          } else {
+            newDiscountAmount = existingInvoice.discountValue;
+          }
+          
+          const newFinalAmount = totalAmount - newDiscountAmount;
+          
+          console.log('🧮 Recálculo con descuento:', {
+            newSubtotal: totalAmount,
+            discountType: existingInvoice.discountType,
+            discountValue: existingInvoice.discountValue,
+            discountAmount: newDiscountAmount,
+            newFinalAmount: newFinalAmount
+          });
+
+          await query(`
+            UPDATE invoices 
+            SET subtotal = ?, amount = ?, updatedAt = NOW()
+            WHERE id = ?
+          `, [totalAmount, newFinalAmount, existingInvoice.id]);
+        } else {
+          // Sin descuento, actualizar directamente
+          console.log('📝 Actualizando factura sin descuento...');
+          
+          await query(`
+            UPDATE invoices 
+            SET amount = ?, subtotal = ?, updatedAt = NOW()
+            WHERE id = ?
+          `, [totalAmount, totalAmount, existingInvoice.id]);
+        }
+
+        console.log('✅ Factura actualizada exitosamente');
+      } else {
+        console.log('ℹ️ No hay factura asociada a esta cita');
+      }
+    }
+
     const response: ApiResponse = {
       success: true,
       message: 'Cita actualizada exitosamente'
@@ -773,14 +831,15 @@ export const updateAppointmentStatus = async (
 
             await query(`
               INSERT INTO invoices (
-                id, clientId, appointmentId, amount, description, dueDate, status, createdAt, updatedAt
+                id, clientId, appointmentId, amount, subtotal, description, dueDate, status, createdAt, updatedAt
               )
-              VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
+              VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
             `, [
               newInvoiceId, 
               appointmentWithTreatments.clientId, 
               id, 
               amount, 
+              amount,
               description, 
               dueDate.toISOString().split('T')[0]
             ]);

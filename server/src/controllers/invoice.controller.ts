@@ -352,11 +352,11 @@ export const createInvoice = async (
     
     await query(`
       INSERT INTO invoices (
-        id, clientId, appointmentId, amount, description, dueDate, status, createdAt, updatedAt
+        id, clientId, appointmentId, amount, subtotal, description, dueDate, status, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
     `, [
-      invoiceId, clientId, appointmentId || null, amount, description || null, dueDate || null
+      invoiceId, clientId, appointmentId || null, amount, amount, description || null, dueDate || null
     ]);
 
     const response: ApiResponse = {
@@ -521,14 +521,15 @@ export const generateInvoiceFromAppointment = async (
 
     await query(`
       INSERT INTO invoices (
-        id, clientId, appointmentId, amount, description, dueDate, status, createdAt, updatedAt
+        id, clientId, appointmentId, amount, subtotal, description, dueDate, status, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', NOW(), NOW())
     `, [
       invoiceId, 
       appointment.clientId, 
       appointmentId, 
       amount, 
+      amount,
       description, 
       dueDate.toISOString().split('T')[0]
     ]);
