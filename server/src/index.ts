@@ -37,8 +37,10 @@ app.set('trust proxy', 1);
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // límite de 100 requests por ventana por IP
+  max: 500, // límite de 500 requests por ventana por IP (aumentado para desarrollo)
   message: 'Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 // Middlewares globales
