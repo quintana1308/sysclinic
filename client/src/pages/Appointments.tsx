@@ -412,13 +412,13 @@ const Appointments: React.FC = () => {
       'SCHEDULED': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Programada' },
       'CONFIRMED': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmada' },
       'IN_PROGRESS': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'En Progreso' },
-      'COMPLETED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Completada' },
+      'COMPLETED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Asistió' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada' },
       'NO_SHOW': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'No Asistió' },
       // Compatibilidad con estados en español
       'programada': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Programada' },
       'confirmada': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmada' },
-      'completada': { bg: 'bg-green-100', text: 'text-green-800', label: 'Completada' },
+      'completada': { bg: 'bg-green-100', text: 'text-green-800', label: 'Asistió' },
       'cancelada': { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada' }
     };
     
@@ -899,6 +899,57 @@ const Appointments: React.FC = () => {
     }
   };
 
+  const handleCompleteAppointment = async () => {
+    if (!selectedAppointment) return;
+    
+    setSubmitting(true);
+    try {
+      console.log('🚀 Completando cita:', selectedAppointment.id);
+      
+      const completeResponse = await appointmentService.updateAppointmentStatus(selectedAppointment.id, 'COMPLETED');
+      
+      if (!completeResponse.success) {
+        throw new Error(completeResponse.message || 'Error al completar la cita');
+      }
+      
+      console.log('✅ Asistencia marcada exitosamente');
+      toast.success('Asistencia del paciente registrada exitosamente');
+      
+      // Actualizar el estado local de la cita
+      setAppointments(prev => prev.map(apt => 
+        apt.id === selectedAppointment.id 
+          ? { 
+              ...apt, 
+              status: 'COMPLETED' as const
+            }
+          : apt
+      ));
+      
+      // Actualizar la cita seleccionada en el modal
+      setSelectedAppointment(prev => prev ? { 
+        ...prev, 
+        status: 'COMPLETED'
+      } : null);
+      
+      // Recargar las citas para mostrar los cambios
+      await loadAppointments();
+      
+    } catch (error: any) {
+      console.error('❌ Error al completar cita:', error);
+      
+      let errorMessage = 'Error desconocido al completar la cita';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error('Error al completar la cita: ' + errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Funciones para el modal de edición
   const handleEditAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -1299,7 +1350,7 @@ const Appointments: React.FC = () => {
                 <option value="Todos">📋 Todos los estados</option>
                 <option value="programada">🗓️ Programada</option>
                 <option value="confirmada">✅ Confirmada</option>
-                <option value="completada">🎉 Completada</option>
+                <option value="completada">✅ Asistió</option>
                 <option value="cancelada">❌ Cancelada</option>
                 <option value="no_show">👻 No Show</option>
               </select>
@@ -1870,15 +1921,26 @@ const Appointments: React.FC = () => {
                   <div>
                     {getStatusBadge(selectedAppointment.status)}
                   </div>
-                  {selectedAppointment.status === 'SCHEDULED' && (
-                    <button
-                      onClick={handleConfirmAppointment}
-                      disabled={submitting}
-                      className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
-                    >
-                      {submitting ? 'Confirmando...' : '✅ Confirmar Cita'}
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {selectedAppointment.status === 'SCHEDULED' && (
+                      <button
+                        onClick={handleConfirmAppointment}
+                        disabled={submitting}
+                        className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
+                      >
+                        {submitting ? 'Confirmando...' : '✅ Confirmar Cita'}
+                      </button>
+                    )}
+                    {selectedAppointment.status === 'CONFIRMED' && (
+                      <button
+                        onClick={handleCompleteAppointment}
+                        disabled={submitting}
+                        className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        {submitting ? 'Marcando asistencia...' : '✅ Marcar Asistencia'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
