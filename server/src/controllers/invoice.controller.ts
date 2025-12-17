@@ -648,10 +648,16 @@ export const applyDiscountToInvoice = async (
       throw new AppError('Factura no encontrada', 404);
     }
 
+    // Validar que la factura no esté totalmente pagada
+    if (invoice.status === 'PAID') {
+      throw new AppError('No se puede aplicar descuento a una factura que ya está totalmente pagada', 400);
+    }
+
     console.log('📋 Factura encontrada:', {
       id: invoice.id,
       currentAmount: invoice.amount,
       currentSubtotal: invoice.subtotal,
+      status: invoice.status,
       hasDiscount: !!invoice.discountValue
     });
 
@@ -761,6 +767,11 @@ export const removeDiscountFromInvoice = async (
 
     if (!invoice) {
       throw new AppError('Factura no encontrada', 404);
+    }
+
+    // Validar que la factura no esté totalmente pagada
+    if (invoice.status === 'PAID') {
+      throw new AppError('No se puede remover descuento de una factura que ya está totalmente pagada', 400);
     }
 
     if (!invoice.discountValue || invoice.discountValue === 0) {

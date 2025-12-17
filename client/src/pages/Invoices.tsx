@@ -840,25 +840,29 @@ const Invoices: React.FC = () => {
                           </button>
                         )}
 
-                        {/* Botón de descuento */}
-                        {(!invoice.discountValue || invoice.discountValue === 0) ? (
-                          <button 
-                            onClick={() => openDiscountModal(invoice)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors"
-                            title="Aplicar descuento"
-                          >
-                            <ReceiptPercentIcon className="h-3 w-3 mr-1" />
-                            Descuento
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => handleRemoveDiscount(invoice.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
-                            title="Remover descuento"
-                          >
-                            <XMarkIcon className="h-3 w-3 mr-1" />
-                            Quitar
-                          </button>
+                        {/* Botón de descuento - Solo mostrar si la factura no está totalmente pagada */}
+                        {invoice.status !== 'PAID' && (
+                          <>
+                            {(!invoice.discountValue || invoice.discountValue === 0) ? (
+                              <button 
+                                onClick={() => openDiscountModal(invoice)}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors"
+                                title="Aplicar descuento"
+                              >
+                                <ReceiptPercentIcon className="h-3 w-3 mr-1" />
+                                Descuento
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleRemoveDiscount(invoice.id)}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                                title="Remover descuento"
+                              >
+                                <XMarkIcon className="h-3 w-3 mr-1" />
+                                Quitar
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
