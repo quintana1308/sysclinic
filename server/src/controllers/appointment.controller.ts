@@ -89,21 +89,19 @@ export const getAppointments = async (
       params.push(endDate);
     }
 
-    // Obtener total de registros (actualizado para incluir administradores)
+    // Obtener total de registros
     const totalResult = await queryOne<{ total: number }>(`
       SELECT COUNT(*) as total
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
-      LEFT JOIN employees e ON a.employeeId = e.id
-      LEFT JOIN users ue ON e.userId = ue.id
-      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
+      LEFT JOIN users ue ON a.employeeId = ue.id
       ${whereClause}
     `, params);
 
     const total = totalResult?.total || 0;
 
-    // Consulta actualizada para incluir tanto empleados como administradores
+    // Consulta para obtener citas con información del encargado (employeeId ahora es userId)
     const allAppointments = await query<any>(`
       SELECT 
         a.*,
@@ -112,20 +110,21 @@ export const getAppointments = async (
         uc.lastName as clientLastName,
         uc.email as clientEmail,
         uc.phone as clientPhone,
-        COALESCE(e.position, 'Administrador') as employeePosition,
-        COALESCE(ue.firstName, ua.firstName) as employeeFirstName,
-        COALESCE(ue.lastName, ua.lastName) as employeeLastName,
+        ue.firstName as employeeFirstName,
+        ue.lastName as employeeLastName,
+        ue.email as employeeEmail,
+        e.position as employeePosition,
         CASE 
           WHEN e.id IS NOT NULL THEN 'employee'
-          WHEN ua.id IS NOT NULL THEN 'admin'
+          WHEN ucomp.role = 'admin' THEN 'admin'
           ELSE NULL
         END as employeeType
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
-      LEFT JOIN employees e ON a.employeeId = e.id
-      LEFT JOIN users ue ON e.userId = ue.id
-      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
+      LEFT JOIN users ue ON a.employeeId = ue.id
+      LEFT JOIN employees e ON a.employeeId = e.userId
+      LEFT JOIN user_companies ucomp ON a.employeeId = ucomp.userId AND ucomp.role = 'admin'
       ${whereClause}
       ORDER BY a.date DESC, a.startTime DESC
     `, params);
@@ -199,20 +198,21 @@ export const getAppointmentById = async (
         uc.lastName as clientLastName,
         uc.email as clientEmail,
         uc.phone as clientPhone,
-        COALESCE(e.position, 'Administrador') as employeePosition,
-        COALESCE(ue.firstName, ua.firstName) as employeeFirstName,
-        COALESCE(ue.lastName, ua.lastName) as employeeLastName,
+        ue.firstName as employeeFirstName,
+        ue.lastName as employeeLastName,
+        ue.email as employeeEmail,
+        e.position as employeePosition,
         CASE 
           WHEN e.id IS NOT NULL THEN 'employee'
-          WHEN ua.id IS NOT NULL THEN 'admin'
+          WHEN ucomp.role = 'admin' THEN 'admin'
           ELSE NULL
         END as employeeType
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
-      LEFT JOIN employees e ON a.employeeId = e.id
-      LEFT JOIN users ue ON e.userId = ue.id
-      LEFT JOIN users ua ON a.employeeId = ua.id AND ua.id NOT IN (SELECT DISTINCT userId FROM employees WHERE userId IS NOT NULL)
+      LEFT JOIN users ue ON a.employeeId = ue.id
+      LEFT JOIN employees e ON a.employeeId = e.userId
+      LEFT JOIN user_companies ucomp ON a.employeeId = ucomp.userId AND ucomp.role = 'admin'
       WHERE a.id = ?
     `, [id]);
 
