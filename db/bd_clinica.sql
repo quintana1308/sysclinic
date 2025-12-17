@@ -251,6 +251,29 @@ CREATE TABLE `employees` (
 insert  into `employees`(`id`,`userId`,`companyId`,`position`,`specialties`,`schedule`,`salary`,`hireDate`,`isActive`,`role`,`createdAt`,`updatedAt`) values 
 ('35d0dae2-3fd1-4c2c-9dbe-e171c4d07aa3','0e131c9b-7eea-48c5-9052-567418d32d49','7af09fd6-2fab-4542-ad9e-6a80d1b3a773','Licenciada','Licenciada en Enfermeria','\"\\\"\\\\\\\"{\\\\\\\\\\\\\\\"lunes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"martes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"miercoles\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"jueves\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"},\\\\\\\\\\\\\\\"viernes\\\\\\\\\\\\\\\":{\\\\\\\\\\\\\\\"inicio\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"08:00\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"fin\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"17:00\\\\\\\\\\\\\\\"}}\\\\\\\"\\\"\"',30.00,'2021-01-01',1,'employee','2025-12-02 10:47:39','2025-12-12 15:23:54');
 
+/*Table structure for table `invoice_discounts` */
+
+CREATE TABLE `invoice_discounts` (
+  `id` varchar(36) NOT NULL DEFAULT uuid(),
+  `invoiceId` varchar(36) NOT NULL,
+  `discountType` enum('PERCENTAGE','FIXED') NOT NULL,
+  `discountValue` decimal(10,2) NOT NULL,
+  `discountReason` text NOT NULL,
+  `appliedBy` varchar(36) NOT NULL,
+  `appliedAt` datetime DEFAULT current_timestamp(),
+  `isActive` tinyint(1) DEFAULT 1,
+  `createdAt` datetime DEFAULT current_timestamp(),
+  `updatedAt` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_invoice_discount` (`invoiceId`),
+  KEY `idx_discount_type` (`discountType`),
+  KEY `idx_applied_by` (`appliedBy`),
+  CONSTRAINT `invoice_discounts_ibfk_1` FOREIGN KEY (`invoiceId`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `invoice_discounts_ibfk_2` FOREIGN KEY (`appliedBy`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+/*Data for the table `invoice_discounts` */
+
 /*Table structure for table `invoices` */
 
 CREATE TABLE `invoices` (
@@ -258,6 +281,12 @@ CREATE TABLE `invoices` (
   `clientId` varchar(36) NOT NULL,
   `appointmentId` varchar(36) DEFAULT NULL,
   `amount` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) DEFAULT 0.00,
+  `discountType` enum('PERCENTAGE','FIXED') DEFAULT NULL,
+  `discountValue` decimal(10,2) DEFAULT 0.00,
+  `discountReason` text DEFAULT NULL,
+  `discountAppliedBy` varchar(36) DEFAULT NULL,
+  `discountAppliedAt` datetime DEFAULT NULL,
   `status` enum('PENDING','PARTIAL','PAID','OVERDUE','CANCELLED') DEFAULT 'PENDING',
   `description` text DEFAULT NULL,
   `dueDate` date DEFAULT NULL,
@@ -268,14 +297,16 @@ CREATE TABLE `invoices` (
   KEY `idx_appointment` (`appointmentId`),
   KEY `idx_status` (`status`),
   KEY `idx_due_date` (`dueDate`),
+  KEY `idx_discount_type` (`discountType`),
+  KEY `idx_discount_applied_by` (`discountAppliedBy`),
   CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`clientId`) REFERENCES `clients` (`id`),
   CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`appointmentId`) REFERENCES `appointments` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*Data for the table `invoices` */
 
-insert  into `invoices`(`id`,`clientId`,`appointmentId`,`amount`,`status`,`description`,`dueDate`,`createdAt`,`updatedAt`) values 
-('661ce99e-96bf-4c24-a403-9b677dc80b42','21ba1c31-491a-43fc-826d-bc5fe8546913','2a93538a-981e-48a3-968d-7f102a25ce18',50.00,'PARTIAL','Factura por Hidrafacial - Anthony Quintana','2026-01-19','2025-12-15 15:11:03','2025-12-16 10:15:09');
+insert  into `invoices`(`id`,`clientId`,`appointmentId`,`amount`,`subtotal`,`discountType`,`discountValue`,`discountReason`,`discountAppliedBy`,`discountAppliedAt`,`status`,`description`,`dueDate`,`createdAt`,`updatedAt`) values 
+('661ce99e-96bf-4c24-a403-9b677dc80b42','21ba1c31-491a-43fc-826d-bc5fe8546913','2a93538a-981e-48a3-968d-7f102a25ce18',40.00,50.00,'FIXED',10.00,'Porque si','a19f292d-c4e3-42dc-b53f-bf228fa4f03a','2025-12-17 11:57:50','PARTIAL','Factura por Hidrafacial - Anthony Quintana','2026-01-19','2025-12-15 15:11:03','2025-12-17 11:57:50');
 
 /*Table structure for table `licenses` */
 
