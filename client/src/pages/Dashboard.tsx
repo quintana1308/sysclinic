@@ -782,12 +782,24 @@ const Dashboard: React.FC = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-0 relative">
+        {/* Marca de agua de fondo */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/karinalogo.png)',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: '50%',
+            opacity: 0.03
+          }}
+        />
+        
         {/* Mobile header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto relative z-10">
           <Routes>
             <Route path="/" element={<DashboardHome />} />
             <Route path="/calendar" element={<Calendar />} />

@@ -229,9 +229,21 @@ const ClientDashboard: React.FC = () => {
       )}
 
       {/* Contenido principal */}
-      <div className="flex-1 flex flex-col lg:ml-0 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:ml-0 overflow-hidden relative">
+        {/* Marca de agua de fondo */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/karinalogo.png)',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            backgroundSize: '50%',
+            opacity: 0.03
+          }}
+        />
+        
         {/* Header móvil */}
-        <header className="lg:hidden bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+        <header className="lg:hidden bg-white shadow-sm border-b border-gray-200 flex-shrink-0 relative z-10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -256,7 +268,7 @@ const ClientDashboard: React.FC = () => {
         </header>
 
         {/* Contenido de las páginas */}
-        <main className="flex-1 overflow-y-auto focus:outline-none">
+        <main className="flex-1 overflow-y-auto focus:outline-none relative z-10">
           <div className="py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <Routes>
