@@ -398,10 +398,12 @@ const SystemManagement: React.FC = () => {
       
       console.log('🔄 Cargando usuarios desde la API...');
       
-      // Llamada a la API real - obtener todos los usuarios sin límite
+      // Llamada a la API real
       const usersData = await userService.getUsers({
-        // No aplicar filtros en la API, se aplicarán en el frontend
-        limit: 10000 // Límite muy alto para obtener todos los usuarios
+        // Aplicar filtros si están activos
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+        role: roleFilter || undefined
       });
       
       console.log('✅ Usuarios cargados:', usersData);
@@ -1529,12 +1531,12 @@ const SystemManagement: React.FC = () => {
     }
   };
 
-  // Cargar usuarios solo cuando cambie la sección activa
+  // Cargar usuarios cuando cambien los filtros
   useEffect(() => {
     if (activeSection === 'users') {
       loadUsers();
     }
-  }, [activeSection]);
+  }, [activeSection, searchTerm, statusFilter, roleFilter]);
 
   // Cargar empresas cuando cambien los filtros
   useEffect(() => {
