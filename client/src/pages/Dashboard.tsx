@@ -656,7 +656,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
           {/* Header */}
           <div className="flex-shrink-0 p-4 border-b border-primary-700">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex-1 flex justify-start bg-white rounded-lg p-2">
+              <div className="flex-1 flex justify-center bg-white rounded-lg p-2">
                 <img 
                   src="/karinalogo.png" 
                   alt="Karina Logo" 
