@@ -141,7 +141,7 @@ interface RecentAppointment {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
   totalAmount: number;
   notes: string;
   createdAt: string;
@@ -506,6 +506,7 @@ const DashboardHome: React.FC = () => {
                             <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                               appointment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                               appointment.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
+                              appointment.status === 'RESCHEDULED' ? 'bg-orange-100 text-orange-800' :
                               appointment.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                               appointment.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
                               appointment.status === 'IN_PROGRESS' ? 'bg-purple-100 text-purple-800' :
@@ -513,6 +514,7 @@ const DashboardHome: React.FC = () => {
                             }`}>
                               {appointment.status === 'COMPLETED' ? 'Completada' :
                                appointment.status === 'CONFIRMED' ? 'Confirmada' :
+                               appointment.status === 'RESCHEDULED' ? 'Reagendada' :
                                appointment.status === 'SCHEDULED' ? 'Programada' :
                                appointment.status === 'CANCELLED' ? 'Cancelada' :
                                appointment.status === 'IN_PROGRESS' ? 'En Progreso' :
