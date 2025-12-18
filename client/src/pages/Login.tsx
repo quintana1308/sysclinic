@@ -66,8 +66,8 @@ const Login: React.FC = () => {
           <div className="w-full flex flex-col items-center text-center space-y-8">
             <div className="flex justify-center">
               <img 
-                src="/SysClinic.png" 
-                alt="SysClinic Logo" 
+                src="/karinalogo.png" 
+                alt="Karina Logo" 
                 className="h-20 w-60 object-contain drop-shadow-2xl"
               />
             </div>
