@@ -712,7 +712,7 @@ export const updateAppointmentStatus = async (
     console.log('🔄 Actualizando estado de cita:', { id, status });
 
     // Validar que el estado sea válido
-    const validStatuses = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+    const validStatuses = ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW', 'RESCHEDULED'];
     if (!validStatuses.includes(status)) {
       throw new AppError('Estado de cita inválido', 400);
     }
