@@ -304,7 +304,14 @@ const ClientTreatments: React.FC = () => {
               <p className="text-sm font-medium text-gray-600">Precio Promedio</p>
               <p className="text-2xl font-bold text-gray-900">
                 ${filteredTreatments.length > 0 
-                  ? (filteredTreatments.reduce((sum, t) => sum + t.price, 0) / filteredTreatments.length).toFixed(0)
+                  ? (() => {
+                      const validPrices = filteredTreatments
+                        .map(t => parseFloat(t.price?.toString() || '0'))
+                        .filter(price => !isNaN(price) && price > 0);
+                      return validPrices.length > 0 
+                        ? (validPrices.reduce((sum, price) => sum + price, 0) / validPrices.length).toFixed(0)
+                        : '0';
+                    })()
                   : '0'
                 }
               </p>
@@ -369,21 +376,13 @@ const ClientTreatments: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex justify-center">
                   <button
                     onClick={() => openDetailModal(treatment)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
                   >
                     <EyeIcon className="h-4 w-4 mr-1" />
                     Ver Detalles
-                  </button>
-                  
-                  <button
-                    onClick={() => handleBookTreatment(treatment.id)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    Agendar
                   </button>
                 </div>
               </div>
@@ -484,14 +483,7 @@ const ClientTreatments: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => handleBookTreatment(selectedTreatment.id)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                >
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Agendar Cita
-                </button>
+              <div className="mt-6 flex justify-end">
                 <button
                   onClick={closeDetailModal}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
