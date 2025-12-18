@@ -64,13 +64,7 @@ const Login: React.FC = () => {
         <div className="absolute inset-0 bg-black opacity-20"></div>
         <div className="relative z-10 w-full h-full flex flex-col justify-center items-center text-white p-12">
           <div className="w-full flex flex-col items-center text-center space-y-8">
-            <div className="flex justify-center">
-              <img 
-                src="/karinalogo.png" 
-                alt="Karina Logo" 
-                className="h-20 w-60 object-contain drop-shadow-2xl"
-              />
-            </div>
+            <h3 className="text-4xl font-bold text-white mb-4">Bienvenido</h3>
             <p className="text-xl text-primary-100 max-w-md leading-relaxed text-center">
               Sistema integral de gestión clínica diseñado para optimizar tu práctica médica
             </p>
@@ -103,7 +97,13 @@ const Login: React.FC = () => {
           {/* Formulario */}
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
             <div className="text-center mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Bienvenido</h3>
+              <div className="flex justify-center mb-4">
+                <img 
+                  src="/karinalogo.png" 
+                  alt="Karina Logo" 
+                  className="h-16 w-auto object-contain"
+                />
+              </div>
               <p className="text-gray-600 text-sm sm:text-base">Inicia sesión para acceder al sistema</p>
             </div>
             

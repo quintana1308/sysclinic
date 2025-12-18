@@ -1,11 +1,11 @@
 {
-  "short_name": "Dr Karina Di Estefano Clinica Estetica",
-  "name": "Create Dr Karina Di Estefano Clinica Estetica Sample",
+  "short_name": "Karina Di Estefano",
+  "name": "Dr Karina Di Estefano Clínica Estética",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "logo192.png",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/png"
     },
     {
       "src": "logo192.png",
@@ -13,13 +13,13 @@
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#d946ef",
   "background_color": "#ffffff"
 }
