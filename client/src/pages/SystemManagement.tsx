@@ -1713,7 +1713,7 @@ const SystemManagement: React.FC = () => {
       </div>
 
       {/* Contenido de las tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="rounded-lg shadow-sm border border-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         {activeSection === 'users' && (
           <div>
             {/* Header de la tarjeta con gradiente */}
@@ -1858,13 +1858,12 @@ const SystemManagement: React.FC = () => {
                       </thead>
 
                       {/* Cuerpo de la tabla */}
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                         {filteredUsers.map((user, index) => (
                           <tr 
                             key={user.id} 
-                            className={`hover:bg-gray-50 transition-colors ${
-                              index % 2 === 0 ? 'bg-white' : 'bg-gray-25'
-                            }`}
+                            className="hover:transition-colors" 
+                            style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}
                           >
                             {/* Usuario */}
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -2128,7 +2127,7 @@ const SystemManagement: React.FC = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                         {companiesList
                           .filter(company => {
                             const matchesSearch = companySearchTerm === '' || 

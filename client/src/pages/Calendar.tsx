@@ -786,7 +786,7 @@ const Calendar: React.FC = () => {
       )}
 
       {/* Calendario */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
         {/* Días de la semana */}
         <div className="grid grid-cols-7 bg-gradient-to-r from-pink-50 to-purple-50 border-b border-gray-200">
           {dayNames.map((day) => (
@@ -805,10 +805,16 @@ const Calendar: React.FC = () => {
               onClick={() => openDayAppointmentsModal(day.date, day.appointments)}
               className={`
                 min-h-[80px] sm:min-h-[120px] p-1 sm:p-2 border-b border-r border-gray-100 relative cursor-pointer
-                hover:bg-gray-50 transition-colors
-                ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                ${day.isToday ? 'bg-blue-50 hover:bg-blue-100' : ''}
+                hover:transition-colors
+                ${day.isToday ? 'hover:bg-blue-100' : ''}
               `}
+              style={{
+                backgroundColor: day.isToday 
+                  ? 'rgb(219 234 254 / 50%)' // bg-blue-50 con 50% transparencia
+                  : day.isCurrentMonth 
+                    ? 'rgb(255 255 255 / 50%)' // bg-white con 50% transparencia
+                    : 'rgb(249 250 251 / 50%)' // bg-gray-50 con 50% transparencia
+              }}
               title={`Ver todas las citas del ${day.date.getDate()} de ${monthNames[day.date.getMonth()]}`}
             >
               {/* Número del día */}

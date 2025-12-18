@@ -1221,7 +1221,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div className="rounded-lg shadow-sm border border-gray-200 p-6 mb-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-pink-800">🔍 Filtros de Reporte</h3>
           <div className="text-sm text-gray-500">
@@ -1356,7 +1356,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
           {/* Estadísticas principales */}
           {mainStats && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <TrendingUpIcon className="h-8 w-8 text-green-600" />
@@ -1369,7 +1369,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <CalendarDaysIcon className="h-8 w-8 text-blue-600" />
@@ -1382,7 +1382,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <UsersIcon className="h-8 w-8 text-orange-600" />
@@ -1400,7 +1400,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
           {/* Desglose de Citas por Estado */}
           {appointmentsStats.totalAppointments > 0 && (
             <div className="mb-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="rounded-lg shadow-sm border border-gray-200 p-4" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                 <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <CalendarDaysIcon className="h-4 w-4 text-blue-600 mr-2" />
                   Desglose de Citas por Estado
@@ -1438,7 +1438,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
           {/* Gráficos y análisis */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Ingresos Mensuales */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Ingresos Mensuales</h3>
               <div className="space-y-4">
                 {monthlyRevenue.map((month, index) => (
@@ -1462,7 +1462,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
             </div>
 
             {/* Tratamientos Más Populares */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">🏆 Tratamientos Más Populares</h3>
               {popularTreatments.length > 0 ? (
                 <div className="space-y-4">
@@ -1504,7 +1504,7 @@ Nota: Para generar archivo Excel real (.xlsx), instale: npm install xlsx`;
 
           {/* Análisis de Clientes */}
           {clientAnalysis && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👥 Análisis de Clientes</h3>
               <div className="text-center mb-6">
                 <span className="text-4xl font-bold text-blue-600">{clientAnalysis.totalClients}</span>

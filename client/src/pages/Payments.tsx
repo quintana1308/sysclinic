@@ -438,7 +438,7 @@ const Payments: React.FC = () => {
       </div>
 
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div className="rounded-lg shadow-sm border border-gray-200 mb-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
@@ -510,7 +510,7 @@ const Payments: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div className="rounded-lg shadow-sm border border-gray-200 p-12 text-center" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={() => loadPayments()}
@@ -520,7 +520,7 @@ const Payments: React.FC = () => {
           </button>
         </div>
       ) : getCurrentPagePayments().length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div className="rounded-lg shadow-sm border border-gray-200 p-12 text-center" style={{ backgroundColor: 'rgb(255 255 255 / 70%)', opacity: 0.7 }}>
           <div className="flex flex-col items-center">
             <div className="text-gray-400 mb-3">
               <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -528,16 +528,16 @@ const Payments: React.FC = () => {
               </svg>
             </div>
             <p className="text-sm font-medium text-gray-600">
-              {payments.length === 0 ? 'No hay pagos registrados' : 'No se encontraron pagos con los filtros aplicados'}
+              No hay pagos registrados
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Los pagos aparecerán aquí cuando se registren
+              Los pagos se registran automáticamente al procesar facturas
             </p>
           </div>
         </div>
       ) : (
         /* Tabla de Pagos */
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ backgroundColor: 'rgb(255 255 255 / 45%)' }}>
           {/* Header de la tabla */}
           <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
@@ -574,9 +574,9 @@ const Payments: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                 {getCurrentPagePayments().map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <tr key={payment.id} className="hover:transition-colors duration-150" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                     {/* Pago */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-3">

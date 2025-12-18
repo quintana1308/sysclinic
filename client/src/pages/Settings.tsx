@@ -245,7 +245,7 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Contenido de las tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="rounded-lg shadow-sm border border-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         {activeTab === 'profile' && (
           <div>
             {/* Header de la tarjeta con gradiente */}

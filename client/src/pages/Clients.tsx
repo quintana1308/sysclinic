@@ -1250,7 +1250,7 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div className="rounded-lg shadow-sm border border-gray-200 mb-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
@@ -1306,7 +1306,7 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Tabla de Clientes */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ backgroundColor: 'rgb(255 255 255 / 45%)' }}>
         {/* Header de la tabla */}
         <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -1343,9 +1343,9 @@ const Clients: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
               {clients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 transition-colors duration-150">
+                <tr key={client.id} className="hover:transition-colors duration-150" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                   {/* Cliente */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-3">
@@ -1491,7 +1491,7 @@ const Clients: React.FC = () => {
 
       {/* Paginación */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+        <div className="mt-6 flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 rounded-lg" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex flex-1 justify-between sm:hidden">
             <button
               onClick={goToPreviousPage}
@@ -1611,7 +1611,7 @@ const Clients: React.FC = () => {
       {/* Modal Crear Nuevo Cliente */}
       {showNewClientModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">🎆 Crear Nuevo Cliente</h2>
@@ -1838,7 +1838,7 @@ const Clients: React.FC = () => {
       {/* Modal Editar Cliente */}
       {showEditClientModal && selectedClient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">✏️ Editar Cliente</h2>

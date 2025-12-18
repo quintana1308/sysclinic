@@ -333,7 +333,7 @@ const DashboardHome: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* Citas Futuras */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-xl">
               <CalendarIcon className="h-7 w-7 text-blue-600" />
@@ -357,7 +357,7 @@ const DashboardHome: React.FC = () => {
         </div>
 
         {/* Total Clientes */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-3 bg-green-100 rounded-xl">
               <UsersIcon className="h-7 w-7 text-green-600" />
@@ -383,7 +383,7 @@ const DashboardHome: React.FC = () => {
         </div>
 
         {/* Ingresos del Mes */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-3 bg-purple-100 rounded-xl">
               <CreditCardIcon className="h-7 w-7 text-purple-600" />
@@ -413,7 +413,7 @@ const DashboardHome: React.FC = () => {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Citas Más Recientes */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="rounded-lg shadow-sm border border-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">Próximas Citas</h3>
@@ -460,7 +460,8 @@ const DashboardHome: React.FC = () => {
                       <div 
                         key={appointment.id} 
                         onClick={() => handleNavigation(`/appointments/${appointment.id}`)}
-                        className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 cursor-pointer"
+                        className="border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 cursor-pointer"
+                        style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
                         title={`Ver detalles de la cita de ${appointment.client.firstName} ${appointment.client.lastName}`}
                       >
                         <div className="flex justify-between items-start gap-2">
@@ -533,7 +534,7 @@ const DashboardHome: React.FC = () => {
         </div>
 
         {/* Acciones Rápidas */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="rounded-lg shadow-sm border border-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">Acciones Rápidas</h3>
           </div>

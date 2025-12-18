@@ -209,7 +209,7 @@ const ClientHome: React.FC = () => {
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <CalendarIcon className="h-6 w-6 text-blue-600" />
@@ -221,7 +221,7 @@ const ClientHome: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
               <ClockIcon className="h-6 w-6 text-green-600" />
@@ -233,7 +233,7 @@ const ClientHome: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
               <DocumentTextIcon className="h-6 w-6 text-yellow-600" />
@@ -245,7 +245,7 @@ const ClientHome: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <span className="text-purple-600 font-bold text-lg">$</span>
@@ -262,7 +262,8 @@ const ClientHome: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <button
           onClick={() => navigate('/client-dashboard/booking')}
-          className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          className="rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -280,7 +281,8 @@ const ClientHome: React.FC = () => {
 
         <button
           onClick={() => navigate('/client-dashboard/treatments')}
-          className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          className="rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -298,7 +300,8 @@ const ClientHome: React.FC = () => {
 
         <button
           onClick={() => navigate('/client-dashboard/medical-history')}
-          className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          className="rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
+          style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -316,7 +319,7 @@ const ClientHome: React.FC = () => {
       </div>
 
       {/* Próximas citas */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="rounded-lg shadow" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">📅 Próximas Citas</h2>
@@ -333,7 +336,7 @@ const ClientHome: React.FC = () => {
           {recentAppointments.length > 0 ? (
             <div className="space-y-4">
               {recentAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">

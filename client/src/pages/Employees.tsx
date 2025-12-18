@@ -397,7 +397,7 @@ const Employees: React.FC = () => {
       </div>
 
       {/* Filtros Mejorados */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div className="rounded-lg shadow-sm border border-gray-200 mb-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
@@ -465,17 +465,17 @@ const Employees: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div className="rounded-lg shadow-sm border border-gray-200 p-12 text-center" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={loadEmployees}
-            className="text-pink-600 hover:text-pink-700 font-medium"
+            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
           >
             Reintentar
           </button>
         </div>
       ) : filteredEmployees.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div className="rounded-lg shadow-sm border border-gray-200 p-12 text-center" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex flex-col items-center">
             <div className="text-gray-400 mb-3">
               <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -495,7 +495,7 @@ const Employees: React.FC = () => {
         </div>
       ) : (
         /* Tabla de Empleados */
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ backgroundColor: 'rgb(255 255 255 / 45%)' }}>
           {/* Header de la tabla */}
           <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
@@ -532,9 +532,9 @@ const Employees: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                 {filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <tr key={employee.id} className="hover:transition-colors duration-150" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                     {/* Empleado */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-3">
@@ -658,7 +658,7 @@ const Employees: React.FC = () => {
       {/* Modal Ver Empleado */}
       {showViewModal && selectedEmployee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 from-pink-50 to-purple-50">
               <div className="flex items-center space-x-4">

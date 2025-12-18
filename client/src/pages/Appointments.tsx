@@ -1531,7 +1531,7 @@ const Appointments: React.FC = () => {
       </div>
 
       {/* Filtros Mejorados para Mobile */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+      <div className="rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
         <div className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base sm:text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
@@ -1641,7 +1641,7 @@ const Appointments: React.FC = () => {
       </div>
 
       {/* Tabla de Citas */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ backgroundColor: 'rgb(255 255 255 / 45%)' }}>
         {/* Header de la tabla */}
         <div className="bg-gradient-to-r from-pink-50 to-purple-50 px-6 py-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -1681,9 +1681,9 @@ const Appointments: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
               {appointments.map((appointment) => (
-                <tr key={appointment.id} className="hover:bg-gray-50 transition-colors duration-150">
+                <tr key={appointment.id} className="hover:transition-colors duration-150" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
                   {/* Fecha & Hora */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
@@ -1843,7 +1843,7 @@ const Appointments: React.FC = () => {
 
       {/* Paginación */}
       {!loading && !error && appointments.length > 0 && (
-        <div className="mt-4 sm:mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+        <div className="mt-4 sm:mt-6 flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6 rounded-lg" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
           <div className="flex flex-1 justify-between sm:hidden">
             <button
               type="button"
@@ -1900,7 +1900,7 @@ const Appointments: React.FC = () => {
       {/* Modal Nueva Cita */}
       {showNewAppointmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">📅 Crear Nueva Cita</h2>
@@ -1992,7 +1992,7 @@ const Appointments: React.FC = () => {
                 </div>
 
                 {/* Sección Fecha y Empleado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="border border-gray-200 rounded-lg p-4" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
                   <h3 className="text-lg font-medium text-gray-800 mb-4">📅 Programación</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2145,7 +2145,7 @@ const Appointments: React.FC = () => {
       {/* Modal Detalles de la Cita */}
       {showDetailsModal && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">📋 Detalles de la Cita</h2>
@@ -2366,7 +2366,7 @@ const Appointments: React.FC = () => {
                 </div>
 
                 {/* Sección Fecha y Empleado */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="border border-gray-200 rounded-lg p-4" style={{ backgroundColor: 'rgb(255 255 255 / 10%)' }}>
                   <h3 className="text-lg font-medium text-gray-800 mb-4">📅 Programación</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
