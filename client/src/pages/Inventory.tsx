@@ -60,6 +60,9 @@ const Inventory: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Estados de loading para prevenir doble clic
+  const [isCreatingSupply, setIsCreatingSupply] = useState(false);
+  
   // Estados de modales
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -200,6 +203,10 @@ const Inventory: React.FC = () => {
   const handleCreateSupply = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isCreatingSupply) return;
+    
+    setIsCreatingSupply(true);
+    
     try {
       // Limpiar datos antes de enviar
       const cleanedData = {
@@ -217,6 +224,8 @@ const Inventory: React.FC = () => {
     } catch (error) {
       console.error('Error creating supply:', error);
       toast.error('Error al crear el insumo');
+    } finally {
+      setIsCreatingSupply(false);
     }
   };
   
@@ -886,9 +895,21 @@ const Inventory: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                  disabled={isCreatingSupply}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-colors ${
+                    isCreatingSupply
+                      ? 'text-gray-400 bg-gray-300 cursor-not-allowed'
+                      : 'text-white bg-pink-600 hover:bg-pink-700'
+                  }`}
                 >
-                  📦 Crear Insumo
+                  {isCreatingSupply ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                      📦 Creando...
+                    </>
+                  ) : (
+                    '📦 Crear Insumo'
+                  )}
                 </button>
               </div>
             </form>

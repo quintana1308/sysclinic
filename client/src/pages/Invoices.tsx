@@ -119,6 +119,9 @@ const Invoices: React.FC = () => {
     transactionId: ''
   });
 
+  // Estados de loading para prevenir doble clic
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
   // Formulario de descuento
   const [discountData, setDiscountData] = useState({
     discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
@@ -499,7 +502,7 @@ const Invoices: React.FC = () => {
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedInvoice) return;
+    if (!selectedInvoice || isProcessingPayment) return;
 
     // Validar que el monto no exceda el saldo pendiente
     const remainingAmount = calculateRemainingAmount(selectedInvoice);
@@ -512,6 +515,8 @@ const Invoices: React.FC = () => {
       toast.error('El monto del abono debe ser mayor a cero');
       return;
     }
+
+    setIsProcessingPayment(true);
 
     try {
 
@@ -554,6 +559,8 @@ const Invoices: React.FC = () => {
     } catch (error: any) {
       console.error('Error procesando pago:', error);
       toast.error('Error al procesar el abono: ' + (error.message || 'Error desconocido'));
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -1444,14 +1451,21 @@ const Invoices: React.FC = () => {
                   return (
                     <button
                       type="submit"
-                      disabled={!isValid}
+                      disabled={!isValid || isProcessingPayment}
                       className={`px-6 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
-                        isValid 
+                        isValid && !isProcessingPayment
                           ? 'text-white bg-pink-600 hover:bg-pink-700 focus:ring-pink-500' 
                           : 'text-gray-400 bg-gray-300 cursor-not-allowed'
                       }`}
                     >
-                      💰 Registrar Abono
+                      {isProcessingPayment ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                          💰 Procesando...
+                        </>
+                      ) : (
+                        '💰 Registrar Abono'
+                      )}
                     </button>
                   );
                 })()}
