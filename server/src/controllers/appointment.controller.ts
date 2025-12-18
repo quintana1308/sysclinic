@@ -921,8 +921,8 @@ export const confirmAppointment = async (
       throw new AppError('No se puede confirmar una cita completada', 400);
     }
 
-    if (appointment.status !== 'SCHEDULED') {
-      throw new AppError('Solo se pueden confirmar citas programadas', 400);
+    if (appointment.status !== 'SCHEDULED' && appointment.status !== 'RESCHEDULED') {
+      throw new AppError('Solo se pueden confirmar citas programadas o reagendadas', 400);
     }
 
     console.log('✅ Validaciones pasadas, procediendo con la confirmación');

@@ -7,7 +7,7 @@ export interface Appointment {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
   notes?: string;
   totalAmount: number;
   createdAt: string;

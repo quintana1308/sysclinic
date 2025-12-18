@@ -126,6 +126,7 @@ const Appointments: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
@@ -409,6 +410,7 @@ const Appointments: React.FC = () => {
     const statusConfig = {
       'SCHEDULED': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Programada' },
       'CONFIRMED': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmada' },
+      'RESCHEDULED': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Reagendada' },
       'IN_PROGRESS': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'En Progreso' },
       'COMPLETED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Asistió' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada' },
@@ -416,6 +418,7 @@ const Appointments: React.FC = () => {
       // Compatibilidad con estados en español
       'programada': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Programada' },
       'confirmada': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Confirmada' },
+      'reagendada': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Reagendada' },
       'completada': { bg: 'bg-green-100', text: 'text-green-800', label: 'Asistió' },
       'cancelada': { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelada' }
     };
@@ -547,7 +550,8 @@ const Appointments: React.FC = () => {
       'en_progreso': 'IN_PROGRESS',
       'completada': 'COMPLETED',
       'cancelada': 'CANCELLED',
-      'no_show': 'NO_SHOW'
+      'no_show': 'NO_SHOW',
+      'reagendada': 'RESCHEDULED'
     };
     return statusMap[status] || status;
   };
@@ -1080,6 +1084,189 @@ const Appointments: React.FC = () => {
     setEditClientSearch('');
   };
 
+  // Funciones para reagendar cita
+  const handleRescheduleAppointment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    
+    // Prellenar el formulario con los datos actuales de la cita
+    const appointmentTreatments = Array.isArray(appointment.treatments) ? appointment.treatments : [];
+
+    const rawDate = appointment.date || appointment.appointmentDate || '';
+    let dateForInput = '';
+    if (rawDate) {
+      const hasSpace = rawDate.includes(' ');
+      const hasT = rawDate.includes('T');
+      let datePart = rawDate;
+      if (hasSpace || hasT) {
+        const separator = hasSpace ? ' ' : 'T';
+        const parts = rawDate.split(separator);
+        if (parts.length > 0) {
+          datePart = parts[0];
+        }
+      }
+      dateForInput = datePart;
+    }
+
+    const extractTimeForInput = (value?: string) => {
+      if (!value) return '';
+      let timePart = value;
+      const hasSpace = value.includes(' ');
+      const hasT = value.includes('T');
+      if (hasSpace || hasT) {
+        const separator = hasSpace ? ' ' : 'T';
+        const parts = value.split(separator);
+        if (parts.length > 1) {
+          timePart = parts[1];
+        }
+      }
+      const timeClean = timePart.replace(/Z$/, '');
+      const [hourStr, minuteStr] = timeClean.split(':');
+      const hour = (hourStr || '0').padStart(2, '0');
+      const minute = (minuteStr || '0').padStart(2, '0');
+      return `${hour}:${minute}`;
+    };
+
+    const startTimeForInput = extractTimeForInput(appointment.startTime || appointment.appointmentTime);
+    const endTimeForInput = extractTimeForInput(appointment.endTime);
+
+    const treatmentIds = appointmentTreatments
+      .map((t: any) => {
+        const byId = t.id && typeof t.id === 'string' && !t.id.startsWith('treatment-') ? t.id : '';
+        if (byId) return byId;
+        const tName = (t.name || '').toString().trim().toLowerCase();
+        const match = treatments.find(globalT =>
+          globalT.name && globalT.name.toString().trim().toLowerCase() === tName
+        );
+        return match ? match.id : '';
+      })
+      .filter((id: any) => typeof id === 'string' && id.trim() !== '');
+
+    setEditFormData({
+      clientId: appointment.clientId || '',
+      clientName: `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.trim(),
+      date: dateForInput,
+      startTime: startTimeForInput,
+      endTime: endTimeForInput,
+      employeeId: appointment.employeeId || '',
+      selectedTreatments: treatmentIds,
+      notes: appointment.notes || ''
+    });
+    
+    setEditClientSearch(`${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`);
+    setEditTreatmentSearch('');
+    setShowRescheduleModal(true);
+  };
+
+  const handleCloseRescheduleModal = () => {
+    setShowRescheduleModal(false);
+    setSelectedAppointment(null);
+    setShowEditClientDropdown(false);
+    setEditFormData({
+      clientId: '',
+      clientName: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      employeeId: '',
+      selectedTreatments: [],
+      notes: ''
+    });
+    setEditClientSearch('');
+  };
+
+  const handleSubmitReschedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAppointment) return;
+    
+    setSubmitting(true);
+    try {
+      console.log('🔄 Reagendando cita:', selectedAppointment.id);
+      console.log('📋 Nuevos datos:', editFormData);
+      
+      // Validaciones
+      const validationErrors = [];
+      
+      if (!editFormData.clientId || editFormData.clientId.trim() === '') {
+        validationErrors.push('Debe seleccionar un cliente válido');
+      }
+      
+      if (!editFormData.date || editFormData.date.trim() === '') {
+        validationErrors.push('Debe seleccionar una fecha');
+      }
+      
+      if (!editFormData.startTime || editFormData.startTime.trim() === '') {
+        validationErrors.push('Debe especificar la hora de inicio');
+      }
+      
+      if (!editFormData.endTime || editFormData.endTime.trim() === '') {
+        validationErrors.push('Debe especificar la hora de fin');
+      }
+      
+      if (!editFormData.selectedTreatments || editFormData.selectedTreatments.length === 0) {
+        validationErrors.push('Debe seleccionar al menos un tratamiento');
+      }
+      
+      if (validationErrors.length > 0) {
+        console.error('❌ Errores de validación:', validationErrors);
+        toast.error(`Errores de validación:\n${validationErrors.join('\n')}`);
+        return;
+      }
+
+      // Preparar datos para el backend
+      const updateData: Partial<AppointmentFormData> = {
+        employeeId: editFormData.employeeId || undefined,
+        date: editFormData.date,
+        startTime: editFormData.startTime,
+        endTime: editFormData.endTime,
+        notes: editFormData.notes || undefined,
+        treatments: editFormData.selectedTreatments.map(treatmentId => ({
+          treatmentId,
+          quantity: 1,
+          notes: undefined
+        }))
+      };
+
+      console.log('📤 Actualizando cita con nuevos datos');
+      
+      // Actualizar la cita
+      const response = await appointmentService.updateAppointment(selectedAppointment.id, updateData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Error al actualizar la cita');
+      }
+      
+      console.log('✅ Cita actualizada, cambiando estado a RESCHEDULED');
+      
+      // Cambiar el estado a RESCHEDULED
+      const statusResponse = await appointmentService.updateAppointmentStatus(selectedAppointment.id, 'RESCHEDULED');
+      
+      if (!statusResponse.success) {
+        throw new Error(statusResponse.message || 'Error al cambiar el estado');
+      }
+      
+      console.log('✅ Cita reagendada exitosamente');
+      toast.success('Cita reagendada exitosamente');
+      handleCloseRescheduleModal();
+      
+      // Recargar las citas
+      await loadAppointments();
+      
+    } catch (error: any) {
+      console.error('❌ Error al reagendar cita:', error);
+      
+      let errorMessage = 'Error desconocido al reagendar la cita';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error('Error al reagendar la cita: ' + errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmitEditAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAppointment) return;
@@ -1387,6 +1574,7 @@ const Appointments: React.FC = () => {
                 <option value="Todos">📋 Todos los estados</option>
                 <option value="programada">🗓️ Programada</option>
                 <option value="confirmada">✅ Confirmada</option>
+                <option value="reagendada">🔄 Reagendada</option>
                 <option value="completada">✅ Asistió</option>
                 <option value="cancelada">❌ Cancelada</option>
                 <option value="no_show">👻 No Show</option>
@@ -1592,7 +1780,17 @@ const Appointments: React.FC = () => {
                         <EyeIcon className="h-3 w-3 mr-1" />
                         Ver
                       </button>
-                      {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && (
+                      {(appointment.status === 'SCHEDULED' || appointment.status === 'CONFIRMED') && (
+                        <button 
+                          type="button"
+                          onClick={() => handleRescheduleAppointment(appointment)}
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 rounded-md hover:bg-orange-200 transition-colors"
+                          title="Reagendar cita"
+                        >
+                          🔄 Reagendar
+                        </button>
+                      )}
+                      {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && appointment.status !== 'RESCHEDULED' && (
                         <button 
                           type="button"
                           onClick={() => handleEditAppointment(appointment)}
@@ -1969,7 +2167,7 @@ const Appointments: React.FC = () => {
                     {getStatusBadge(selectedAppointment.status)}
                   </div>
                   <div className="flex gap-2">
-                    {selectedAppointment.status === 'SCHEDULED' && (
+                    {(selectedAppointment.status === 'SCHEDULED' || selectedAppointment.status === 'RESCHEDULED') && (
                       <button
                         onClick={handleConfirmAppointment}
                         disabled={submitting}
@@ -2396,6 +2594,167 @@ const Appointments: React.FC = () => {
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Cancelando...' : 'Confirmar Cancelación'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Reagendar Cita */}
+      {showRescheduleModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-orange-200 bg-orange-50">
+              <h2 className="text-xl font-semibold text-orange-800">🔄 Reagendar Cita</h2>
+              <button
+                onClick={handleCloseRescheduleModal}
+                className="text-orange-400 hover:text-orange-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmitReschedule} className="p-6">
+              <div className="space-y-6">
+                {/* Información de la cita original */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-blue-800 mb-2">📋 Cita Original</h3>
+                  <p className="text-sm text-blue-700">
+                    Cliente: <span className="font-semibold">{selectedAppointment.client?.firstName} {selectedAppointment.client?.lastName}</span>
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    Fecha original: <span className="font-semibold">{formatDate(selectedAppointment.date)}</span> - {formatTime(selectedAppointment.startTime)}
+                  </p>
+                </div>
+
+                {/* Sección Fecha y Hora */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-gray-800 mb-4">📅 Nueva Programación</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nueva Fecha <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={editFormData.date}
+                        onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora Inicio <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="time"
+                        value={editFormData.startTime}
+                        onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora Fin <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="time"
+                        value={editFormData.endTime}
+                        onChange={(e) => setEditFormData({ ...editFormData, endTime: e.target.value })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Encargado
+                    </label>
+                    <select
+                      value={editFormData.employeeId}
+                      onChange={(e) => setEditFormData({ ...editFormData, employeeId: e.target.value })}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    >
+                      <option value="">Seleccionar encargado...</option>
+                      {employees.map(employee => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.firstName} {employee.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sección Tratamientos */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-green-800 mb-4">💊 Tratamientos</h3>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {treatments.map((treatment) => (
+                      <label
+                        key={treatment.id}
+                        className="flex items-center p-3 bg-white border border-green-200 rounded-lg hover:bg-green-50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={editFormData.selectedTreatments.includes(treatment.id)}
+                          onChange={() => {
+                            const isSelected = editFormData.selectedTreatments.includes(treatment.id);
+                            setEditFormData({
+                              ...editFormData,
+                              selectedTreatments: isSelected
+                                ? editFormData.selectedTreatments.filter(id => id !== treatment.id)
+                                : [...editFormData.selectedTreatments, treatment.id]
+                            });
+                          }}
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900">{treatment.name}</span>
+                            <span className="text-sm font-semibold text-green-600">${treatment.price.toFixed(2)}</span>
+                          </div>
+                          {treatment.description && (
+                            <p className="text-xs text-gray-500 mt-1">{treatment.description}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sección Notas */}
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <h3 className="text-lg font-medium text-purple-800 mb-4">📝 Notas</h3>
+                  <textarea
+                    value={editFormData.notes}
+                    onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                    rows={3}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Motivo del reagendamiento u otras notas..."
+                  />
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-orange-200 bg-orange-50 -mx-6 px-6 rounded-b-lg">
+                <button
+                  type="button"
+                  onClick={handleCloseRescheduleModal}
+                  className="px-4 py-2 text-sm font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-orange-600 border border-transparent rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Reagendando...' : '🔄 Reagendar Cita'}
                 </button>
               </div>
             </form>

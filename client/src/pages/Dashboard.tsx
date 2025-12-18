@@ -463,49 +463,38 @@ const DashboardHome: React.FC = () => {
                         className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 cursor-pointer"
                         title={`Ver detalles de la cita de ${appointment.client.firstName} ${appointment.client.lastName}`}
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-start gap-2">
                           {/* Información principal */}
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-4">
-                              {/* Cliente */}
-                              <div className="min-w-0 flex-1">
-                                <h4 className="font-semibold text-gray-900 text-sm truncate">
-                                  {appointment.client.firstName} {appointment.client.lastName}
-                                </h4>
-                                {appointment.client.clientCode && (
-                                  <p className="text-xs text-gray-500">
-                                    {appointment.client.clientCode}
-                                  </p>
-                                )}
-                              </div>
-                              
-                              {/* Fecha y hora */}
-                              <div className="text-sm text-gray-600">
-                                <div className="flex items-center">
-                                  <CalendarIcon className="h-3 w-3 mr-1" />
-                                  {formatDate(appointment.date)}
-                                </div>
-                                <div className="flex items-center">
-                                  <ClockIcon className="h-3 w-3 mr-1" />
-                                  {formatTime(appointment.startTime)}
-                                </div>
-                              </div>
-                              
-                              {/* Profesional */}
-                              {appointment.employee.firstName && (
-                                <div className="text-sm text-gray-600 min-w-0">
-                                  <div className="flex items-center">
-                                    <UserIcon className="h-3 w-3 mr-1" />
-                                    <span className="truncate">
-                                      {appointment.employee.firstName} {appointment.employee.lastName}
-                                    </span>
-                                  </div>
-                                </div>
+                          <div className="flex-1 min-w-0">
+                            {/* Cliente */}
+                            <div className="mb-2">
+                              <h4 className="font-semibold text-gray-900 text-sm truncate">
+                                {appointment.client.firstName} {appointment.client.lastName}
+                              </h4>
+                              {appointment.client.clientCode && (
+                                <p className="text-xs text-gray-500 hidden sm:block truncate">
+                                  {appointment.client.clientCode}
+                                </p>
                               )}
+                            </div>
+                            
+                            {/* Fecha, hora y monto - Layout responsive */}
+                            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600">
+                              {/* Fecha y hora */}
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center whitespace-nowrap">
+                                  <CalendarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+                                  <span>{formatDate(appointment.date)}</span>
+                                </div>
+                                <div className="flex items-center whitespace-nowrap">
+                                  <ClockIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+                                  <span>{formatTime(appointment.startTime)}</span>
+                                </div>
+                              </div>
                               
                               {/* Monto */}
                               {appointment.totalAmount && (
-                                <div className="text-sm font-semibold text-green-600">
+                                <div className="text-sm font-semibold text-green-600 whitespace-nowrap">
                                   ${appointment.totalAmount.toFixed(2)}
                                 </div>
                               )}
@@ -513,8 +502,8 @@ const DashboardHome: React.FC = () => {
                           </div>
                           
                           {/* Estado y flecha */}
-                          <div className="ml-4 flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                               appointment.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
                               appointment.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
                               appointment.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
@@ -529,7 +518,7 @@ const DashboardHome: React.FC = () => {
                                appointment.status === 'IN_PROGRESS' ? 'En Progreso' :
                                appointment.status}
                             </span>
-                            <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                            <ChevronRightIcon className="h-4 w-4 text-gray-400 hidden sm:block" />
                           </div>
                         </div>
                       </div>

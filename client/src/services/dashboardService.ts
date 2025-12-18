@@ -34,7 +34,7 @@ export interface RecentAppointment {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
   totalAmount: number;
   notes: string;
   createdAt: string;
