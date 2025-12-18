@@ -62,6 +62,45 @@ export const getInvoices = async (
       queryParams.push(req.companyId);
     }
 
+    // Filtrar por cliente si el usuario es cliente (solo puede ver sus propias facturas)
+    const isClient = req.user?.roles?.some((role: any) => {
+      let roleName = '';
+      
+      if (typeof role === 'string') {
+        roleName = role.toLowerCase();
+      } else if (role.name) {
+        roleName = role.name.toLowerCase();
+      } else if (role.role && role.role.name) {
+        // Estructura anidada: { role: { name: 'cliente' } }
+        roleName = role.role.name.toLowerCase();
+      }
+      
+      return roleName === 'cliente' || roleName === 'client';
+    });
+
+    if (isClient && req.user) {
+      console.log(`🔍 Usuario cliente detectado: ${req.user.id}`);
+      console.log(`🔍 Buscando registro de cliente en tabla clients para userId: ${req.user.id}`);
+      
+      // Buscar el clientId real basado en el userId
+      const clientRecord = await queryOne<{ id: string }>(`
+        SELECT id FROM clients WHERE userId = ? AND companyId = ?
+      `, [req.user.id, req.user?.companies?.current?.id || req.companyId]);
+      
+      console.log(`📋 Resultado de búsqueda de cliente:`, clientRecord);
+      
+      if (clientRecord) {
+        // Usar el clientId real de la tabla clients
+        whereConditions.push('i.clientId = ?');
+        queryParams.push(clientRecord.id);
+        console.log(`✅ Filtrando facturas por clientId real: ${clientRecord.id} (usuario: ${req.user.id})`);
+      } else {
+        // Si no se encuentra el registro de cliente, no mostrar facturas
+        console.log(`❌ No se encontró registro de cliente para usuario: ${req.user.id}`);
+        whereConditions.push('1=0'); // Condición que nunca se cumple
+      }
+    }
+
     // Filtro de búsqueda (cliente, descripción)
     if (search && search.trim()) {
       whereConditions.push(`(
@@ -80,8 +119,8 @@ export const getInvoices = async (
       queryParams.push(status);
     }
 
-    // Filtro por cliente específico
-    if (clientId && clientId.trim()) {
+    // Filtro por cliente específico (solo para usuarios no cliente)
+    if (clientId && clientId.trim() && !isClient) {
       whereConditions.push('i.clientId = ?');
       queryParams.push(clientId);
     }
@@ -149,6 +188,35 @@ export const getInvoices = async (
       totalPaginas: totalPages
     });
 
+    // Obtener tratamientos para cada factura basado en appointmentId
+    for (const invoice of invoices) {
+      if (invoice.appointmentId) {
+        try {
+          const treatments = await query<any>(`
+            SELECT 
+              t.id,
+              t.name,
+              t.description,
+              t.duration,
+              t.price,
+              at.price as appointmentPrice,
+              at.quantity
+            FROM appointment_treatments at
+            INNER JOIN treatments t ON at.treatmentId = t.id
+            WHERE at.appointmentId = ?
+          `, [invoice.appointmentId]);
+
+          invoice.treatments = treatments;
+          console.log(`📋 Tratamientos para factura ${invoice.id}:`, treatments.length);
+        } catch (treatmentError) {
+          console.error(`❌ Error obteniendo tratamientos para factura ${invoice.id}:`, treatmentError);
+          invoice.treatments = [];
+        }
+      } else {
+        invoice.treatments = [];
+      }
+    }
+
     if (invoices && invoices.length > 0) {
       console.log('📋 Primera factura de ejemplo:', {
         id: invoices[0].id,
@@ -157,7 +225,8 @@ export const getInvoices = async (
         amount: invoices[0].amount,
         status: invoices[0].status,
         totalPaid: invoices[0].totalPaid,
-        paymentCount: invoices[0].paymentCount
+        paymentCount: invoices[0].paymentCount,
+        treatmentsCount: invoices[0].treatments?.length || 0
       });
     }
 

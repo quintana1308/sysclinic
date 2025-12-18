@@ -261,18 +261,18 @@ const ClientHome: React.FC = () => {
       {/* Acciones rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <button
-          onClick={() => navigate('/client-dashboard/booking')}
+          onClick={() => navigate('/client-dashboard/appointments')}
           className="rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
           style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
         >
           <div className="flex items-center justify-between">
             <div>
               <div className="p-2 bg-pink-100 rounded-lg w-fit">
-                <PlusIcon className="h-6 w-6 text-pink-600" />
+                <CalendarIcon className="h-6 w-6 text-pink-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mt-3">Agendar Cita</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mt-3">Mis Citas</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Programa una nueva cita con nuestros especialistas
+                Revisa y gestiona tus citas programadas
               </p>
             </div>
             <ChevronRightIcon className="h-5 w-5 text-gray-400" />
@@ -299,7 +299,7 @@ const ClientHome: React.FC = () => {
         </button>
 
         <button
-          onClick={() => navigate('/client-dashboard/medical-history')}
+          onClick={() => navigate('/client-dashboard/invoices')}
           className="rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 text-left"
           style={{ backgroundColor: 'rgb(255 255 255 / 70%)' }}
         >
@@ -308,9 +308,9 @@ const ClientHome: React.FC = () => {
               <div className="p-2 bg-blue-100 rounded-lg w-fit">
                 <DocumentTextIcon className="h-6 w-6 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mt-3">Historial Médico</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mt-3">Mis Facturas</h3>
               <p className="text-gray-600 text-sm mt-1">
-                Revisa tu historial médico y tratamientos anteriores
+                Revisa y descarga tus facturas de tratamientos
               </p>
             </div>
             <ChevronRightIcon className="h-5 w-5 text-gray-400" />

@@ -80,6 +80,7 @@ export const getClients = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const search = req.query.search as string || '';
     const status = req.query.status as string;
+    const userId = req.query.userId as string; // Nuevo parámetro para filtrar por userId
     const offset = (page - 1) * limit;
 
     // Validar que limit y offset sean números válidos
@@ -92,9 +93,17 @@ export const getClients = async (
     }
 
     console.log('📊 Parámetros de paginación:', { page, limit, offset });
+    console.log('🔍 Filtro por userId:', userId);
 
     let whereClause = 'WHERE 1=1';
     const params: any[] = [];
+
+    // Filtrar por userId si se proporciona
+    if (userId) {
+      whereClause += ' AND c.userId = ?';
+      params.push(userId);
+      console.log('✅ Aplicando filtro por userId:', userId);
+    }
 
     // Filtrar por empresa (obligatorio para usuarios no master)
     // Nota: La relación empresa-cliente es a través de user_companies

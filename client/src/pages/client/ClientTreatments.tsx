@@ -22,11 +22,6 @@ const CurrencyDollarIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const CalendarIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25m3 6.75H3.75m15.75 0v8.25a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18.75V9.75a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 9.75z" />
-  </svg>
-);
 
 const EyeIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -102,6 +97,7 @@ const ClientTreatments: React.FC = () => {
 
       setTreatments(processedTreatments);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error al cargar tratamientos:', error);
       toast.error('Error al cargar los tratamientos');
     } finally {
@@ -164,10 +160,6 @@ const ClientTreatments: React.FC = () => {
     setShowDetailModal(false);
   };
 
-  const handleBookTreatment = (treatmentId: string) => {
-    // Redirigir a la página de agendamiento con el tratamiento preseleccionado
-    navigate(`/client-dashboard/booking?treatment=${treatmentId}`);
-  };
 
   const formatDuration = (minutes: number): string => {
     if (minutes < 60) {

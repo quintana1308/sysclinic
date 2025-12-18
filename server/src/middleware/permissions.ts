@@ -59,10 +59,18 @@ export const hasPermission = (user: any, permission: Permission): boolean => {
         
       case 'cliente':
       case 'client':
-        // Cliente puede ver su propia información y citas (filtradas automáticamente en el controlador)
+        // Cliente puede ver su propia información, citas y facturas (filtradas automáticamente en el controlador)
         if (permission.resource === 'appointments') {
           // Los clientes pueden leer y actualizar (cancelar) sus citas (el filtro se aplica en el controlador)
           return permission.action === 'read' || permission.action === 'update';
+        }
+        if (permission.resource === 'invoices') {
+          // Los clientes pueden leer sus propias facturas (solo lectura, filtradas en el controlador)
+          return permission.action === 'read';
+        }
+        if (permission.resource === 'medical-history') {
+          // Los clientes pueden leer su propio historial médico (filtrado en el controlador)
+          return permission.action === 'read';
         }
         return permission.resource === 'profile' || 
                (permission.resource === 'treatments' && permission.action === 'read');

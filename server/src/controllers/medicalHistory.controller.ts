@@ -121,34 +121,57 @@ export const getMedicalHistory = async (
 
     console.log('📋 [BACKEND] Obteniendo historial médico para cliente:', clientId);
     console.log('👤 [BACKEND] Usuario que hace la petición:', req.user?.id, req.user?.email);
-    console.log('📊 [BACKEND] Parámetros de paginación:', { page, limit, offset });
+    console.log('🔍 [BACKEND] Rol del usuario:', req.user?.role?.role?.name);
 
-    // Verificar permisos
-    if (!req.user?.isMaster) {
-      // Solo admin, empleados de la empresa o el propio cliente pueden ver el historial
-      const isAuthorized = await queryOne(`
-        SELECT 1 FROM clients c
-        INNER JOIN users u ON c.userId = u.id
-        WHERE c.id = ? AND (
-          c.userId = ? OR 
-          EXISTS (
-            SELECT 1 FROM user_companies uc 
-            WHERE uc.userId = ? AND uc.companyId = c.companyId 
-            AND uc.role IN ('admin', 'employee') AND uc.isActive = 1
-          )
-        )
-      `, [clientId, req.user?.id, req.user?.id]);
-
-      if (!isAuthorized) {
+    // Detectar si el usuario es cliente y obtener su clientId real
+    let actualClientId = clientId;
+    const isClient = req.user?.role?.role?.name === 'cliente';
+    
+    if (isClient && req.user) {
+      console.log(' [BACKEND] Usuario es cliente, obteniendo clientId real...');
+      const clientData = await queryOne<any>(`
+        SELECT id FROM clients WHERE userId = ?
+      `, [req.user.id]);
+      
+      if (!clientData) {
+        throw new AppError('Cliente no encontrado', 404);
+      }
+      
+      actualClientId = clientData.id;
+      console.log('✅ [BACKEND] ClientId real del usuario:', actualClientId);
+      
+      // Si es cliente, solo puede ver su propio historial
+      if (clientId !== actualClientId) {
         throw new AppError('No tienes permisos para ver este historial', 403);
+      }
+    } else {
+      // Verificar permisos para usuarios no cliente
+      if (!req.user?.isMaster) {
+        // Solo admin, empleados de la empresa o el propio cliente pueden ver el historial
+        const isAuthorized = await queryOne(`
+          SELECT 1 FROM clients c
+          INNER JOIN users u ON c.userId = u.id
+          WHERE c.id = ? AND (
+            c.userId = ? OR 
+            EXISTS (
+              SELECT 1 FROM user_companies uc 
+              WHERE uc.userId = ? AND uc.companyId = c.companyId 
+              AND uc.role IN ('admin', 'employee') AND uc.isActive = 1
+            )
+          )
+        `, [actualClientId, req.user?.id, req.user?.id]);
+
+        if (!isAuthorized) {
+          throw new AppError('No tienes permisos para ver este historial', 403);
+        }
       }
     }
 
     // Obtener total de registros
-    console.log('🔍 [BACKEND] Ejecutando consulta de conteo para clientId:', clientId);
+    console.log('🔍 [BACKEND] Ejecutando consulta de conteo para clientId:', actualClientId);
     const totalResult = await queryOne<{ total: number }>(`
       SELECT COUNT(*) as total FROM medical_history WHERE clientId = ?
-    `, [clientId]);
+    `, [actualClientId]);
 
     const total = totalResult?.total || 0;
     console.log(' [BACKEND] Total de registros encontrados:', total);
@@ -179,7 +202,7 @@ export const getMedicalHistory = async (
       GROUP BY mh.id, mh.appointmentId, a.date, a.startTime, a.endTime, a.status, a.notes, 
                uc.firstName, uc.lastName, ue.firstName, ue.lastName
       ORDER BY mh.date DESC, mh.createdAt DESC
-    `, [clientId]);
+    `, [actualClientId]);
 
     // Aplicar paginación manual
     const history = allHistory.slice(offset, offset + limit);

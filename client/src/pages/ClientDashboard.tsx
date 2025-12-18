@@ -6,6 +6,7 @@ import ClientAppointments from './client/ClientAppointments';
 import ClientInvoices from './client/ClientInvoices';
 import ClientTreatments from './client/ClientTreatments';
 import ClientMedicalHistory from './client/ClientMedicalHistory';
+import ClientSettings from './client/ClientSettings';
 import ClientBooking from './client/ClientBooking';
 
 // Iconos SVG personalizados
@@ -96,10 +97,8 @@ const ClientDashboard: React.FC = () => {
   const menuItems: MenuItem[] = [
     { name: 'Inicio', path: '/client-dashboard', icon: HomeIcon, page: 'home' },
     { name: 'Mis Citas', path: '/client-dashboard/appointments', icon: CalendarIcon, page: 'appointments' },
-    { name: 'Agendar Cita', path: '/client-dashboard/booking', icon: PlusIcon, page: 'booking' },
     { name: 'Tratamientos', path: '/client-dashboard/treatments', icon: SparklesIcon, page: 'treatments' },
     { name: 'Mis Facturas', path: '/client-dashboard/invoices', icon: DocumentTextIcon, page: 'invoices' },
-    { name: 'Historial Médico', path: '/client-dashboard/medical-history', icon: ClipboardDocumentListIcon, page: 'medical-history' },
     { name: 'Configuración', path: '/client-dashboard/settings', icon: CogIcon, page: 'settings' },
   ];
 
@@ -278,7 +277,7 @@ const ClientDashboard: React.FC = () => {
                 <Route path="/treatments" element={<ClientTreatments />} />
                 <Route path="/invoices" element={<ClientInvoices />} />
                 <Route path="/medical-history" element={<ClientMedicalHistory />} />
-                <Route path="/settings" element={<div className="p-6 text-center text-gray-500">Configuración en desarrollo</div>} />
+                <Route path="/settings" element={<ClientSettings />} />
               </Routes>
             </div>
           </div>
