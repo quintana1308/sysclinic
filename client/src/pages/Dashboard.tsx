@@ -790,8 +790,8 @@ const Dashboard: React.FC = () => {
             backgroundImage: 'url(/karinalogo.png)',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
-            backgroundSize: '50%',
-            opacity: 0.03
+            backgroundSize: '100%',
+            opacity: 0.09
           }}
         />
         
