@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { appointmentService, Appointment as ApiAppointment, AppointmentFormData, AppointmentFilters } from '../services/appointmentService';
 import { treatmentService, Treatment as ApiTreatment } from '../services/treatmentService';
@@ -432,7 +432,7 @@ const Appointments: React.FC = () => {
   };
 
   // Cargar citas desde la base de datos
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -545,7 +545,7 @@ const Appointments: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pagination.limit, filters.search, filters.status, filters.employee, filters.dateFrom, filters.dateTo]);
 
   // Función para mapear estados del frontend a la API
   const mapStatusToAPI = (status: string): string => {
@@ -628,19 +628,19 @@ const Appointments: React.FC = () => {
     }).format(fixedDate);
   };
 
-  // Debounce para el filtro de búsqueda
+  // Efecto unificado con debounce solo para búsqueda
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    // Si el filtro de búsqueda cambió, aplicar debounce
+    if (filters.search !== undefined) {
+      const timeoutId = setTimeout(() => {
+        loadAppointments();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Para otros filtros, cargar inmediatamente
       loadAppointments();
-    }, 300); // 300ms de delay para búsqueda
-
-    return () => clearTimeout(timeoutId);
-  }, [filters.search]);
-
-  // Cargar inmediatamente para otros filtros
-  useEffect(() => {
-    loadAppointments();
-  }, [currentPage, filters.status, filters.employee, filters.dateFrom, filters.dateTo]);
+    }
+  }, [loadAppointments]);
 
   const handleNewAppointment = () => {
     setShowNewAppointmentModal(true);
@@ -2144,7 +2144,6 @@ const Appointments: React.FC = () => {
                     <input
                       type="date"
                       value={editFormData.date}
-                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       required
