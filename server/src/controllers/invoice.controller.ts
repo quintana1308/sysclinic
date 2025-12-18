@@ -241,6 +241,43 @@ export const getInvoiceById = async (
     console.log('📧 clientEmail:', invoice.clientEmail);
     console.log('🆔 clientId:', invoice.clientId);
 
+    // Obtener información de la cita si existe
+    let appointmentInfo = null;
+    if (invoice.appointmentId) {
+      const appointment = await queryOne<any>(`
+        SELECT 
+          a.id,
+          a.date,
+          a.startTime,
+          a.endTime,
+          a.status,
+          a.notes
+        FROM appointments a
+        WHERE a.id = ?
+      `, [invoice.appointmentId]);
+
+      if (appointment) {
+        // Obtener tratamientos de la cita
+        const treatments = await query<any>(`
+          SELECT 
+            t.id,
+            t.name,
+            t.description,
+            t.duration,
+            at.price,
+            at.quantity
+          FROM appointment_treatments at
+          INNER JOIN treatments t ON at.treatmentId = t.id
+          WHERE at.appointmentId = ?
+        `, [invoice.appointmentId]);
+
+        appointmentInfo = {
+          ...appointment,
+          treatments: treatments || []
+        };
+      }
+    }
+
     // Obtener historial de pagos de la factura
     const payments = await query<any>(`
       SELECT 
@@ -279,10 +316,11 @@ export const getInvoiceById = async (
       });
     }
 
-    // Agregar historial de pagos a la factura
+    // Agregar historial de pagos e información de la cita a la factura
     const invoiceWithPayments = {
       ...invoice,
-      paymentHistory: payments || []
+      paymentHistory: payments || [],
+      appointment: appointmentInfo
     };
 
     console.log('📤 Respuesta final enviada al frontend:');
@@ -291,6 +329,7 @@ export const getInvoiceById = async (
     console.log('🔗 invoiceWithPayments.clientLastName:', invoiceWithPayments.clientLastName);
     console.log('📊 Cantidad de pagos en historial:', payments?.length || 0);
     console.log('💳 paymentHistory completo:', invoiceWithPayments.paymentHistory);
+    console.log('📅 Información de la cita:', appointmentInfo ? 'Incluida' : 'No disponible');
 
     const response: ApiResponse = {
       success: true,

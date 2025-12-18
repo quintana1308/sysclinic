@@ -1790,7 +1790,7 @@ const Appointments: React.FC = () => {
                           🔄 Reagendar
                         </button>
                       )}
-                      {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && appointment.status !== 'RESCHEDULED' && (
+                      {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && (
                         <button 
                           type="button"
                           onClick={() => handleEditAppointment(appointment)}
@@ -2210,7 +2210,7 @@ const Appointments: React.FC = () => {
                   <div className="bg-white p-3 rounded border border-blue-200">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium text-blue-700">Teléfono:</span>
-                      <span className="text-sm text-blue-900">0424785645</span>
+                      <span className="text-sm text-blue-900">{selectedAppointment.client?.phone || 'No registrado'}</span>
                     </div>
                   </div>
                 </div>

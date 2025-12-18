@@ -36,6 +36,23 @@ export interface Invoice {
   paymentCount?: number;
   remainingAmount?: number;
   paymentHistory?: Payment[];
+  // Información completa de la cita
+  appointment?: {
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    notes?: string;
+    treatments?: {
+      id: string;
+      name: string;
+      description?: string;
+      duration: number;
+      price: number;
+      quantity: number;
+    }[];
+  };
 }
 
 export interface Payment {

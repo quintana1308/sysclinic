@@ -1102,53 +1102,52 @@ const Invoices: React.FC = () => {
               {/* Información de la Cita */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-800 mb-4">📅 Información de la Cita</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm text-gray-700 font-medium">Fecha y Hora:</span>
-                    <p className="text-sm text-gray-800 bg-white p-2 rounded border">
-                      {selectedInvoice.createdAt ? new Date(selectedInvoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}, 20:00
-                    </p>
+                {selectedInvoice.appointment ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm text-gray-700 font-medium">Fecha y Hora:</span>
+                      <p className="text-sm text-gray-800 bg-white p-2 rounded border">
+                        {selectedInvoice.appointment.date ? new Date(selectedInvoice.appointment.date).toLocaleDateString('es-ES') : 'N/A'}
+                        {selectedInvoice.appointment.startTime && `, ${selectedInvoice.appointment.startTime.substring(11, 16)}`}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-700 font-medium">Estado de la Cita:</span>
+                      <p className="text-sm text-gray-800 bg-white p-2 rounded border">
+                        {selectedInvoice.appointment.status === 'COMPLETED' ? 'Completada' :
+                         selectedInvoice.appointment.status === 'CONFIRMED' ? 'Confirmada' :
+                         selectedInvoice.appointment.status === 'RESCHEDULED' ? 'Reagendada' :
+                         selectedInvoice.appointment.status === 'SCHEDULED' ? 'Programada' :
+                         selectedInvoice.appointment.status === 'CANCELLED' ? 'Cancelada' :
+                         selectedInvoice.appointment.status === 'IN_PROGRESS' ? 'En Progreso' :
+                         selectedInvoice.appointment.status || 'N/A'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-700 font-medium">Estado de la Cita:</span>
-                    <p className="text-sm text-gray-800 bg-white p-2 rounded border">Confirmada</p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-sm text-gray-500">No hay información de cita disponible</p>
+                )}
                 
-                <div className="mt-4">
-                  <span className="text-sm text-gray-700 font-medium">Tratamientos:</span>
-                  <div className="mt-2 space-y-2">
-                    {selectedInvoice.description && selectedInvoice.description.includes('Jalupro Classic') && (
-                      <div className="flex justify-between items-center bg-white p-2 rounded border">
-                        <span className="text-sm text-gray-800">Jalupro Classic</span>
-                        <span className="text-sm font-medium text-pink-700">$220.00</span>
-                        <span className="text-xs text-gray-600">30 min</span>
-                      </div>
-                    )}
-                    {selectedInvoice.description && selectedInvoice.description.includes('Hidrafacial') && (
-                      <div className="flex justify-between items-center bg-white p-2 rounded border">
-                        <span className="text-sm text-gray-800">Hidrafacial Coreano</span>
-                        <span className="text-sm font-medium text-pink-700">$65.00</span>
-                        <span className="text-xs text-gray-600">70 min</span>
-                      </div>
-                    )}
-                    {selectedInvoice.description && selectedInvoice.description.includes('Masaje') && (
-                      <div className="flex justify-between items-center bg-white p-2 rounded border">
-                        <span className="text-sm text-gray-800">Masaje Corporal/Linfático</span>
-                        <span className="text-sm font-medium text-pink-700">$70.00</span>
-                        <span className="text-xs text-gray-600">30 min</span>
-                      </div>
-                    )}
+                {selectedInvoice.appointment && selectedInvoice.appointment.treatments && selectedInvoice.appointment.treatments.length > 0 && (
+                  <div className="mt-4">
+                    <span className="text-sm text-gray-700 font-medium">Tratamientos:</span>
+                    <div className="mt-2 space-y-2">
+                      {selectedInvoice.appointment.treatments.map((treatment: any, index: number) => (
+                        <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
+                          <span className="text-sm text-gray-800">{treatment.name}</span>
+                          <span className="text-sm font-medium text-pink-700">${treatment.price?.toFixed(2) || '0.00'}</span>
+                          <span className="text-xs text-gray-600">{treatment.duration} min</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {selectedInvoice.description && (
+                {selectedInvoice.appointment && selectedInvoice.appointment.notes && (
                   <div className="mt-4">
                     <span className="text-sm text-gray-700 font-medium">Notas de la Cita:</span>
                     <p className="text-sm text-gray-800 bg-white p-2 rounded border mt-1">
-                      {selectedInvoice.description.includes('Factura por') 
-                        ? 'llegara un poco tarde porque tine que buscar a sus hijos'
-                        : selectedInvoice.description}
+                      {selectedInvoice.appointment.notes}
                     </p>
                   </div>
                 )}
@@ -1559,16 +1558,14 @@ const Invoices: React.FC = () => {
                 )}
 
                 {/* Notas */}
-                {selectedPayment.notes && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      📝 Notas
-                    </label>
-                    <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded border border-gray-200">
-                      {selectedPayment.notes}
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    📝 Notas
+                  </label>
+                  <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded border border-gray-200">
+                    {selectedPayment.notes || 'Sin notas'}
                   </div>
-                )}
+                </div>
 
                 {/* Factura Asociada */}
                 {selectedPayment.invoiceId && (

@@ -135,7 +135,7 @@ export const getAppointments = async (
     // Aplicar paginación manual
     const appointments = allAppointments.slice(offset, offset + limit);
 
-    // Obtener tratamientos para cada cita
+    // Obtener tratamientos para cada cita y mapear datos del cliente
     for (const appointment of appointments) {
       try {
         const treatments = await query<any>(`
@@ -152,6 +152,26 @@ export const getAppointments = async (
         `, [appointment.id]);
 
         appointment.treatments = treatments || [];
+        
+        // Mapear datos del cliente a objeto anidado
+        appointment.client = {
+          firstName: appointment.clientFirstName,
+          lastName: appointment.clientLastName,
+          email: appointment.clientEmail,
+          phone: appointment.clientPhone,
+          clientCode: appointment.clientCode
+        };
+        
+        // Mapear datos del empleado a objeto anidado si existe
+        if (appointment.employeeFirstName) {
+          appointment.employee = {
+            firstName: appointment.employeeFirstName,
+            lastName: appointment.employeeLastName,
+            email: appointment.employeeEmail,
+            position: appointment.employeePosition
+          };
+        }
+        
         console.log(`📋 Cita ${appointment.id}: ${treatments.length} tratamientos encontrados`);
       } catch (treatmentError) {
         console.error(`❌ Error obteniendo tratamientos para cita ${appointment.id}:`, treatmentError);
@@ -239,14 +259,36 @@ export const getAppointmentById = async (
       ORDER BY createdAt DESC
     `, [id]);
 
+    // Mapear datos del cliente y empleado a objetos anidados
+    const mappedAppointment = {
+      ...appointment,
+      client: {
+        firstName: appointment.clientFirstName,
+        lastName: appointment.clientLastName,
+        email: appointment.clientEmail,
+        phone: appointment.clientPhone,
+        clientCode: appointment.clientCode,
+        dateOfBirth: appointment.dateOfBirth,
+        gender: appointment.gender,
+        address: appointment.address,
+        emergencyContact: appointment.emergencyContact,
+        medicalConditions: appointment.medicalConditions,
+        allergies: appointment.allergies
+      },
+      employee: appointment.employeeFirstName ? {
+        firstName: appointment.employeeFirstName,
+        lastName: appointment.employeeLastName,
+        email: appointment.employeeEmail,
+        position: appointment.employeePosition
+      } : null,
+      treatments,
+      payments
+    };
+
     const response: ApiResponse = {
       success: true,
       message: 'Cita obtenida exitosamente',
-      data: {
-        ...appointment,
-        treatments,
-        payments
-      }
+      data: mappedAppointment
     };
 
     res.json(response);
