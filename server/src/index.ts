@@ -23,6 +23,7 @@ import dashboardRoutes from './routes/dashboard.routes';
 import companyRoutes from './routes/company.routes';
 import reportRoutes from './routes/report.routes';
 import licenseRoutes from './routes/license.routes';
+import medicalHistoryRoutes from './routes/medicalHistory.routes';
 
 // Configurar variables de entorno
 dotenv.config();
@@ -83,6 +84,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/licenses', licenseRoutes);
+app.use('/api/medical-history', medicalHistoryRoutes);
 
 // Middleware para rutas API no encontradas (debe ir después de todas las rutas)
 app.use('/api/*', notFound);

@@ -4,6 +4,7 @@ import { AuthenticatedRequest, ApiResponse, PaginatedResponse, AppointmentStatus
 import { AppError } from '../middleware/errorHandler';
 import { generateId } from '../utils/auth';
 import { generateInvoiceFromAppointment } from './invoice.controller';
+import { createMedicalHistoryFromAppointment } from './medicalHistory.controller';
 
 export const getAppointments = async (
   req: AuthenticatedRequest,
@@ -901,10 +902,29 @@ export const updateAppointmentStatus = async (
       console.log('   - Estado actual:', appointment.status, '-> Nuevo estado:', status);
     }
 
+    // Si el estado cambia a COMPLETED, crear historial médico automáticamente
+    let historyId = null;
+    if (status === 'COMPLETED' && appointment.status !== 'COMPLETED') {
+      console.log('🏥 ¡CONDICIÓN CUMPLIDA! Cita completada - creando historial médico automáticamente...');
+      
+      try {
+        historyId = await createMedicalHistoryFromAppointment(id, req.user?.id || 'system');
+        console.log('✅ ¡HISTORIAL MÉDICO CREADO EXITOSAMENTE!:', historyId);
+      } catch (historyError: any) {
+        console.error('❌ ERROR al crear historial médico:', historyError);
+        console.error('📋 Stack trace completo:', historyError.stack);
+        // No fallar la actualización del estado si hay error en el historial
+        console.log('⚠️ Continuando con actualización de estado sin historial médico');
+      }
+    }
+
     const response: ApiResponse = {
       success: true,
-      message: `Cita marcada como ${status.toLowerCase()}${invoiceId ? '. Factura generada automáticamente.' : ''}`,
-      data: invoiceId ? { invoiceId } : undefined
+      message: `Cita marcada como ${status.toLowerCase()}${invoiceId ? '. Factura generada automáticamente.' : ''}${historyId ? '. Historial médico creado automáticamente.' : ''}`,
+      data: { 
+        ...(invoiceId && { invoiceId }),
+        ...(historyId && { historyId })
+      }
     };
 
     res.json(response);

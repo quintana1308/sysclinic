@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientService, Client as ApiClient, ClientFormData, ClientFilters } from '../services/clientService';
+import { medicalHistoryService } from '../services/medicalHistoryService';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import ClientMedicalHistory from './client/ClientMedicalHistory';
 import toast, { Toaster } from 'react-hot-toast';
 import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
@@ -673,12 +675,40 @@ const Clients: React.FC = () => {
     }
   };
 
+  // Estado para el historial médico real
+  const [realMedicalHistory, setRealMedicalHistory] = useState<any[]>([]);
+  const [loadingMedicalHistory, setLoadingMedicalHistory] = useState(false);
+
+  // Cargar historial médico real desde la API
+  const loadRealMedicalHistory = async (clientId: string) => {
+    try {
+      setLoadingMedicalHistory(true);
+      console.log('🏥 [CLIENTS] Cargando historial médico real para cliente:', clientId);
+      
+      const response = await medicalHistoryService.getMedicalHistory(clientId);
+      console.log('📋 [CLIENTS] Respuesta del historial médico:', response);
+      
+      if (response.success) {
+        setRealMedicalHistory(response.data);
+        console.log('✅ [CLIENTS] Historial médico cargado:', response.data.length, 'registros');
+      } else {
+        console.error('❌ [CLIENTS] Error en respuesta:', response);
+        setRealMedicalHistory([]);
+      }
+    } catch (error) {
+      console.error('❌ [CLIENTS] Error al cargar historial médico:', error);
+      setRealMedicalHistory([]);
+    } finally {
+      setLoadingMedicalHistory(false);
+    }
+  };
+
   const getClientMedicalRecords = (clientId: string) => {
-    return medicalRecords.filter(record => record.clientId === clientId);
+    return realMedicalHistory;
   };
 
   const getMedicalStats = (clientId: string) => {
-    const records = getClientMedicalRecords(clientId);
+    const records = realMedicalHistory;
     const recentRecords = records.filter(record => {
       const recordDate = new Date(record.date);
       const thirtyDaysAgo = new Date();
@@ -686,7 +716,7 @@ const Clients: React.FC = () => {
       return recordDate >= thirtyDaysAgo;
     });
     
-    const uniqueTreatments = new Set(records.map(record => record.treatment)).size;
+    const uniqueTreatments = new Set(records.map(record => record.treatmentNames || '').filter(Boolean)).size;
     
     return {
       totalRecords: records.length,
@@ -2065,8 +2095,8 @@ const Clients: React.FC = () => {
 
       {/* Modal Historial Médico */}
       {showHistoryModal && selectedClient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-pink-800">
@@ -2095,11 +2125,16 @@ const Clients: React.FC = () => {
                   Información Personal
                 </button>
                 <button
-                  onClick={() => setActiveTab('medical')}
+                  onClick={() => {
+                    setActiveTab('medical');
+                    if (selectedClient) {
+                      loadRealMedicalHistory(selectedClient.id);
+                    }
+                  }}
                   className={`py-3 px-6 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === 'medical'
                       ? 'border-pink-500 text-pink-600 bg-pink-50'
-                      : 'border-transparent text-gray-500 hover:text-pink-600 hover:border-pink-300'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
                   <DocumentTextIcon className="h-4 w-4 inline mr-2" />
@@ -2217,117 +2252,9 @@ const Clients: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* Estadísticas del Historial Médico */}
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-pink-800 mb-4">
-                      🏥 Historial Médico - {selectedClient.firstName} {selectedClient.lastName}
-                    </h3>
-                    
-                    {(() => {
-                      const stats = getMedicalStats(selectedClient.id);
-                      return (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                          <div className="bg-white border border-pink-200 rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center">
-                              <div className="bg-pink-100 p-2 rounded-full mr-3">
-                                <DocumentTextIcon className="h-5 w-5 text-pink-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-pink-700">Total Registros</p>
-                                <p className="text-2xl font-bold text-pink-800">{stats.totalRecords}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center">
-                              <div className="bg-green-100 p-2 rounded-full mr-3">
-                                <ClockIcon className="h-5 w-5 text-green-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-green-700">Registros Recientes</p>
-                                <p className="text-2xl font-bold text-green-800">{stats.recentRecords}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="bg-white border border-purple-200 rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center">
-                              <div className="bg-purple-100 p-2 rounded-full mr-3">
-                                <UserIcon className="h-5 w-5 text-purple-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-purple-700">Tratamientos Únicos</p>
-                                <p className="text-2xl font-bold text-purple-800">{stats.uniqueTreatments}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Lista de Registros Médicos */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <h4 className="text-md font-medium text-gray-800 mb-4">📝 Registros Médicos</h4>
-                    
-                    {(() => {
-                      const clientRecords = getClientMedicalRecords(selectedClient.id);
-                      
-                      if (clientRecords.length === 0) {
-                        return (
-                          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                            <div className="bg-gray-100 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                              <DocumentTextIcon className="h-8 w-8 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay registros médicos</h3>
-                            <p className="text-gray-600 mb-4">
-                              Comienza creando el primer registro médico para este cliente.
-                            </p>
-                            <button className="inline-flex items-center px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 transition-colors">
-                              <PlusIcon className="h-4 w-4 mr-2" />
-                              Crear Primer Registro
-                            </button>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="space-y-4">
-                          {clientRecords.map((record) => (
-                            <div key={record.id} className="bg-gradient-to-r from-pink-25 to-purple-25 border border-pink-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center mb-3">
-                                    <div className="bg-pink-100 p-1.5 rounded-full mr-3">
-                                      <DocumentTextIcon className="h-4 w-4 text-pink-600" />
-                                    </div>
-                                    <span className="text-sm text-pink-700 font-medium bg-white px-2 py-1 rounded-full">
-                                      {record.date}, 19:52
-                                    </span>
-                                  </div>
-                                  <h5 className="font-semibold text-gray-900 mb-2 text-lg">
-                                    {record.treatment}
-                                  </h5>
-                                  <div className="bg-white p-3 rounded-lg border border-pink-100">
-                                    <p className="text-sm text-gray-700">
-                                      <span className="font-medium text-pink-700">Notas:</span> {record.notes}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => handleEditRecord(record)}
-                                  className="ml-4 p-2 text-pink-600 hover:text-pink-800 hover:bg-pink-100 rounded-full transition-colors"
-                                  title="Editar registro"
-                                >
-                                  <PencilIcon className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                <div className="h-full">
+                  {/* Componente completo de historial médico */}
+                  <ClientMedicalHistory clientId={selectedClient?.id} />
                 </div>
               )}
             </div>
