@@ -1135,7 +1135,9 @@ const Invoices: React.FC = () => {
                       {selectedInvoice.appointment.treatments.map((treatment: any, index: number) => (
                         <div key={index} className="flex justify-between items-center bg-white p-2 rounded border">
                           <span className="text-sm text-gray-800">{treatment.name}</span>
-                          <span className="text-sm font-medium text-pink-700">${treatment.price?.toFixed(2) || '0.00'}</span>
+                          <span className="text-sm font-medium text-pink-700">
+                            ${treatment.price ? Number(treatment.price).toFixed(2) : '0.00'}
+                          </span>
                           <span className="text-xs text-gray-600">{treatment.duration} min</span>
                         </div>
                       ))}

@@ -240,7 +240,18 @@ export const getPayments = async (
     // Obtener todos los pagos sin LIMIT/OFFSET para compatibilidad Railway MySQL
     const allPayments = await query<any>(`
       SELECT 
-        p.*,
+        p.id,
+        p.invoiceId,
+        p.appointmentId,
+        p.clientId,
+        p.amount,
+        p.method,
+        p.status,
+        p.description as notes,
+        p.transactionId,
+        p.paidDate,
+        p.createdAt,
+        p.updatedAt,
         uc.firstName as clientFirstName,
         uc.lastName as clientLastName,
         uc.email as clientEmail,
