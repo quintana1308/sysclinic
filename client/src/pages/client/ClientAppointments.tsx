@@ -78,8 +78,10 @@ const ClientAppointments: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState('all');
 
   useEffect(() => {
-    loadAppointments();
-  }, []);
+    if (user?.id) {
+      loadAppointments();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     filterAppointments();
@@ -90,9 +92,16 @@ const ClientAppointments: React.FC = () => {
       setIsLoading(true);
       console.log('🔍 Cargando citas para el usuario:', user?.id);
       
-      // Primero obtenemos las citas del usuario autenticado
-      // El backend debería filtrar automáticamente por el usuario autenticado
-      const response = await appointmentService.getAppointments({});
+      if (!user?.id) {
+        console.log('❌ Usuario no autenticado');
+        setAppointments([]);
+        return;
+      }
+      
+      // Filtrar citas específicamente por el cliente autenticado
+      const response = await appointmentService.getAppointments({
+        clientId: user.id
+      });
       console.log('📋 Respuesta del servicio de citas:', response);
       
       if (response.success && response.data) {

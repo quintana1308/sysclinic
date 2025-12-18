@@ -17,7 +17,7 @@ export const getAppointments = async (
     const search = req.query.search as string || '';
     const status = req.query.status as string;
     const employeeId = req.query.employeeId as string;
-    const clientId = req.query.clientId as string;
+    let clientId = req.query.clientId as string;
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
     const offset = (page - 1) * limit;
@@ -38,23 +38,52 @@ export const getAppointments = async (
       params.push(req.companyId);
     }
 
+    // DEBUG: Verificar roles del usuario
+    console.log(`🔍 Roles del usuario:`, req.user?.roles);
+    console.log(`🔍 Tipo de roles:`, req.user?.roles?.map((role: any) => typeof role));
+    
+    const isClient = req.user?.roles?.some((role: any) => {
+      // Manejar diferentes estructuras de roles
+      let roleName = '';
+      
+      if (typeof role === 'string') {
+        roleName = role.toLowerCase();
+      } else if (role.name) {
+        roleName = role.name.toLowerCase();
+      } else if (role.role && role.role.name) {
+        // Estructura anidada: { role: { name: 'cliente' } }
+        roleName = role.role.name.toLowerCase();
+      }
+      
+      return roleName === 'cliente' || roleName === 'client';
+    });
+    
+    console.log(`🔍 ¿Es usuario cliente?`, isClient);
+    
     // Filtrar por cliente si el usuario es cliente (solo puede ver sus propias citas)
-    if (req.user?.roles?.some((role: any) => 
-      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
-      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
-    )) {
-      // Buscar el clientId basado en el userId
+    if (isClient) {
+      console.log(`🔍 Usuario cliente detectado: ${req.user.id}`);
+      console.log(`🔍 Buscando registro de cliente en tabla clients para userId: ${req.user.id}`);
+      
+      // Buscar el clientId real basado en el userId
       const clientRecord = await queryOne<{ id: string }>(`
-        SELECT id FROM clients WHERE userId = ?
-      `, [req.user.id]);
+        SELECT id FROM clients WHERE userId = ? AND companyId = ?
+      `, [req.user.id, req.user?.companies?.current?.id || req.companyId]);
+      
+      console.log(`� Resultado de búsqueda de cliente:`, clientRecord);
       
       if (clientRecord) {
+        // Usar el clientId real de la tabla clients
         whereClause += ` AND a.clientId = ?`;
         params.push(clientRecord.id);
-        console.log(`🔍 Cliente ${req.user.id} filtrando citas por clientId: ${clientRecord.id}`);
+        console.log(`✅ Filtrando citas por clientId real: ${clientRecord.id} (usuario: ${req.user.id})`);
+        
+        // Sobrescribir el clientId del parámetro con el clientId real
+        clientId = clientRecord.id;
       } else {
         // Si no se encuentra el registro de cliente, no mostrar citas
         console.log(`❌ No se encontró registro de cliente para usuario: ${req.user.id}`);
+        console.log(`❌ El usuario no tiene un registro correspondiente en la tabla clients`);
         whereClause += ` AND 1=0`; // Condición que nunca se cumple
       }
     }
@@ -75,9 +104,14 @@ export const getAppointments = async (
       params.push(employeeId);
     }
 
-    if (clientId) {
+    // Para usuarios no cliente, aplicar filtro por clientId del parámetro
+    if (clientId && !isClient) {
+      console.log(`🔍 Aplicando filtro por clientId para usuario no-cliente: ${clientId}`);
       whereClause += ` AND a.clientId = ?`;
       params.push(clientId);
+    } else if (clientId && isClient) {
+      console.log(`⚠️ Usuario es cliente, pero se recibió clientId en parámetro: ${clientId}`);
+      console.log(`⚠️ Esto puede indicar un problema en el frontend`);
     }
 
     if (startDate) {
@@ -90,20 +124,53 @@ export const getAppointments = async (
       params.push(endDate);
     }
 
+    console.log(`🔍 WHERE CLAUSE FINAL: ${whereClause}`);
+    console.log(`🔍 PARÁMETROS FINALES:`, params);
+
+    // DIAGNÓSTICO: Verificar si existe el registro del cliente
+    if (clientId) {
+      const clientExists = await queryOne<{ client_count: number }>(`
+        SELECT COUNT(*) as client_count FROM clients WHERE id = ?
+      `, [clientId]);
+      console.log(`🔍 ¿Existe cliente con id ${clientId}?`, (clientExists?.client_count || 0) > 0 ? 'SÍ' : 'NO');
+      
+      // Verificar si existen citas para este clientId sin INNER JOIN
+      const appointmentsForClient = await queryOne<{ count: number }>(`
+        SELECT COUNT(*) as count FROM appointments WHERE clientId = ? AND companyId = ?
+      `, [clientId, req.user?.companies?.current?.id || req.companyId]);
+      console.log(`🔍 Citas directas para clientId ${clientId}:`, appointmentsForClient?.count || 0);
+      
+      // Mostrar algunos registros de ejemplo de la tabla clients
+      const sampleClients = await query<any>(`
+        SELECT id, userId, clientCode FROM clients WHERE companyId = ? LIMIT 3
+      `, [req.user?.companies?.current?.id || req.companyId]);
+      console.log(`🔍 Ejemplos de registros en tabla clients:`, sampleClients);
+      
+      // Mostrar algunos registros de ejemplo de la tabla appointments
+      const sampleAppointments = await query<any>(`
+        SELECT id, clientId, date FROM appointments WHERE companyId = ? LIMIT 3
+      `, [req.user?.companies?.current?.id || req.companyId]);
+      console.log(`🔍 Ejemplos de registros en tabla appointments:`, sampleAppointments);
+    }
+
     // Obtener total de registros
-    const totalResult = await queryOne<{ total: number }>(`
+    const totalQuery = `
       SELECT COUNT(*) as total
       FROM appointments a
       INNER JOIN clients c ON a.clientId = c.id
       INNER JOIN users uc ON c.userId = uc.id
       LEFT JOIN users ue ON a.employeeId = ue.id
       ${whereClause}
-    `, params);
+    `;
+    
+    console.log(`🔍 CONSULTA DE CONTEO:`, totalQuery);
+    const totalResult = await queryOne<{ total: number }>(totalQuery, params);
 
     const total = totalResult?.total || 0;
+    console.log(`📊 Total de registros encontrados: ${total}`);
 
-    // Consulta para obtener citas con información del encargado (employeeId ahora es userId)
-    const allAppointments = await query<any>(`
+    // Consulta para obtener citas (SIN LIMIT/OFFSET para Railway MySQL)
+    const mainQuery = `
       SELECT 
         a.*,
         c.clientCode,
@@ -128,12 +195,15 @@ export const getAppointments = async (
       LEFT JOIN user_companies ucomp ON a.employeeId = ucomp.userId AND ucomp.role = 'admin'
       ${whereClause}
       ORDER BY a.date DESC, a.startTime DESC
-    `, params);
+    `;
+    
+    console.log(`🔍 CONSULTA PRINCIPAL:`, mainQuery);
+    const allAppointments = await query<any>(mainQuery, params);
 
     console.log(`📊 Citas encontradas: ${allAppointments.length}`);
     console.log(`📊 Parámetros utilizados:`, params);
 
-    // Aplicar paginación manual
+    // Aplicar paginación manual (compatible con Railway MySQL)
     const appointments = allAppointments.slice(offset, offset + limit);
 
     // Obtener tratamientos para cada cita y mapear datos del cliente
