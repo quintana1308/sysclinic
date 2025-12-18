@@ -78,6 +78,10 @@ const SystemManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  
+  // Estados para paginación de usuarios
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Estados para empresas
   const [companiesList, setCompaniesList] = useState<Company[]>([]);
@@ -1610,6 +1614,30 @@ const SystemManagement: React.FC = () => {
     return matchesSearch && matchesStatus && matchesRole;
   });
 
+  // Lógica de paginación para usuarios
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Resetear página cuando cambian los filtros
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, roleFilter]);
+
+  // Funciones de navegación de paginación
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
   // Filtrar plantillas de licencias
   const filteredTemplates = licenseTemplates.filter(template => {
     const matchesSearch = templateSearchTerm === '' || 
@@ -1859,7 +1887,7 @@ const SystemManagement: React.FC = () => {
 
                       {/* Cuerpo de la tabla */}
                       <tbody className="divide-y divide-gray-200" style={{ backgroundColor: 'rgb(255 255 255 / 0%)' }}>
-                        {filteredUsers.map((user, index) => (
+                        {currentUsers.map((user, index) => (
                           <tr 
                             key={user.id} 
                             className="hover:transition-colors" 
@@ -1989,12 +2017,72 @@ const SystemManagement: React.FC = () => {
                   </div>
 
                   {/* Footer de la tabla */}
+                  {/* Paginación */}
                   <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      {/* Información de paginación */}
                       <div className="text-sm text-gray-700">
-                        Mostrando <span className="font-medium">{filteredUsers.length}</span> de{' '}
-                        <span className="font-medium">{users.length}</span> usuarios
+                        Mostrando <span className="font-medium">{startIndex + 1}</span> - <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> de{' '}
+                        <span className="font-medium">{filteredUsers.length}</span> usuarios
+                        {filteredUsers.length !== users.length && (
+                          <span className="text-gray-500 ml-2">(filtrados de {users.length} totales)</span>
+                        )}
                       </div>
+
+                      {/* Controles de paginación */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center space-x-2">
+                          {/* Botón anterior */}
+                          <button
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ← Anterior
+                          </button>
+
+                          {/* Números de página */}
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                              let pageNumber: number;
+                              if (totalPages <= 5) {
+                                pageNumber = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNumber = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNumber = totalPages - 4 + i;
+                              } else {
+                                pageNumber = currentPage - 2 + i;
+                              }
+
+                              return (
+                                <button
+                                  key={pageNumber}
+                                  onClick={() => goToPage(pageNumber)}
+                                  className={`px-3 py-1 text-sm font-medium rounded-md ${
+                                    currentPage === pageNumber
+                                      ? 'bg-pink-600 text-white'
+                                      : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {pageNumber}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Botón siguiente */}
+                          <button
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Siguiente →
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Estadísticas */}
                       <div className="text-sm text-gray-500">
                         📊 {users.filter(u => u.isActive).length} activos • {users.filter(u => !u.isActive).length} inactivos
                       </div>
