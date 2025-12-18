@@ -102,26 +102,24 @@ interface NewAppointmentForm {
 
 const Appointments: React.FC = () => {
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]); // Citas paginadas para mostrar
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]); // Todas las citas sin filtrar
+  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]); // Citas filtradas
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0
-  });
+  const itemsPerPage = 10; // Citas por página
   
   // Filtros
   const [filters, setFilters] = useState({
-    search: '',
     status: 'Todos',
     employee: 'Todos',
     dateFrom: '',
     dateTo: ''
   });
+  
+  // Estado local para el input de búsqueda en tiempo real
+  const [searchInput, setSearchInput] = useState('');
 
   // Modal states
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
@@ -431,20 +429,15 @@ const Appointments: React.FC = () => {
     );
   };
 
-  // Cargar citas desde la base de datos
+  // Cargar todas las citas desde la base de datos (una sola vez)
   const loadAppointments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
       const filterParams: AppointmentFilters = {
-        page: currentPage,
-        limit: pagination.limit,
-        search: filters.search || undefined,
-        status: filters.status !== 'Todos' ? mapStatusToAPI(filters.status) : undefined,
-        employeeId: filters.employee !== 'Todos' ? filters.employee : undefined,
-        startDate: filters.dateFrom || undefined,
-        endDate: filters.dateTo || undefined
+        page: 1,
+        limit: 1000 // Cargar todas las citas para filtrado local
       };
       
       const response = await appointmentService.getAppointments(filterParams);
@@ -528,24 +521,23 @@ const Appointments: React.FC = () => {
           };
         });
         
-        setAppointments(mappedAppointments);
-        
-        if (response.pagination) {
-          setPagination(response.pagination);
-        }
+        setAllAppointments(mappedAppointments); // Guardar todas las citas
+        setFilteredAppointments(mappedAppointments); // Inicialmente todas están filtradas
       } else {
         console.error('❌ Respuesta inválida del servidor:', response);
         setError('Respuesta inválida del servidor. Los datos no están en el formato esperado.');
-        setAppointments([]);
+        setAllAppointments([]);
+        setFilteredAppointments([]);
       }
     } catch (error) {
       console.error('Error loading appointments:', error);
       setError('Error al cargar las citas. Por favor, intente nuevamente.');
-      setAppointments([]);
+      setAllAppointments([]);
+      setFilteredAppointments([]);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pagination.limit, filters.search, filters.status, filters.employee, filters.dateFrom, filters.dateTo]);
+  }, []); // Solo cargar una vez al inicio
 
   // Función para mapear estados del frontend a la API
   const mapStatusToAPI = (status: string): string => {
@@ -628,19 +620,62 @@ const Appointments: React.FC = () => {
     }).format(fixedDate);
   };
 
-  // Efecto unificado con debounce solo para búsqueda
+  // Cargar todas las citas al inicio
   useEffect(() => {
-    // Si el filtro de búsqueda cambió, aplicar debounce
-    if (filters.search !== undefined) {
-      const timeoutId = setTimeout(() => {
-        loadAppointments();
-      }, 300);
-      return () => clearTimeout(timeoutId);
-    } else {
-      // Para otros filtros, cargar inmediatamente
-      loadAppointments();
+    loadAppointments();
+  }, []); // Solo cargar una vez al inicio
+
+  // Filtrado en tiempo real local (búsqueda, estado, empleado, fechas)
+  useEffect(() => {
+    setCurrentPage(1); // Resetear a página 1 cuando se filtra
+    
+    let filtered = allAppointments;
+    
+    // Aplicar filtro de estado
+    if (filters.status !== 'Todos') {
+      const statusAPI = mapStatusToAPI(filters.status);
+      filtered = filtered.filter(appointment => appointment.status === statusAPI);
     }
-  }, [loadAppointments]);
+    
+    // Aplicar filtro de empleado
+    if (filters.employee !== 'Todos') {
+      filtered = filtered.filter(appointment => appointment.employeeId === filters.employee);
+    }
+    
+    // Aplicar filtro de fecha desde
+    if (filters.dateFrom) {
+      filtered = filtered.filter(appointment => appointment.date >= filters.dateFrom);
+    }
+    
+    // Aplicar filtro de fecha hasta
+    if (filters.dateTo) {
+      filtered = filtered.filter(appointment => appointment.date <= filters.dateTo);
+    }
+    
+    // Aplicar filtro de búsqueda
+    if (searchInput.trim()) {
+      const searchLower = searchInput.toLowerCase();
+      filtered = filtered.filter(appointment => {
+        const clientName = `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''}`.toLowerCase();
+        const employeeName = `${appointment.employee?.firstName || ''} ${appointment.employee?.lastName || ''}`.toLowerCase();
+        const treatments = appointment.treatments?.map(t => t.name.toLowerCase()).join(' ') || '';
+        
+        return clientName.includes(searchLower) || 
+               employeeName.includes(searchLower) || 
+               treatments.includes(searchLower);
+      });
+    }
+    
+    setFilteredAppointments(filtered);
+  }, [searchInput, allAppointments, filters.status, filters.employee, filters.dateFrom, filters.dateTo]);
+
+  // Paginación local
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedAppointments = filteredAppointments.slice(startIndex, endIndex);
+    setAppointments(paginatedAppointments);
+  }, [filteredAppointments, currentPage]);
 
   const handleNewAppointment = () => {
     setShowNewAppointmentModal(true);
@@ -819,13 +854,14 @@ const Appointments: React.FC = () => {
   });
 
   const handleClearFilters = () => {
+    setSearchInput('');
     setFilters({
-      search: '',
       status: 'Todos',
       employee: 'Todos',
       dateFrom: '',
       dateTo: ''
     });
+    setCurrentPage(1);
   };
 
   // Funciones para el modal de detalles
@@ -1327,12 +1363,10 @@ const Appointments: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Cliente, empleado, tratamiento..."
-                  value={filters.search}
-                  onChange={(e) => {
-                    setFilters({ ...filters, search: e.target.value });
-                    setCurrentPage(1); // Resetear página al buscar
-                  }}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -1623,8 +1657,8 @@ const Appointments: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
-              disabled={currentPage === pagination.totalPages}
+              onClick={() => setCurrentPage(Math.min(currentPage + 1, Math.ceil(filteredAppointments.length / itemsPerPage)))}
+              disabled={currentPage === Math.ceil(filteredAppointments.length / itemsPerPage)}
               className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente →
@@ -1634,8 +1668,8 @@ const Appointments: React.FC = () => {
             <div>
               <p className="text-sm text-gray-700">
                 Página <span className="font-medium">{currentPage}</span> de{' '}
-                <span className="font-medium">{pagination.totalPages}</span> - Total:{' '}
-                <span className="font-medium">{pagination.total}</span> citas
+                <span className="font-medium">{Math.ceil(filteredAppointments.length / itemsPerPage)}</span> - Total:{' '}
+                <span className="font-medium">{filteredAppointments.length}</span> citas
               </p>
             </div>
             <div>
@@ -1649,12 +1683,12 @@ const Appointments: React.FC = () => {
                   <ChevronLeftIcon className="h-5 w-5" />
                 </button>
                 <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                  Página {currentPage} de {pagination.totalPages}
+                  Página {currentPage} de {Math.ceil(filteredAppointments.length / itemsPerPage)}
                 </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentPage(Math.min(currentPage + 1, pagination.totalPages))}
-                  disabled={currentPage === pagination.totalPages}
+                  onClick={() => setCurrentPage(Math.min(currentPage + 1, Math.ceil(filteredAppointments.length / itemsPerPage)))}
+                  disabled={currentPage === Math.ceil(filteredAppointments.length / itemsPerPage)}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ChevronRightIcon className="h-5 w-5" />

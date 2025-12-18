@@ -704,12 +704,18 @@ export const applyDiscountToInvoice = async (
 
     const finalAmount = subtotal - discountAmount;
 
+    // Determinar el nuevo estado de la factura
+    // Si el descuento es del 100% (finalAmount = 0), marcar como PAID
+    const newStatus = finalAmount <= 0 ? 'PAID' : invoice.status;
+
     console.log('🧮 Cálculos de descuento:', {
       subtotal,
       discountType,
       discountValue,
       discountAmount,
-      finalAmount
+      finalAmount,
+      newStatus,
+      statusChanged: newStatus !== invoice.status
     });
 
     // Actualizar factura con descuento
@@ -723,11 +729,15 @@ export const applyDiscountToInvoice = async (
         discountAppliedBy = ?,
         discountAppliedAt = NOW(),
         amount = ?,
+        status = ?,
         updatedAt = NOW()
       WHERE id = ?
-    `, [subtotal, discountType, discountValue, discountReason, req.user?.id, finalAmount, id]);
+    `, [subtotal, discountType, discountValue, discountReason, req.user?.id, finalAmount, newStatus, id]);
 
     console.log('✅ Descuento aplicado exitosamente a factura:', id);
+    if (newStatus === 'PAID') {
+      console.log('💯 Factura marcada como PAGADA debido a descuento del 100%');
+    }
 
     const response: ApiResponse = {
       success: true,
