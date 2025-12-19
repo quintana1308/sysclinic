@@ -112,7 +112,7 @@ const ClientBooking: React.FC = () => {
     try {
       setIsLoading(true);
       const [treatmentsResponse, employeesResponse] = await Promise.allSettled([
-        treatmentService.getTreatments({}),
+        treatmentService.getTreatments({ limit: 1000 }),
         employeeService.getEmployees({})
       ]);
 
