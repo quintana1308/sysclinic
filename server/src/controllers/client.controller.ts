@@ -967,11 +967,11 @@ export const updateCurrentClient = async (
       `, [
         dateOfBirth || null,
         age || null,
-        gender || '',
-        address || '',
-        emergencyContact || '',
-        medicalConditions || '',
-        allergies || '',
+        gender && ['M', 'F', 'Other'].includes(gender) ? gender : null,
+        address || null,
+        emergencyContact || null,
+        medicalConditions || null,
+        allergies || null,
         clientId
       ]);
     } else {
@@ -982,21 +982,22 @@ export const updateCurrentClient = async (
 
       await query(`
         INSERT INTO clients (
-          id, clientCode, userId, dateOfBirth, age, gender, 
+          id, clientCode, userId, companyId, dateOfBirth, age, gender, 
           address, emergencyContact, medicalConditions, allergies,
           isActive, createdAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `, [
         clientId,
         clientCode,
         req.user.id,
+        req.user?.companies?.current?.id || req.companyId,
         dateOfBirth || null,
         age || null,
-        gender || '',
-        address || '',
-        emergencyContact || '',
-        medicalConditions || '',
-        allergies || ''
+        gender && ['M', 'F', 'Other'].includes(gender) ? gender : null,
+        address || null,
+        emergencyContact || null,
+        medicalConditions || null,
+        allergies || null
       ]);
     }
 
@@ -1009,7 +1010,7 @@ export const updateCurrentClient = async (
         phone = ?,
         updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [firstName, lastName, email, phone || '', req.user.id]);
+    `, [firstName, lastName, email, phone || null, req.user.id]);
 
     console.log('✅ [updateCurrentClient] Cliente actualizado exitosamente');
 
