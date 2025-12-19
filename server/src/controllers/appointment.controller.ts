@@ -64,8 +64,9 @@ export const getAppointments = async (
     // EXCEPCIÓN: Para validación de horarios (cuando se solicitan citas por fecha), 
     // los clientes necesitan ver TODAS las citas para validar disponibilidad
     const isDateRangeQuery = startDate && endDate && startDate === endDate && !search && !status && !employeeId && !clientId;
+    const isMonthlyQuery = startDate && endDate && startDate !== endDate && !search && !status && !employeeId && !clientId;
     
-    if (isClient && !isDateRangeQuery) {
+    if (isClient && !isDateRangeQuery && !isMonthlyQuery) {
       console.log(`🔍 Usuario cliente detectado: ${req.user.id}`);
       console.log(`🔍 Buscando registro de cliente en tabla clients para userId: ${req.user.id}`);
       
@@ -90,9 +91,14 @@ export const getAppointments = async (
         console.log(`❌ El usuario no tiene un registro correspondiente en la tabla clients`);
         whereClause += ` AND 1=0`; // Condición que nunca se cumple
       }
-    } else if (isClient && isDateRangeQuery) {
-      console.log(`🔍 Cliente solicitando citas para validación de horarios - mostrando TODAS las citas de la fecha`);
-      console.log(`📅 Fecha solicitada: ${startDate} (para validación de disponibilidad)`);
+    } else if (isClient && (isDateRangeQuery || isMonthlyQuery)) {
+      if (isDateRangeQuery) {
+        console.log(`🔍 Cliente solicitando citas para validación de horarios - mostrando TODAS las citas de la fecha`);
+        console.log(`📅 Fecha solicitada: ${startDate} (para validación de disponibilidad)`);
+      } else if (isMonthlyQuery) {
+        console.log(`🔍 Cliente solicitando citas para disponibilidad mensual - mostrando TODAS las citas del mes`);
+        console.log(`📅 Rango solicitado: ${startDate} a ${endDate} (para validación de disponibilidad mensual)`);
+      }
       // No aplicar filtro por clientId para permitir validación de horarios ocupados
     }
 
@@ -212,10 +218,10 @@ export const getAppointments = async (
     console.log(`📊 Parámetros utilizados:`, params);
 
     // Aplicar paginación manual (compatible con Railway MySQL)
-    // EXCEPCIÓN: Para validación de horarios, devolver TODAS las citas sin paginación
+    // EXCEPCIÓN: Para validación de horarios Y disponibilidad mensual, devolver TODAS las citas sin paginación
     let appointments;
-    if (isDateRangeQuery) {
-      console.log(`🔍 Consulta de validación de horarios - devolviendo TODAS las ${allAppointments.length} citas sin paginación`);
+    if (isDateRangeQuery || isMonthlyQuery) {
+      console.log(`🔍 Consulta de validación ${isDateRangeQuery ? 'de horarios' : 'mensual'} - devolviendo TODAS las ${allAppointments.length} citas sin paginación`);
       appointments = allAppointments; // Todas las citas para validación
     } else {
       appointments = allAppointments.slice(offset, offset + limit); // Paginación normal
