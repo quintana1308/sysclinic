@@ -366,18 +366,32 @@ const ClientBooking: React.FC = () => {
       const appointments = response.data || [];
       const availability: {[key: string]: {available: boolean, count: number}} = {};
       
+      console.log(`🔍 DEBUG VALIDACIÓN - Total de citas recibidas para el mes:`, appointments.length);
+      
       // Contar citas por día
-      appointments.forEach((appointment: any) => {
-        const dateKey = appointment.date;
+      appointments.forEach((appointment: any, index: number) => {
+        // Convertir fecha ISO a formato YYYY-MM-DD para comparación
+        const dateKey = appointment.date.split('T')[0];
+        console.log(`  📅 Cita ${index + 1}: fecha=${appointment.date} -> normalizada=${dateKey}, startTime=${appointment.startTime}, status=${appointment.status}`);
+        
         if (!availability[dateKey]) {
           availability[dateKey] = { available: true, count: 0 };
         }
         availability[dateKey].count++;
         
-        // Si hay 6 o más citas, marcar como no disponible
-        if (availability[dateKey].count >= 6) {
+        console.log(`    📊 Contador para ${dateKey}: ${availability[dateKey].count} citas`);
+        
+        // Si hay 8 o más citas, marcar como no disponible
+        if (availability[dateKey].count >= 8) {
           availability[dateKey].available = false;
+          console.log(`    ❌ FECHA DESHABILITADA: ${dateKey} tiene ${availability[dateKey].count} citas (≥8)`);
         }
+      });
+      
+      console.log(`🔍 DEBUG VALIDACIÓN - Resumen de disponibilidad por fecha:`);
+      Object.keys(availability).forEach(dateKey => {
+        const info = availability[dateKey];
+        console.log(`  📅 ${dateKey}: ${info.count} citas, disponible: ${info.available ? '✅' : '❌'}`);
       });
       
       setDayAvailability(availability);
@@ -391,14 +405,27 @@ const ClientBooking: React.FC = () => {
     today.setHours(0, 0, 0, 0);
     
     // No permitir fechas pasadas
-    if (date < today) return false;
+    if (date < today) {
+      console.log(`🔍 DEBUG isDateAvailable - Fecha pasada: ${date.toISOString().split('T')[0]} < ${today.toISOString().split('T')[0]}`);
+      return false;
+    }
     
     // No permitir domingos (0 = domingo)
-    if (date.getDay() === 0) return false;
+    if (date.getDay() === 0) {
+      console.log(`🔍 DEBUG isDateAvailable - Domingo: ${date.toISOString().split('T')[0]}`);
+      return false;
+    }
     
     // Verificar disponibilidad por número de citas
     const dateKey = date.toISOString().split('T')[0];
     const dayInfo = dayAvailability[dateKey];
+    
+    console.log(`🔍 DEBUG isDateAvailable - Verificando ${dateKey}:`, {
+      dayInfo: dayInfo || 'No hay info',
+      available: dayInfo ? dayInfo.available : 'Sin datos = disponible',
+      count: dayInfo ? dayInfo.count : 0,
+      resultado: !dayInfo || dayInfo.available
+    });
     
     return !dayInfo || dayInfo.available;
   };
