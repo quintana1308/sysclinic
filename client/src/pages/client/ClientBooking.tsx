@@ -160,9 +160,22 @@ const ClientBooking: React.FC = () => {
       const dateStr = selectedDate.toISOString().split('T')[0];
       
       // Obtener citas existentes para la fecha seleccionada
+      console.log(`🔍 DEBUGGING PRODUCCIÓN - Solicitando citas para:`, {
+        startDate: dateStr,
+        endDate: dateStr,
+        url: 'appointmentService.getAppointments'
+      });
+      
       const response = await appointmentService.getAppointments({
         startDate: dateStr,
         endDate: dateStr
+      });
+      
+      console.log(`📊 DEBUGGING PRODUCCIÓN - Respuesta del servidor:`, {
+        success: response.success,
+        dataLength: response.data?.length || 0,
+        data: response.data,
+        pagination: response.pagination
       });
       
       const existingAppointments = response.data || [];
@@ -320,9 +333,22 @@ const ClientBooking: React.FC = () => {
       const startDate = firstDay.toISOString().split('T')[0];
       const endDate = lastDay.toISOString().split('T')[0];
       
+      console.log(`🔍 DEBUGGING PRODUCCIÓN - loadDayAvailability solicitando:`, {
+        startDate,
+        endDate,
+        url: 'appointmentService.getAppointments (monthly)'
+      });
+      
       const response = await appointmentService.getAppointments({
         startDate,
         endDate
+      });
+      
+      console.log(`📊 DEBUGGING PRODUCCIÓN - loadDayAvailability respuesta:`, {
+        success: response.success,
+        dataLength: response.data?.length || 0,
+        data: response.data,
+        pagination: response.pagination
       });
       
       const appointments = response.data || [];
