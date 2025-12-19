@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import ClientMedicalHistory from './client/ClientMedicalHistory';
 import toast, { Toaster } from 'react-hot-toast';
-import { EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, PencilIcon, TrashIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 
 // Iconos SVG personalizados
 const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
@@ -1205,6 +1205,86 @@ const Clients: React.FC = () => {
     return colors[index];
   };
 
+  // Función para copiar credenciales del cliente
+  const handleCopyCredentials = async (client: Client) => {
+    try {
+      // Mensaje personalizado para WhatsApp con las credenciales
+      const credentialsMessage = `🏥 *Credenciales de Acceso - SysClinic*
+
+¡Hola ${client.firstName}! 👋
+
+Te compartimos tus credenciales para acceder al sistema:
+
+🌐 *URL:* https://carlosagusting2.sg-host.com/
+📧 *Email:* ${client.email}
+🔑 *Contraseña:* 123456
+
+ℹ️ *Instrucciones:*
+• Ingresa a la URL desde cualquier navegador
+• Usa tu email y contraseña para iniciar sesión
+• Si tienes problemas, contáctanos
+
+¡Gracias por confiar en nosotros! 💜`;
+
+      // Copiar al portapapeles
+      await navigator.clipboard.writeText(credentialsMessage);
+      
+      toast.success(
+        (t) => (
+          <div className="flex flex-col gap-2">
+            <div className="font-semibold text-green-800">📋 ¡Credenciales copiadas!</div>
+            <div className="text-sm text-gray-700">
+              El mensaje con las credenciales de <strong>{client.firstName} {client.lastName}</strong> ha sido copiado al portapapeles.
+            </div>
+            <div className="text-xs text-green-700 bg-green-50 p-2 rounded mt-2 border border-green-200">
+              ✅ Listo para pegar en WhatsApp
+            </div>
+          </div>
+        ),
+        {
+          duration: 5000,
+          position: 'top-center',
+          style: {
+            minWidth: '400px',
+            padding: '16px',
+          },
+        }
+      );
+    } catch (error) {
+      console.error('Error copiando credenciales:', error);
+      
+      // Fallback para navegadores que no soportan clipboard API
+      const textArea = document.createElement('textarea');
+      const credentialsMessage = `🏥 Credenciales de Acceso - SysClinic
+
+¡Hola ${client.firstName}! 👋
+
+Te compartimos tus credenciales para acceder al sistema:
+
+🌐 URL: https://carlosagusting2.sg-host.com/
+📧 Email: ${client.email}
+🔑 Contraseña: 123456 
+
+ℹ️ Instrucciones:
+• Ingresa a la URL desde cualquier navegador
+• Usa tu email y contraseña para iniciar sesión
+• Si tienes problemas, contáctanos
+
+¡Gracias por confiar en nosotros! 💜`;
+      
+      textArea.value = credentialsMessage;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      toast.success('📋 Credenciales copiadas al portapapeles', {
+        duration: 4000,
+        position: 'top-center',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1450,6 +1530,14 @@ const Clients: React.FC = () => {
                       >
                         <EyeIcon className="h-3 w-3 mr-1" />
                         Ver
+                      </button>
+                      <button 
+                        onClick={() => handleCopyCredentials(client)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors"
+                        title="Copiar credenciales para WhatsApp"
+                      >
+                        <ClipboardIcon className="h-3 w-3 mr-1" />
+                        Credenciales
                       </button>
                       <button 
                         onClick={() => handleEditClient(client)}

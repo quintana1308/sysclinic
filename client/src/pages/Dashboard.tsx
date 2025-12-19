@@ -16,6 +16,7 @@ import Reports from './Reports';
 import Settings from './Settings';
 import Inventory from './Inventory';
 import SystemManagement from './SystemManagement';
+import Footer from '../components/Footer';
 // Iconos SVG personalizados (temporal hasta que se resuelva el problema de importación)
 const CalendarIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -800,35 +801,40 @@ const Dashboard: React.FC = () => {
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto relative z-10">
-          <Routes>
-            <Route path="/" element={<DashboardHome />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/calendar/*" element={<Calendar />} />
-            <Route path="/appointments" element={<Appointments />} />
-            <Route path="/appointments/*" element={<Appointments />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/clients/*" element={<Clients />} />
-            <Route path="/employees" element={<Employees />} />
-            <Route path="/employees/*" element={<Employees />} />
-            <Route path="/companies" element={<Companies />} />
-            <Route path="/companies/*" element={<Companies />} />
-            <Route path="/treatments" element={<Treatments />} />
-            <Route path="/treatments/*" element={<Treatments />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/inventory/*" element={<Inventory />} />
-            <Route path="/invoices" element={<Invoices />} />
-            <Route path="/invoices/*" element={<Invoices />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/payments/*" element={<Payments />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/reports/*" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/settings/*" element={<Settings />} />
-            <Route path="/system-management" element={<SystemManagement />} />
-            <Route path="/system-management/*" element={<SystemManagement />} />
-            <Route path="/*" element={<DashboardHome />} />
-          </Routes>
+        <main className="flex-1 overflow-y-auto relative z-10 flex flex-col pb-20">
+          <div className="flex-1">
+            <Routes>
+              <Route path="/" element={<DashboardHome />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/calendar/*" element={<Calendar />} />
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/appointments/*" element={<Appointments />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/clients/*" element={<Clients />} />
+              <Route path="/employees" element={<Employees />} />
+              <Route path="/employees/*" element={<Employees />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/*" element={<Companies />} />
+              <Route path="/treatments" element={<Treatments />} />
+              <Route path="/treatments/*" element={<Treatments />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/inventory/*" element={<Inventory />} />
+              <Route path="/invoices" element={<Invoices />} />
+              <Route path="/invoices/*" element={<Invoices />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/payments/*" element={<Payments />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/*" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings/*" element={<Settings />} />
+              <Route path="/system-management" element={<SystemManagement />} />
+              <Route path="/system-management/*" element={<SystemManagement />} />
+              <Route path="/*" element={<DashboardHome />} />
+            </Routes>
+          </div>
+          
+          {/* Footer del desarrollador */}
+          <Footer />
         </main>
       </div>
     </div>
