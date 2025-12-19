@@ -9,13 +9,21 @@ import {
   updateClient,
   deleteClient,
   toggleClientStatus,
-  checkDatabaseData
+  checkDatabaseData,
+  getCurrentClient,
+  updateCurrentClient
 } from '../controllers/client.controller';
 
 const router = Router();
 
 // Endpoint temporal para verificar datos (sin restricciones)
 router.get('/check-data', authenticate, checkDatabaseData);
+
+// Endpoint para que clientes obtengan su propia información (solo autenticación)
+router.get('/me', authenticate, getCurrentClient);
+
+// Endpoint para que clientes actualicen su propia información (solo autenticación)
+router.put('/me', authenticate, updateCurrentClient);
 
 // Todas las rutas requieren autenticación, acceso a empresa y licencia válida
 router.use(authenticate);

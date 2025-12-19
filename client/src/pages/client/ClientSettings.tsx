@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { clientService } from '../../services/clientService';
 import toast from 'react-hot-toast';
 import { 
   UserIcon, 
@@ -59,32 +60,13 @@ const ClientSettings: React.FC = () => {
 
       console.log('🔍 [FRONTEND] Cargando datos del cliente para userId:', user.id);
 
-      // Primero intentar obtener datos del cliente por userId
-      const clientResponse = await fetch(`/api/clients?userId=${user.id}`);
+      // Usar el nuevo endpoint getCurrentClient
+      const clientResponse = await clientService.getCurrentClient();
       
-      console.log('🌐 [FRONTEND] Status de respuesta:', clientResponse.status);
-      console.log('🌐 [FRONTEND] Headers:', clientResponse.headers.get('content-type'));
-      
-      if (!clientResponse.ok) {
-        throw new Error(`HTTP error! status: ${clientResponse.status}`);
-      }
-      
-      const responseText = await clientResponse.text();
-      console.log('📄 [FRONTEND] Respuesta raw:', responseText.substring(0, 200));
-      
-      let clientData;
-      try {
-        clientData = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ [FRONTEND] Error parsing JSON:', parseError);
-        console.error('📄 [FRONTEND] Respuesta completa:', responseText);
-        throw new Error('El servidor devolvió una respuesta inválida');
-      }
-      
-      console.log('📋 [FRONTEND] Respuesta de clientes:', clientData);
+      console.log('📋 [FRONTEND] Respuesta de clientes:', clientResponse);
 
-      if (clientData.success && clientData.data.length > 0) {
-        const client = clientData.data[0];
+      if (clientResponse.success && clientResponse.data) {
+        const client = clientResponse.data;
         console.log('✅ [FRONTEND] Cliente encontrado:', client);
         
         setClientData({
@@ -122,6 +104,24 @@ const ClientSettings: React.FC = () => {
     } catch (error) {
       console.error('❌ [FRONTEND] Error al cargar datos del cliente:', error);
       toast.error('Error al cargar la información del perfil');
+      
+      // Fallback: usar datos del usuario si hay error
+      if (user) {
+        setClientData({
+          id: user.id,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          dateOfBirth: '',
+          age: null,
+          gender: '',
+          address: '',
+          emergencyContact: '',
+          medicalConditions: '',
+          allergies: ''
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -145,28 +145,20 @@ const ClientSettings: React.FC = () => {
     try {
       setIsSaving(true);
 
-      // Actualizar datos del cliente usando el endpoint de clientes
-      const response = await fetch(`/api/clients/${clientData.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: clientData.firstName,
-          lastName: clientData.lastName,
-          email: clientData.email,
-          phone: clientData.phone,
-          dateOfBirth: clientData.dateOfBirth,
-          age: clientData.age,
-          gender: clientData.gender,
-          address: clientData.address,
-          emergencyContact: clientData.emergencyContact,
-          medicalConditions: clientData.medicalConditions,
-          allergies: clientData.allergies
-        }),
+      // Actualizar datos del cliente usando el nuevo endpoint
+      const data = await clientService.updateCurrentClient({
+        firstName: clientData.firstName,
+        lastName: clientData.lastName,
+        email: clientData.email,
+        phone: clientData.phone,
+        dateOfBirth: clientData.dateOfBirth,
+        age: clientData.age || undefined,
+        gender: clientData.gender,
+        address: clientData.address,
+        emergencyContact: clientData.emergencyContact,
+        medicalConditions: clientData.medicalConditions,
+        allergies: clientData.allergies
       });
-
-      const data = await response.json();
 
       if (data.success) {
         // Actualizar el contexto de usuario

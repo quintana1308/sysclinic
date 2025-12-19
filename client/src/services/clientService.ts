@@ -62,6 +62,7 @@ export interface ClientFilters {
   search?: string;
   status?: string;
   gender?: string;
+  userId?: string;
 }
 
 export interface ClientResponse {
@@ -85,6 +86,7 @@ class ClientService {
     if (filters.search) params.append('search', filters.search);
     if (filters.status) params.append('status', filters.status);
     if (filters.gender) params.append('gender', filters.gender);
+    if (filters.userId) params.append('userId', filters.userId);
 
     const response = await api.get(`/clients?${params.toString()}`);
     return response.data;
@@ -141,6 +143,18 @@ class ClientService {
   // Buscar clientes por nombre o email
   async searchClients(query: string): Promise<{ success: boolean; data: Client[] }> {
     const response = await api.get(`/clients/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  }
+
+  // Obtener información del cliente actual (para clientes autenticados)
+  async getCurrentClient(): Promise<{ success: boolean; data: Client; message?: string }> {
+    const response = await api.get('/clients/me');
+    return response.data;
+  }
+
+  // Actualizar información del cliente actual (para clientes autenticados)
+  async updateCurrentClient(clientData: Partial<ClientFormData>): Promise<{ success: boolean; message: string }> {
+    const response = await api.put('/clients/me', clientData);
     return response.data;
   }
 }

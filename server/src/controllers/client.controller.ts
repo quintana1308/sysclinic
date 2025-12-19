@@ -823,6 +823,223 @@ export const deleteClient = async (
   }
 };
 
+// Obtener información del cliente actual (para clientes autenticados)
+export const getCurrentClient = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.id) {
+      throw new AppError('Usuario no autenticado', 401);
+    }
+
+    console.log('🔍 [getCurrentClient] Buscando cliente para userId:', req.user.id);
+
+    // Buscar el registro de cliente basado en el userId del usuario autenticado
+    const client = await queryOne<any>(`
+      SELECT 
+        c.*,
+        u.firstName,
+        u.lastName,
+        u.email,
+        u.phone
+      FROM clients c
+      INNER JOIN users u ON c.userId = u.id
+      WHERE c.userId = ? AND u.isActive = 1
+    `, [req.user.id]);
+
+    console.log('📋 [getCurrentClient] Cliente encontrado:', client);
+
+    if (!client) {
+      console.log('⚠️ [getCurrentClient] No se encontró registro de cliente para el usuario');
+      // Si no hay registro de cliente, devolver datos básicos del usuario
+      const response: ApiResponse = {
+        success: true,
+        message: 'Datos básicos del usuario (cliente nuevo)',
+        data: {
+          id: req.user.id,
+          firstName: req.user.firstName || '',
+          lastName: req.user.lastName || '',
+          email: req.user.email || '',
+          phone: req.user.phone || '',
+          dateOfBirth: null,
+          age: null,
+          gender: '',
+          address: '',
+          emergencyContact: '',
+          medicalConditions: '',
+          allergies: '',
+          isNewClient: true // Indicador de que es un cliente nuevo sin registro completo
+        }
+      };
+      return res.json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Información del cliente obtenida exitosamente',
+      data: {
+        id: client.id,
+        clientCode: client.clientCode,
+        userId: client.userId,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: client.email,
+        phone: client.phone,
+        dateOfBirth: client.dateOfBirth,
+        age: client.age,
+        gender: client.gender,
+        address: client.address,
+        emergencyContact: client.emergencyContact,
+        medicalConditions: client.medicalConditions,
+        allergies: client.allergies,
+        isActive: client.isActive,
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt
+      }
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('❌ [getCurrentClient] Error:', error);
+    return next(error);
+  }
+};
+
+// Actualizar información del cliente actual (para clientes autenticados)
+export const updateCurrentClient = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.id) {
+      throw new AppError('Usuario no autenticado', 401);
+    }
+
+    console.log('🔍 [updateCurrentClient] Actualizando cliente para userId:', req.user.id);
+    console.log('📋 [updateCurrentClient] Datos recibidos:', req.body);
+
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      dateOfBirth,
+      age,
+      gender,
+      address,
+      emergencyContact,
+      medicalConditions,
+      allergies
+    } = req.body;
+
+    // Validaciones básicas
+    if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
+      throw new AppError('Los campos nombre, apellido y email son obligatorios', 400);
+    }
+
+    // Buscar si existe un registro de cliente para este usuario
+    const existingClient = await queryOne<any>(`
+      SELECT c.id, c.userId FROM clients c
+      WHERE c.userId = ?
+    `, [req.user.id]);
+
+    let clientId: string;
+
+    if (existingClient) {
+      // Actualizar registro existente
+      clientId = existingClient.id;
+      console.log('📝 [updateCurrentClient] Actualizando cliente existente:', clientId);
+
+      await query(`
+        UPDATE clients SET
+          dateOfBirth = ?,
+          age = ?,
+          gender = ?,
+          address = ?,
+          emergencyContact = ?,
+          medicalConditions = ?,
+          allergies = ?,
+          updatedAt = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        dateOfBirth || null,
+        age || null,
+        gender || '',
+        address || '',
+        emergencyContact || '',
+        medicalConditions || '',
+        allergies || '',
+        clientId
+      ]);
+    } else {
+      // Crear nuevo registro de cliente
+      clientId = generateId();
+      const clientCode = generateClientCode();
+      console.log('➕ [updateCurrentClient] Creando nuevo cliente:', clientId);
+
+      await query(`
+        INSERT INTO clients (
+          id, clientCode, userId, dateOfBirth, age, gender, 
+          address, emergencyContact, medicalConditions, allergies,
+          isActive, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `, [
+        clientId,
+        clientCode,
+        req.user.id,
+        dateOfBirth || null,
+        age || null,
+        gender || '',
+        address || '',
+        emergencyContact || '',
+        medicalConditions || '',
+        allergies || ''
+      ]);
+    }
+
+    // Actualizar información básica del usuario
+    await query(`
+      UPDATE users SET
+        firstName = ?,
+        lastName = ?,
+        email = ?,
+        phone = ?,
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [firstName, lastName, email, phone || '', req.user.id]);
+
+    console.log('✅ [updateCurrentClient] Cliente actualizado exitosamente');
+
+    const response: ApiResponse = {
+      success: true,
+      message: 'Perfil actualizado exitosamente',
+      data: {
+        id: clientId,
+        userId: req.user.id,
+        firstName,
+        lastName,
+        email,
+        phone: phone || '',
+        dateOfBirth,
+        age,
+        gender,
+        address,
+        emergencyContact,
+        medicalConditions,
+        allergies
+      }
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error('❌ [updateCurrentClient] Error:', error);
+    return next(error);
+  }
+};
+
 export const getClientAppointments = async (
   req: AuthenticatedRequest,
   res: Response,
