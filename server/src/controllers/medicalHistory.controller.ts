@@ -174,40 +174,69 @@ export const getMedicalHistory = async (
     `, [actualClientId]);
 
     const total = totalResult?.total || 0;
-    console.log(' [BACKEND] Total de registros encontrados:', total);
-    console.log(' [BACKEND] Resultado completo de conteo:', totalResult);
+    console.log(' Total de registros encontrados:', total);
+    console.log(' Resultado completo de conteo:', totalResult);
 
-    // Obtener registros del historial con datos de la cita (sin LIMIT/OFFSET para Railway MySQL)
+    // Obtener registros del historial - consulta simplificada para Railway MySQL
+    console.log(' Ejecutando consulta principal simplificada...');
     const allHistory = await query<any>(`
       SELECT 
         mh.*,
         uc.firstName as createdByFirstName,
-        uc.lastName as createdByLastName,
-        DATE_FORMAT(a.date, '%Y-%m-%d') as appointmentDate,
-        TIME_FORMAT(a.startTime, '%H:%i:%s') as appointmentStartTime,
-        TIME_FORMAT(a.endTime, '%H:%i:%s') as appointmentEndTime,
-        a.status as appointmentStatus,
-        a.notes as appointmentNotes,
-        ue.firstName as employeeFirstName,
-        ue.lastName as employeeLastName,
-        GROUP_CONCAT(t.name SEPARATOR ', ') as treatmentNames,
-        GROUP_CONCAT(at.price SEPARATOR ', ') as treatmentPrices
+        uc.lastName as createdByLastName
       FROM medical_history mh
       LEFT JOIN users uc ON mh.createdBy = uc.id
-      LEFT JOIN appointments a ON mh.appointmentId = a.id
-      LEFT JOIN users ue ON a.employeeId = ue.id
-      LEFT JOIN appointment_treatments at ON a.id = at.appointmentId
-      LEFT JOIN treatments t ON at.treatmentId = t.id
       WHERE mh.clientId = ?
-      GROUP BY mh.id, mh.appointmentId, a.date, a.startTime, a.endTime, a.status, a.notes, 
-               uc.firstName, uc.lastName, ue.firstName, ue.lastName
       ORDER BY mh.date DESC, mh.createdAt DESC
     `, [actualClientId]);
 
-    // Aplicar paginación manual
-    const history = allHistory.slice(offset, offset + limit);
+    console.log(' Registros de historial obtenidos:', allHistory.length);
 
-    console.log(' [BACKEND] Registros obtenidos de la base de datos:', history);
+    // Obtener datos de citas por separado para evitar GROUP BY problemático
+    const historyWithAppointments = [];
+    for (const record of allHistory) {
+      let appointmentData = null;
+      let treatmentData = [];
+
+      if (record.appointmentId) {
+        // Obtener datos de la cita
+        appointmentData = await queryOne<any>(`
+          SELECT 
+            DATE_FORMAT(a.date, '%Y-%m-%d') as appointmentDate,
+            TIME_FORMAT(a.startTime, '%H:%i:%s') as appointmentStartTime,
+            TIME_FORMAT(a.endTime, '%H:%i:%s') as appointmentEndTime,
+            a.status as appointmentStatus,
+            a.notes as appointmentNotes,
+            ue.firstName as employeeFirstName,
+            ue.lastName as employeeLastName
+          FROM appointments a
+          LEFT JOIN users ue ON a.employeeId = ue.id
+          WHERE a.id = ?
+        `, [record.appointmentId]);
+
+        // Obtener tratamientos de la cita
+        treatmentData = await query<any>(`
+          SELECT t.name, at.price
+          FROM appointment_treatments at
+          INNER JOIN treatments t ON at.treatmentId = t.id
+          WHERE at.appointmentId = ?
+        `, [record.appointmentId]);
+      }
+
+      historyWithAppointments.push({
+        ...record,
+        ...appointmentData,
+        treatmentNames: treatmentData.map(t => t.name).join(', '),
+        treatmentPrices: treatmentData.map(t => t.price).join(', ')
+      });
+    }
+
+    // Aplicar paginación manual
+    const history = historyWithAppointments.slice(offset, offset + limit);
+
+    console.log(' Registros obtenidos de la base de datos:', history);
+    console.log(' Número de registros obtenidos:', history.length);
+    console.log(' Enviando respuesta con', history.length, 'registros');
     console.log(' [BACKEND] Número de registros obtenidos:', history.length);
     console.log('📋 [BACKEND] Registros obtenidos de la base de datos:', history);
     console.log('📊 [BACKEND] Número de registros obtenidos:', history.length);
