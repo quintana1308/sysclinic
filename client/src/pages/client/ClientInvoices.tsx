@@ -412,14 +412,14 @@ const ClientInvoices: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-pink-50 p-6 border-b border-gray-100">
-        <div className="flex items-center space-x-4">
-          <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-            <DocumentTextIcon className="h-6 w-6 text-pink-700" />
+      <div className="bg-pink-50 p-4 sm:p-6 border-b border-gray-100">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+            <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-pink-700" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-pink-800">💳 Mis Facturas</h1>
-            <p className="text-sm text-gray-600 mt-1">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">💳 Mis Facturas</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Revisa tu historial de facturas y pagos
             </p>
           </div>
@@ -427,55 +427,55 @@ const ClientInvoices: React.FC = () => {
       </div>
 
       {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <CreditCardIcon className="h-6 w-6 text-green-600" />
+              <CreditCardIcon className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Pagado</p>
-              <p className="text-2xl font-bold text-gray-900">${getTotalPaid().toFixed(2)}</p>
+            <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Pagado</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">${getTotalPaid().toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <div className="flex items-center">
             <div className="p-2 bg-yellow-100 rounded-lg">
-              <DocumentTextIcon className="h-6 w-6 text-yellow-600" />
+              <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pendiente de Pago</p>
-              <p className="text-2xl font-bold text-gray-900">${getTotalPending().toFixed(2)}</p>
+            <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Pendiente de Pago</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900 truncate">${getTotalPending().toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <DocumentTextIcon className="h-6 w-6 text-blue-600" />
+              <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Facturas</p>
-              <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
+            <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Total Facturas</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{invoices.length}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               📊 Filtrar por Estado
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="all">Todos los estados</option>
               <option value="PENDING">Pendientes</option>
@@ -486,13 +486,13 @@ const ClientInvoices: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               📅 Filtrar por Fecha
             </label>
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="all">Todas las fechas</option>
               <option value="this_month">Este mes</option>
@@ -508,34 +508,39 @@ const ClientInvoices: React.FC = () => {
         {filteredInvoices.length > 0 ? (
           filteredInvoices.map((invoice) => (
             <div key={invoice.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
-              <div className="p-6">
-                <div className="flex items-start justify-between">
+              <div className="p-4 sm:p-6">
+                {/* Layout responsive: columna en móvil, fila en desktop */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-4 sm:space-y-0">
+                  
+                  {/* Contenido principal */}
                   <div className="flex-1">
-                    <div className="flex items-start space-x-4">
+                    <div className="flex items-start space-x-3 sm:space-x-4">
                       <div className="flex-shrink-0">
-                        <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center">
-                          <DocumentTextIcon className="h-6 w-6 text-pink-600" />
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-100 flex items-center justify-center">
+                          <DocumentTextIcon className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
                         </div>
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                        {/* Título y estado - stack en móvil */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                             Factura #{invoice.invoiceNumber}
                           </h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(invoice.status)}`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border mt-1 sm:mt-0 self-start ${getStatusColor(invoice.status)}`}>
                             {getStatusText(invoice.status)}
                           </span>
                         </div>
                         
+                        {/* Información de la factura */}
                         <div className="space-y-1 text-sm text-gray-600">
                           <div className="flex items-center space-x-2">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>Fecha: {formatDate(invoice.date)}</span>
+                            <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">Fecha: {formatDate(invoice.date)}</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <CreditCardIcon className="h-4 w-4" />
-                            <span className="font-semibold text-gray-900">Total: ${invoice.totalAmount.toFixed(2)}</span>
+                            <CreditCardIcon className="h-4 w-4 flex-shrink-0" />
+                            <span className="font-semibold text-gray-900 truncate">Total: ${invoice.totalAmount.toFixed(2)}</span>
                           </div>
                         </div>
 
@@ -550,22 +555,25 @@ const ClientInvoices: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0 ml-4">
-                    <div className="flex flex-col space-y-2">
+                  {/* Botones de acción - horizontal en móvil, vertical en desktop */}
+                  <div className="flex-shrink-0 sm:ml-4">
+                    <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 overflow-x-auto sm:overflow-x-visible">
                       <button
                         onClick={() => openDetailModal(invoice)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 whitespace-nowrap"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
-                        Ver Detalles
+                        <span className="hidden sm:inline">Ver Detalles</span>
+                        <span className="sm:hidden">Ver</span>
                       </button>
                       
                       <button
                         onClick={() => handleDownloadInvoice(invoice.id)}
-                        className="inline-flex items-center px-3 py-1.5 border border-pink-300 text-sm font-medium rounded-md text-pink-700 bg-white hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                        className="inline-flex items-center px-3 py-1.5 border border-pink-300 text-xs sm:text-sm font-medium rounded-md text-pink-700 bg-white hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 whitespace-nowrap"
                       >
                         <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
-                        Descargar
+                        <span className="hidden sm:inline">Descargar</span>
+                        <span className="sm:hidden">PDF</span>
                       </button>
                     </div>
                   </div>

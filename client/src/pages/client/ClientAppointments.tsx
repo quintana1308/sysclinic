@@ -406,14 +406,14 @@ const ClientAppointments: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-pink-50 p-6 border-b border-gray-100">
-        <div className="flex items-center space-x-4">
-          <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
-            <CalendarIcon className="h-6 w-6 text-pink-700" />
+      <div className="bg-pink-50 p-4 sm:p-6 border-b border-gray-100">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-100 flex items-center justify-center shadow-sm">
+            <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-pink-700" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-pink-800">📅 Mis Citas</h1>
-            <p className="text-sm text-gray-600 mt-1">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-pink-800">📅 Mis Citas</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Revisa tu historial de citas y próximas visitas
             </p>
           </div>
@@ -421,16 +421,16 @@ const ClientAppointments: React.FC = () => {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               📊 Filtrar por Estado
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="all">Todos los estados</option>
               <option value="SCHEDULED">Programadas</option>
@@ -443,13 +443,13 @@ const ClientAppointments: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               🕒 Filtrar por Tiempo
             </label>
             <select
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="all">Todas las citas</option>
               <option value="upcoming">Próximas citas</option>
@@ -464,38 +464,43 @@ const ClientAppointments: React.FC = () => {
         {filteredAppointments.length > 0 ? (
           filteredAppointments.map((appointment) => (
             <div key={appointment.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
-              <div className="p-6">
-                <div className="flex items-start justify-between">
+              <div className="p-4 sm:p-6">
+                {/* Layout responsive: columna en móvil, fila en desktop */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-4 sm:space-y-0">
+                  
+                  {/* Contenido principal */}
                   <div className="flex-1">
-                    <div className="flex items-start space-x-4">
+                    <div className="flex items-start space-x-3 sm:space-x-4">
                       <div className="flex-shrink-0">
-                        <div className="h-12 w-12 rounded-full bg-pink-100 flex items-center justify-center">
-                          <CalendarIcon className="h-6 w-6 text-pink-600" />
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-pink-100 flex items-center justify-center">
+                          <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
                         </div>
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                        {/* Título y estado - stack en móvil */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                             {appointment.treatmentName || 'Consulta General'}
                           </h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border mt-1 sm:mt-0 self-start ${getStatusColor(appointment.status)}`}>
                             {getStatusText(appointment.status)}
                           </span>
                         </div>
                         
+                        {/* Información de la cita */}
                         <div className="space-y-1 text-sm text-gray-600">
                           <div className="flex items-center space-x-2">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>{formatDate(appointment.date)}</span>
+                            <CalendarIcon className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{formatDate(appointment.date)}</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <ClockIcon className="h-4 w-4" />
-                            <span>{formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}</span>
+                            <ClockIcon className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <UserIcon className="h-4 w-4" />
-                            <span>{appointment.employeeName || 'Por asignar'}</span>
+                            <UserIcon className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{appointment.employeeName || 'Por asignar'}</span>
                           </div>
                         </div>
 
@@ -510,33 +515,37 @@ const ClientAppointments: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0 ml-4">
-                    <div className="flex flex-col space-y-2">
+                  {/* Botones de acción - horizontal en móvil, vertical en desktop */}
+                  <div className="flex-shrink-0 sm:ml-4">
+                    <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 overflow-x-auto sm:overflow-x-visible">
                       <button
                         onClick={() => openDetailModal(appointment)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 whitespace-nowrap"
                       >
                         <EyeIcon className="h-4 w-4 mr-1" />
-                        Ver Detalles
+                        <span className="hidden sm:inline">Ver Detalles</span>
+                        <span className="sm:hidden">Ver</span>
                       </button>
                       
                       {canConfirmAppointment(appointment) && (
                         <button
                           onClick={() => openConfirmModal(appointment)}
-                          className="inline-flex items-center px-3 py-1.5 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          className="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs sm:text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 whitespace-nowrap"
                         >
                           <CheckIcon className="h-4 w-4 mr-1" />
-                          Confirmar
+                          <span className="hidden sm:inline">Confirmar</span>
+                          <span className="sm:hidden">OK</span>
                         </button>
                       )}
                       
                       {canCancelAppointment(appointment) && (
                         <button
                           onClick={() => openCancelModal(appointment)}
-                          className="inline-flex items-center px-3 py-1.5 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs sm:text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 whitespace-nowrap"
                         >
                           <XMarkIcon className="h-4 w-4 mr-1" />
-                          Cancelar
+                          <span className="hidden sm:inline">Cancelar</span>
+                          <span className="sm:hidden">X</span>
                         </button>
                       )}
                     </div>

@@ -256,7 +256,6 @@ const ClientDashboard: React.FC = () => {
                 alt="Karina Logo" 
                 className="h-8 w-auto object-contain"
               />
-              <span className="text-lg font-semibold text-gray-900">Mi Portal</span>
             </div>
             <div className="h-10 w-10 bg-primary-600 rounded-full flex items-center justify-center">
               <span className="text-sm font-medium text-white">
