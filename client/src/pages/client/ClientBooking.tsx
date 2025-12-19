@@ -192,9 +192,9 @@ const ClientBooking: React.FC = () => {
         for (let minute = 0; minute < 60; minute += 30) {
           const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           
-          // Calcular hora de inicio y fin del slot propuesto
-          const slotStart = new Date(`${dateStr}T${timeStr}:00`);
-          const slotEnd = new Date(slotStart.getTime() + treatmentDuration * 60000);
+          // Calcular hora de inicio y fin del slot propuesto - usar duración fija de 30 minutos para validación
+          const slotStart = new Date(`${dateStr}T${timeStr}:00.000Z`);
+          const slotEnd = new Date(slotStart.getTime() + 30 * 60000); // Siempre 30 minutos para validación
           
           // Verificar que el slot no se extienda más allá del horario de trabajo (6:00 PM)
           const workEndTime = new Date(`${dateStr}T18:00:00`);
@@ -220,19 +220,36 @@ const ClientBooking: React.FC = () => {
               appointmentEnd = new Date(appointment.endTime);
             }
             
-            // Verificar si hay solapamiento de tiempo
-            if (
-              (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
-              (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
-              (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
-            ) {
+            // Verificar si hay solapamiento de tiempo - algoritmo corregido con logs detallados
+            const hasOverlap = (
+              // Slot comienza antes o exactamente cuando termine la cita Y slot termina después de que comience la cita
+              slotStart < appointmentEnd && slotEnd > appointmentStart
+            ) || (
+              // Caso especial: slot comienza exactamente cuando termina la cita (no permitir citas consecutivas sin tiempo de limpieza)
+              slotStart.getTime() === appointmentEnd.getTime()
+            );
+            
+            // Log detallado para debugging
+            console.log(`🔍 Verificando slot ${timeStr}:`, {
+              slotStart: slotStart.toISOString(),
+              slotEnd: slotEnd.toISOString(),
+              appointmentStart: appointmentStart.toISOString(),
+              appointmentEnd: appointmentEnd.toISOString(),
+              condition1: `slotStart < appointmentEnd: ${slotStart.toISOString()} < ${appointmentEnd.toISOString()} = ${slotStart < appointmentEnd}`,
+              condition2: `slotEnd > appointmentStart: ${slotEnd.toISOString()} > ${appointmentStart.toISOString()} = ${slotEnd > appointmentStart}`,
+              condition3: `slotStart === appointmentEnd: ${slotStart.getTime()} === ${appointmentEnd.getTime()} = ${slotStart.getTime() === appointmentEnd.getTime()}`,
+              hasOverlap: hasOverlap
+            });
+            
+            if (hasOverlap) {
               // Hay conflicto de horario - marcar como no disponible
               console.log(`❌ Slot ${timeStr} no disponible - conflicto con cita existente:`, {
                 slotStart: slotStart.toISOString(),
                 slotEnd: slotEnd.toISOString(),
                 appointmentStart: appointmentStart.toISOString(),
                 appointmentEnd: appointmentEnd.toISOString(),
-                appointmentId: appointment.id
+                appointmentId: appointment.id,
+                hasOverlap: true
               });
               isAvailable = false;
               break;
