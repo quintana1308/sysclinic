@@ -990,7 +990,7 @@ const ClientBooking: React.FC = () => {
               <button
                 onClick={handleSubmitBooking}
                 disabled={isSubmitting}
-                className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
+                className="px-8 py-3 bg-pink-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
               >
                 {isSubmitting ? (
                   <div className="flex items-center justify-center">
