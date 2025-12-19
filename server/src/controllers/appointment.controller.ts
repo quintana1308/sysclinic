@@ -61,7 +61,11 @@ export const getAppointments = async (
     console.log(`🔍 ¿Es usuario cliente?`, isClient);
     
     // Filtrar por cliente si el usuario es cliente (solo puede ver sus propias citas)
-    if (isClient) {
+    // EXCEPCIÓN: Para validación de horarios (cuando se solicitan citas por fecha), 
+    // los clientes necesitan ver TODAS las citas para validar disponibilidad
+    const isDateRangeQuery = startDate && endDate && startDate === endDate && !search && !status && !employeeId && !clientId;
+    
+    if (isClient && !isDateRangeQuery) {
       console.log(`🔍 Usuario cliente detectado: ${req.user.id}`);
       console.log(`🔍 Buscando registro de cliente en tabla clients para userId: ${req.user.id}`);
       
@@ -86,6 +90,10 @@ export const getAppointments = async (
         console.log(`❌ El usuario no tiene un registro correspondiente en la tabla clients`);
         whereClause += ` AND 1=0`; // Condición que nunca se cumple
       }
+    } else if (isClient && isDateRangeQuery) {
+      console.log(`🔍 Cliente solicitando citas para validación de horarios - mostrando TODAS las citas de la fecha`);
+      console.log(`📅 Fecha solicitada: ${startDate} (para validación de disponibilidad)`);
+      // No aplicar filtro por clientId para permitir validación de horarios ocupados
     }
 
     if (search) {
