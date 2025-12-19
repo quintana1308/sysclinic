@@ -80,6 +80,7 @@ const ClientBooking: React.FC = () => {
   const [treatments, setTreatments] = useState<ClientTreatment[]>([]);
   const [employees, setEmployees] = useState<ClientEmployee[]>([]);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [dayAvailability, setDayAvailability] = useState<{[key: string]: {available: boolean, count: number}}>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1); // 1: Seleccionar fecha, 2: Seleccionar tratamiento, 3: Seleccionar hora, 4: Confirmar
@@ -91,6 +92,11 @@ const ClientBooking: React.FC = () => {
     time: '',
     notes: ''
   });
+
+  useEffect(() => {
+    loadInitialData();
+    loadDayAvailability();
+  }, [currentDate]);
 
   useEffect(() => {
     loadInitialData();
@@ -153,15 +159,94 @@ const ClientBooking: React.FC = () => {
       setIsLoading(true);
       const dateStr = selectedDate.toISOString().split('T')[0];
       
-      // Generar slots de tiempo disponibles (9:00 AM - 6:00 PM)
+      // Obtener citas existentes para la fecha seleccionada
+      const response = await appointmentService.getAppointments({
+        startDate: dateStr,
+        endDate: dateStr
+      });
+      
+      const existingAppointments = response.data || [];
+      const selectedTreatment = treatments.find(t => t.id === bookingForm.treatmentId);
+      const treatmentDuration = selectedTreatment?.duration || 60;
+      
+      console.log(`📅 Cargando slots para ${dateStr}:`, {
+        existingAppointments: existingAppointments.length,
+        treatmentDuration,
+        selectedTreatment: selectedTreatment?.name
+      });
+      
+      // Log de citas existentes para debugging
+      existingAppointments.forEach(apt => {
+        console.log(`📋 Cita existente:`, {
+          id: apt.id,
+          startTime: apt.startTime,
+          endTime: apt.endTime,
+          status: apt.status,
+          treatments: apt.treatments?.length || 0
+        });
+      });
+      
+      // Generar slots de tiempo disponibles (8:00 AM - 6:00 PM)
       const slots: TimeSlot[] = [];
-      for (let hour = 9; hour < 18; hour++) {
+      for (let hour = 8; hour < 18; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
           const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Calcular hora de inicio y fin del slot propuesto
+          const slotStart = new Date(`${dateStr}T${timeStr}:00`);
+          const slotEnd = new Date(slotStart.getTime() + treatmentDuration * 60000);
+          
+          // Verificar que el slot no se extienda más allá del horario de trabajo (6:00 PM)
+          const workEndTime = new Date(`${dateStr}T18:00:00`);
+          if (slotEnd > workEndTime) {
+            continue; // Saltar este slot si se extiende más allá del horario
+          }
+          
+          let isAvailable = true;
+          
+          // Verificar conflictos con citas existentes (sin considerar empleados específicos)
+          for (const appointment of existingAppointments) {
+            // Manejar diferentes formatos de fecha/hora de la base de datos
+            let appointmentStart: Date;
+            let appointmentEnd: Date;
+            
+            if (appointment.startTime.includes(' ')) {
+              // Formato: "YYYY-MM-DD HH:MM:SS"
+              appointmentStart = new Date(appointment.startTime.replace(' ', 'T'));
+              appointmentEnd = new Date(appointment.endTime.replace(' ', 'T'));
+            } else {
+              // Formato ISO o solo hora
+              appointmentStart = new Date(appointment.startTime);
+              appointmentEnd = new Date(appointment.endTime);
+            }
+            
+            // Verificar si hay solapamiento de tiempo
+            if (
+              (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
+              (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
+              (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
+            ) {
+              // Hay conflicto de horario - marcar como no disponible
+              console.log(`❌ Slot ${timeStr} no disponible - conflicto con cita existente:`, {
+                slotStart: slotStart.toISOString(),
+                slotEnd: slotEnd.toISOString(),
+                appointmentStart: appointmentStart.toISOString(),
+                appointmentEnd: appointmentEnd.toISOString(),
+                appointmentId: appointment.id
+              });
+              isAvailable = false;
+              break;
+            }
+          }
+          
+          if (isAvailable) {
+            console.log(`✅ Slot ${timeStr} disponible`);
+          }
+          
           slots.push({
             time: timeStr,
-            available: true, // Por simplicidad, asumimos que todos están disponibles
-            employeeId: employees[0]?.id // Asignar al primer empleado disponible
+            available: isAvailable,
+            employeeId: undefined // No asignar empleado - lo hará el administrador
           });
         }
       }
@@ -207,10 +292,87 @@ const ClientBooking: React.FC = () => {
     return days;
   };
 
+  const loadDayAvailability = async () => {
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      
+      // Obtener citas del mes actual
+      const startDate = firstDay.toISOString().split('T')[0];
+      const endDate = lastDay.toISOString().split('T')[0];
+      
+      const response = await appointmentService.getAppointments({
+        startDate,
+        endDate
+      });
+      
+      const appointments = response.data || [];
+      const availability: {[key: string]: {available: boolean, count: number}} = {};
+      
+      // Contar citas por día
+      appointments.forEach((appointment: any) => {
+        const dateKey = appointment.date;
+        if (!availability[dateKey]) {
+          availability[dateKey] = { available: true, count: 0 };
+        }
+        availability[dateKey].count++;
+        
+        // Si hay 6 o más citas, marcar como no disponible
+        if (availability[dateKey].count >= 6) {
+          availability[dateKey].available = false;
+        }
+      });
+      
+      setDayAvailability(availability);
+    } catch (error) {
+      console.error('Error al cargar disponibilidad de días:', error);
+    }
+  };
+
   const isDateAvailable = (date: Date): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date >= today;
+    
+    // No permitir fechas pasadas
+    if (date < today) return false;
+    
+    // No permitir domingos (0 = domingo)
+    if (date.getDay() === 0) return false;
+    
+    // Verificar disponibilidad por número de citas
+    const dateKey = date.toISOString().split('T')[0];
+    const dayInfo = dayAvailability[dateKey];
+    
+    return !dayInfo || dayInfo.available;
+  };
+
+  const getDayStyle = (date: Date, isCurrentMonth: boolean): string => {
+    const isAvailable = isDateAvailable(date);
+    const isSelected = selectedDate?.toDateString() === date.toDateString();
+    const isSunday = date.getDay() === 0;
+    const dateKey = date.toISOString().split('T')[0];
+    const dayInfo = dayAvailability[dateKey];
+    
+    if (isSelected) {
+      return 'bg-pink-600 text-white';
+    }
+    
+    if (!isCurrentMonth) {
+      return 'text-gray-400 cursor-not-allowed opacity-50';
+    }
+    
+    if (isSunday) {
+      return 'text-red-400 cursor-not-allowed bg-red-50';
+    }
+    
+    if (!isAvailable) {
+      return 'text-gray-400 cursor-not-allowed bg-gray-100';
+    }
+    
+    // Días disponibles en verde claro
+    return 'hover:bg-green-100 text-gray-900 bg-green-50 border border-green-200';
   };
 
   const handleDateSelect = (date: Date) => {
@@ -229,11 +391,11 @@ const ClientBooking: React.FC = () => {
     setStep(3);
   };
 
-  const handleTimeSelect = (time: string, employeeId: string) => {
+  const handleTimeSelect = (time: string, employeeId?: string) => {
     setBookingForm(prev => ({
       ...prev,
       time,
-      employeeId
+      employeeId: '' // No asignar empleado - será asignado por el administrador
     }));
     setStep(4);
   };
@@ -255,18 +417,32 @@ const ClientBooking: React.FC = () => {
 
       // Calcular hora de fin basada en la duración del tratamiento
       const [hours, minutes] = bookingForm.time.split(':').map(Number);
-      const startTime = new Date(bookingForm.date);
-      startTime.setHours(hours, minutes, 0, 0);
       
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + selectedTreatment.duration);
+      // Crear fecha y hora correctamente usando la fecha seleccionada
+      const appointmentDate = new Date(bookingForm.date + 'T00:00:00');
+      appointmentDate.setHours(hours, minutes, 0, 0);
+      
+      const endDateTime = new Date(appointmentDate);
+      endDateTime.setMinutes(endDateTime.getMinutes() + selectedTreatment.duration);
+
+      // Formatear para el backend (YYYY-MM-DD HH:mm:ss)
+      const formatDateTime = (date: Date) => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hour = date.getHours().toString().padStart(2, '0');
+        const minute = date.getMinutes().toString().padStart(2, '0');
+        const second = date.getSeconds().toString().padStart(2, '0');
+        return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+      };
 
       const appointmentData = {
         clientId: user?.id || '',
-        employeeId: bookingForm.employeeId,
+        employeeId: undefined, // No asignar empleado - será asignado por el administrador
         date: bookingForm.date,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        startTime: formatDateTime(appointmentDate),
+        endTime: formatDateTime(endDateTime),
+        status: 'SCHEDULED', // Estado inicial para nuevas citas
         notes: bookingForm.notes,
         treatments: [{
           treatmentId: bookingForm.treatmentId,
@@ -413,6 +589,26 @@ const ClientBooking: React.FC = () => {
               </button>
             </div>
 
+            {/* Leyenda del calendario */}
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-green-50 border border-green-200 rounded"></div>
+                <span className="text-xs text-gray-600">Disponible</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-red-50 rounded"></div>
+                <span className="text-xs text-gray-600">Domingos</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-100 rounded"></div>
+                <span className="text-xs text-gray-600">Completo (6+ citas)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-pink-600 rounded"></div>
+                <span className="text-xs text-gray-600">Seleccionado</span>
+              </div>
+            </div>
+
             {/* Calendario */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
@@ -425,23 +621,26 @@ const ClientBooking: React.FC = () => {
             <div className="grid grid-cols-7 gap-1">
               {getDaysInMonth(currentDate).map((dayInfo, index) => {
                 const isAvailable = isDateAvailable(dayInfo.date);
-                const isSelected = selectedDate?.toDateString() === dayInfo.date.toDateString();
+                const dateKey = dayInfo.date.toISOString().split('T')[0];
+                const appointmentCount = dayAvailability[dateKey]?.count || 0;
+                const isSunday = dayInfo.date.getDay() === 0;
                 
                 return (
-                  <button
-                    key={index}
-                    onClick={() => handleDateSelect(dayInfo.date)}
-                    disabled={!isAvailable || !dayInfo.isCurrentMonth}
-                    className={`p-2 text-sm rounded-lg transition-colors ${
-                      isSelected
-                        ? 'bg-pink-600 text-white'
-                        : isAvailable && dayInfo.isCurrentMonth
-                        ? 'hover:bg-pink-100 text-gray-900'
-                        : 'text-gray-400 cursor-not-allowed'
-                    } ${!dayInfo.isCurrentMonth ? 'opacity-50' : ''}`}
-                  >
-                    {dayInfo.date.getDate()}
-                  </button>
+                  <div key={index} className="relative">
+                    <button
+                      onClick={() => handleDateSelect(dayInfo.date)}
+                      disabled={!isAvailable || !dayInfo.isCurrentMonth}
+                      className={`w-full p-2 text-sm rounded-lg transition-colors ${getDayStyle(dayInfo.date, dayInfo.isCurrentMonth)}`}
+                      title={isSunday ? 'Domingos no disponibles' : appointmentCount >= 6 ? 'Día completo (6+ citas)' : `${appointmentCount} citas agendadas`}
+                    >
+                      {dayInfo.date.getDate()}
+                    </button>
+                    {appointmentCount > 0 && dayInfo.isCurrentMonth && (
+                      <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                        {appointmentCount}
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -450,38 +649,94 @@ const ClientBooking: React.FC = () => {
 
         {step === 2 && (
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Selecciona un tratamiento</h2>
-              <p className="text-sm text-gray-600">
-                Fecha seleccionada: {selectedDate && formatDate(selectedDate)}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">✨ Selecciona un tratamiento</h2>
+              <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                📅 <strong>Fecha:</strong> {selectedDate && formatDate(selectedDate)}
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {treatments.map(treatment => (
-                <button
-                  key={treatment.id}
-                  onClick={() => handleTreatmentSelect(treatment.id)}
-                  className={`p-4 border rounded-lg text-left transition-colors hover:border-pink-300 hover:bg-pink-50 ${
-                    bookingForm.treatmentId === treatment.id
-                      ? 'border-pink-500 bg-pink-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <SparklesIcon className="h-6 w-6 text-pink-600 mt-1" />
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{treatment.name}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{treatment.description}</p>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                        <span>⏱️ {treatment.duration} min</span>
-                        <span>💰 ${treatment.price}</span>
+            {treatments.length === 0 ? (
+              <div className="text-center py-8">
+                <SparklesIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay tratamientos disponibles</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Contacta con la clínica para más información sobre nuestros servicios.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {treatments.map(treatment => (
+                  <div
+                    key={treatment.id}
+                    className={`relative border rounded-xl transition-all duration-200 hover:shadow-md ${
+                      bookingForm.treatmentId === treatment.id
+                        ? 'border-pink-500 bg-gradient-to-br from-pink-50 to-purple-50 shadow-md'
+                        : 'border-gray-200 hover:border-pink-300 hover:bg-pink-50'
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleTreatmentSelect(treatment.id)}
+                      className="w-full p-5 text-left"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <div className={`p-3 rounded-full ${
+                          bookingForm.treatmentId === treatment.id
+                            ? 'bg-pink-100'
+                            : 'bg-gray-100'
+                        }`}>
+                          <SparklesIcon className={`h-6 w-6 ${
+                            bookingForm.treatmentId === treatment.id
+                              ? 'text-pink-600'
+                              : 'text-gray-600'
+                          }`} />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 mb-2">{treatment.name}</h3>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {treatment.description || 'Tratamiento profesional personalizado'}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4 text-sm">
+                              <span className="flex items-center text-blue-600">
+                                <ClockIcon className="h-4 w-4 mr-1" />
+                                {treatment.duration} min
+                              </span>
+                              <span className="flex items-center text-green-600 font-semibold">
+                                💰 ${parseFloat(String(treatment.price || '0')).toFixed(2)}
+                              </span>
+                            </div>
+                            
+                            {bookingForm.treatmentId === treatment.id && (
+                              <div className="flex items-center text-pink-600">
+                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </button>
                   </div>
-                </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+            
+            {bookingForm.treatmentId && (
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium text-green-800">
+                    Tratamiento seleccionado. Continúa para elegir el horario.
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -524,77 +779,176 @@ const ClientBooking: React.FC = () => {
 
         {step === 4 && (
           <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Confirmar cita</h2>
+            <div className="text-center mb-6">
+              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">🎉 Confirmar tu Cita</h2>
+              <p className="text-sm text-gray-600">
+                Revisa los detalles de tu cita antes de confirmar
+              </p>
+            </div>
             
-            <div className="space-y-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Resumen de la cita</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fecha:</span>
-                    <span className="text-gray-900">{selectedDate && formatDate(selectedDate)}</span>
+            <div className="space-y-6 mb-8">
+              {/* Información principal de la cita */}
+              <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 border border-pink-200">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <CalendarIcon className="h-5 w-5 text-pink-600 mr-2" />
+                  Detalles de la Cita
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <CalendarIcon className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Fecha</p>
+                        <p className="font-medium text-gray-900">{selectedDate && formatDate(selectedDate)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <ClockIcon className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Hora</p>
+                        <p className="font-medium text-gray-900">{formatTime(bookingForm.time)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Hora:</span>
-                    <span className="text-gray-900">{formatTime(bookingForm.time)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tratamiento:</span>
-                    <span className="text-gray-900">{getSelectedTreatment()?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Duración:</span>
-                    <span className="text-gray-900">{getSelectedTreatment()?.duration} minutos</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Especialista:</span>
-                    <span className="text-gray-900">
-                      {getSelectedEmployee() 
-                        ? `${getSelectedEmployee()?.firstName} ${getSelectedEmployee()?.lastName}`
-                        : 'Por asignar'
-                      }
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-medium border-t pt-2">
-                    <span className="text-gray-900">Precio:</span>
-                    <span className="text-gray-900">${getSelectedTreatment()?.price}</span>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <SparklesIcon className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Tratamiento</p>
+                        <p className="font-medium text-gray-900">{getSelectedTreatment()?.name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <UserIcon className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Especialista</p>
+                        <p className="font-medium text-orange-600">
+                          Será asignado por la clinica
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notas adicionales (opcional)
+              {/* Información del tratamiento */}
+              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <SparklesIcon className="h-5 w-5 text-pink-600 mr-2" />
+                  Información del Tratamiento
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <ClockIcon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Duración</p>
+                    <p className="font-semibold text-gray-900">{getSelectedTreatment()?.duration} min</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <svg className="h-6 w-6 text-green-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-500">Precio</p>
+                    <p className="font-semibold text-gray-900">${parseFloat(String(getSelectedTreatment()?.price || '0')).toFixed(2)}</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <svg className="h-6 w-6 text-purple-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    <p className="text-sm text-gray-500">Estado</p>
+                    <p className="font-semibold text-orange-600">Por confirmar</p>
+                  </div>
+                </div>
+                
+                {getSelectedTreatment()?.description && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Descripción:</span> {getSelectedTreatment()?.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Notas adicionales */}
+              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  📝 Notas adicionales (opcional)
                 </label>
                 <textarea
                   value={bookingForm.notes}
                   onChange={(e) => setBookingForm(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
-                  placeholder="Menciona cualquier información adicional o requerimientos especiales..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"
+                  placeholder="Menciona cualquier información adicional, alergias, medicamentos, o requerimientos especiales que debamos conocer..."
                 />
+                <p className="text-xs text-gray-500 mt-2">
+                  Esta información ayudará a nuestro equipo a brindarte el mejor servicio posible.
+                </p>
+              </div>
+
+              {/* Información importante */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <svg className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  </svg>
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Información importante</h4>
+                    <div className="text-sm text-yellow-700 space-y-1">
+                      <p>• Tu cita será creada en estado "Programada" y requiere confirmación del personal</p>
+                      <p>• La clinica asignará el especialista más adecuado para tu tratamiento</p>
+                      <p>• Recibirás una notificación una vez que la cita sea confirmada y asignada</p>
+                      <p>• Por favor llega 10 minutos antes de tu cita</p>
+                      <p>• Para cancelar o reprogramar, contacta con anticipación</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={() => setStep(3)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Volver
+                ← Volver al Horario
               </button>
               <button
                 onClick={handleSubmitBooking}
                 disabled={isSubmitting}
-                className="px-6 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
               >
                 {isSubmitting ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Agendando...
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Agendando tu cita...
                   </div>
                 ) : (
-                  'Confirmar Cita'
+                  <div className="flex items-center justify-center">
+                    <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                      Agendar Cita
+                  </div>
                 )}
               </button>
             </div>

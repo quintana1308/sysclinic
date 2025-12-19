@@ -108,6 +108,22 @@ const ClientAppointments: React.FC = () => {
         const appointmentsData = response.data;
         console.log('✅ Citas obtenidas:', appointmentsData);
         
+        // Log detallado de fechas y horas para debugging
+        appointmentsData.forEach((apt: any, index: number) => {
+          console.log(`📅 Cita ${index + 1}:`, {
+            id: apt.id,
+            date: apt.date,
+            startTime: apt.startTime,
+            endTime: apt.endTime,
+            dateType: typeof apt.date,
+            startTimeType: typeof apt.startTime,
+            endTimeType: typeof apt.endTime,
+            formattedDate: formatDate(apt.date),
+            formattedStartTime: formatTime(apt.startTime),
+            formattedEndTime: formatTime(apt.endTime)
+          });
+        });
+        
         // Procesar y mapear los datos de las citas
         const processedAppointments = appointmentsData.map((apt: any) => {
           console.log('🔄 Procesando cita:', apt);
@@ -190,34 +206,130 @@ const ClientAppointments: React.FC = () => {
   };
 
   const formatDate = (dateString: string): string => {
+    console.log('🔍 formatDate input:', { dateString, type: typeof dateString });
+    
+    if (!dateString) return 'Fecha no disponible';
+    
+    // Método 1: Si es formato YYYY-MM-DD, parsear manualmente sin conversión de zona horaria
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Crear fecha en zona horaria local sin conversión UTC
+      const date = new Date(year, month - 1, day, 12, 0, 0); // Usar mediodía para evitar cambios de día
+      console.log('📅 Método 1 (YYYY-MM-DD):', { input: dateString, year, month, day, date: date.toString() });
+      
+      return date.toLocaleDateString('es-VE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'America/Caracas'
+      });
+    }
+    
+    // Método 2: Para formatos ISO con T, extraer fecha directamente
+    if (dateString.includes('T')) {
+      const datePart = dateString.split('T')[0]; // "2025-12-25"
+      const [year, month, day] = datePart.split('-').map(Number);
+      const date = new Date(year, month - 1, day, 12, 0, 0);
+      console.log('📅 Método 2 (ISO):', { input: dateString, datePart, year, month, day });
+      
+      return date.toLocaleDateString('es-VE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
+    // Método 3: Fallback
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    console.log('📅 Método 3 (fallback):', { input: dateString, parsed: date.toString() });
+    
+    return date.toLocaleDateString('es-VE', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'America/Caracas'
     });
   };
 
   const formatTime = (timeString: string): string => {
-    // Si timeString es solo hora (HH:MM), crear fecha completa
-    if (timeString && timeString.includes(':') && !timeString.includes('T')) {
-      const today = new Date().toISOString().split('T')[0];
-      const fullDateTime = `${today}T${timeString}:00`;
-      const date = new Date(fullDateTime);
-      return date.toLocaleTimeString('es-ES', {
+    console.log('🕐 formatTime input:', { timeString, type: typeof timeString });
+    
+    if (!timeString) return 'Hora no disponible';
+    
+    // Método 1: Si timeString es formato YYYY-MM-DD HH:MM:SS, extraer solo la hora SIN conversión de zona horaria
+    if (timeString && timeString.includes(' ') && timeString.includes(':')) {
+      const timePart = timeString.split(' ')[1]; // Obtener solo la parte de hora "10:00:00"
+      const [hours, minutes] = timePart.split(':').map(Number);
+      console.log('🕐 Método 1 (YYYY-MM-DD HH:MM:SS):', { input: timeString, timePart, hours, minutes });
+      
+      // Crear fecha con hora específica SIN conversión de zona horaria
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      
+      const formatted = date.toLocaleTimeString('es-VE', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true
       });
+      console.log('🕐 Resultado método 1:', formatted);
+      return formatted;
     }
     
+    // Método 2: Si timeString es solo hora (HH:MM o HH:MM:SS), usar directamente
+    if (timeString && timeString.includes(':') && !timeString.includes('T') && !timeString.includes(' ')) {
+      const timeParts = timeString.split(':');
+      const hours = parseInt(timeParts[0]);
+      const minutes = parseInt(timeParts[1]);
+      console.log('🕐 Método 2 (HH:MM):', { input: timeString, hours, minutes });
+      
+      // Crear fecha en zona horaria de Caracas
+      const today = new Date();
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, 0);
+      
+      const formatted = date.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Caracas'
+      });
+      console.log('🕐 Resultado método 2:', formatted);
+      return formatted;
+    }
+    
+    // Método 3: Para formatos ISO completos - extraer hora directamente sin conversión UTC
+    console.log('🕐 Método 3 (ISO completo):', { input: timeString });
+    
+    if (timeString.includes('T') && timeString.includes('Z')) {
+      // Extraer la hora directamente del formato ISO: "2025-12-25T10:00:00.000Z"
+      const timePart = timeString.split('T')[1].replace('.000Z', ''); // "10:00:00"
+      const [hours, minutes] = timePart.split(':').map(Number);
+      console.log('🕐 Método 3 - Extracción directa:', { timePart, hours, minutes });
+      
+      // Crear fecha con hora específica SIN conversión de zona horaria
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      
+      const formatted = date.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+      console.log('🕐 Resultado método 3:', formatted);
+      return formatted;
+    }
+    
+    // Fallback para otros formatos ISO
     const date = new Date(timeString);
-    return date.toLocaleTimeString('es-ES', {
+    const formatted = date.toLocaleTimeString('es-VE', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
+    console.log('🕐 Resultado método 3 fallback:', formatted);
+    return formatted;
   };
 
   const getStatusColor = (status: string): string => {

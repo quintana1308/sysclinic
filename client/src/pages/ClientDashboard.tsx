@@ -96,6 +96,7 @@ const ClientDashboard: React.FC = () => {
   // Menú de navegación para clientes
   const menuItems: MenuItem[] = [
     { name: 'Inicio', path: '/client-dashboard', icon: HomeIcon, page: 'home' },
+    { name: 'Agendar cita', path: '/client-dashboard/booking', icon: CalendarIcon, page: 'booking' },
     { name: 'Mis Citas', path: '/client-dashboard/appointments', icon: CalendarIcon, page: 'appointments' },
     { name: 'Tratamientos', path: '/client-dashboard/treatments', icon: SparklesIcon, page: 'treatments' },
     { name: 'Mis Facturas', path: '/client-dashboard/invoices', icon: DocumentTextIcon, page: 'invoices' },

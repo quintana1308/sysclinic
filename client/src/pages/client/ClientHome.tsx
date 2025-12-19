@@ -85,6 +85,22 @@ const ClientHome: React.FC = () => {
       let appointments: any[] = [];
       if (appointmentsResponse.status === 'fulfilled') {
         appointments = appointmentsResponse.value.data || [];
+        
+        // Log detallado de fechas y horas para debugging
+        console.log('🏠 ClientHome - Citas obtenidas:', appointments.length);
+        appointments.slice(0, 3).forEach((apt: any, index: number) => {
+          console.log(`📅 ClientHome Cita ${index + 1}:`, {
+            id: apt.id,
+            date: apt.date,
+            startTime: apt.startTime,
+            endTime: apt.endTime,
+            dateType: typeof apt.date,
+            startTimeType: typeof apt.startTime,
+            endTimeType: typeof apt.endTime,
+            formattedDate: formatDate(apt.date),
+            formattedStartTime: formatTime(apt.startTime)
+          });
+        });
       }
 
       // Procesar facturas
@@ -136,18 +152,106 @@ const ClientHome: React.FC = () => {
   };
 
   const formatDate = (dateString: string): string => {
+    if (!dateString) return 'Fecha no disponible';
+    
+    // Si es formato YYYY-MM-DD, parsear manualmente sin conversión de zona horaria
+    if (dateString && typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Crear fecha en zona horaria local sin conversión UTC
+      const date = new Date(year, month - 1, day, 12, 0, 0); // Usar mediodía para evitar cambios de día
+      
+      return date.toLocaleDateString('es-VE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'America/Caracas'
+      });
+    }
+    
+    // Para formatos ISO con T, extraer fecha directamente
+    if (dateString.includes('T')) {
+      const datePart = dateString.split('T')[0]; // "2025-12-25"
+      const [year, month, day] = datePart.split('-').map(Number);
+      const date = new Date(year, month - 1, day, 12, 0, 0);
+      
+      return date.toLocaleDateString('es-VE', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    
+    // Fallback
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
+    
+    return date.toLocaleDateString('es-VE', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'America/Caracas'
     });
   };
 
   const formatTime = (timeString: string): string => {
+    if (!timeString) return 'Hora no disponible';
+    
+    // Si timeString es formato YYYY-MM-DD HH:MM:SS, extraer solo la hora SIN conversión de zona horaria
+    if (timeString && timeString.includes(' ') && timeString.includes(':')) {
+      const timePart = timeString.split(' ')[1]; // Obtener solo la parte de hora "10:00:00"
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      // Crear fecha con hora específica SIN conversión de zona horaria
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      
+      return date.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    // Si timeString es solo hora (HH:MM o HH:MM:SS), usar directamente
+    if (timeString && timeString.includes(':') && !timeString.includes('T') && !timeString.includes(' ')) {
+      const timeParts = timeString.split(':');
+      const hours = parseInt(timeParts[0]);
+      const minutes = parseInt(timeParts[1]);
+      
+      // Crear fecha en zona horaria de Caracas
+      const today = new Date();
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, 0);
+      
+      return date.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Caracas'
+      });
+    }
+    
+    // Para formatos ISO completos - extraer hora directamente sin conversión UTC
+    if (timeString.includes('T') && timeString.includes('Z')) {
+      // Extraer la hora directamente del formato ISO: "2025-12-25T10:00:00.000Z"
+      const timePart = timeString.split('T')[1].replace('.000Z', ''); // "10:00:00"
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      // Crear fecha con hora específica SIN conversión de zona horaria
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      
+      return date.toLocaleTimeString('es-VE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    // Fallback para otros formatos ISO
     const date = new Date(timeString);
-    return date.toLocaleTimeString('es-ES', {
+    return date.toLocaleTimeString('es-VE', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true

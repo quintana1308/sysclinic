@@ -426,9 +426,20 @@ export const createAppointment = async (
     }
 
     // Verificar que el cliente existe y pertenece a la empresa
-    console.log('Validating client:', { clientId, companyId });
+    console.log('Validating client:', { clientId, companyId, userRoles: req.user?.roles });
     
-    const client = await queryOne(`
+    // Detectar si el usuario actual es un cliente creando su propia cita
+    const userRoles = req.user?.roles || [];
+    const isClientUser = userRoles.some((role: any) => 
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'cliente' ||
+      (typeof role === 'string' ? role.toLowerCase() : role.name?.toLowerCase()) === 'client'
+    );
+    
+    let client;
+    
+    // Intentar buscar primero por clientId (c.id), si no encuentra, buscar por userId (c.userId)
+    console.log('Buscando cliente por clientId:', clientId);
+    client = await queryOne(`
       SELECT 
         c.id,
         c.userId,
@@ -442,11 +453,38 @@ export const createAppointment = async (
       WHERE c.id = ?
     `, [clientId]);
     
+    if (!client) {
+      // Si no se encontró por clientId, intentar buscar por userId
+      console.log('No encontrado por clientId, buscando por userId:', clientId);
+      client = await queryOne(`
+        SELECT 
+          c.id,
+          c.userId,
+          c.clientCode,
+          c.companyId,
+          u.firstName,
+          u.lastName,
+          u.email
+        FROM clients c
+        INNER JOIN users u ON c.userId = u.id
+        WHERE c.userId = ?
+      `, [clientId]);
+      
+      if (client) {
+        console.log('Cliente encontrado por userId (compatibilidad)');
+      }
+    } else {
+      console.log('Cliente encontrado por clientId (método preferido)');
+    }
+    
     console.log('Client found:', client);
     
     if (!client) {
       throw new AppError('Cliente no encontrado', 404);
     }
+    
+    // Si es un cliente creando su propia cita, usar el clientId real de la tabla clients
+    const actualClientId = client.id;
     
     // Verificar si el cliente pertenece a la empresa (según estructura real)
     if (!req.user?.isMaster && client.companyId !== companyId) {
@@ -547,6 +585,29 @@ export const createAppointment = async (
     // Crear la cita
     const appointmentId = generateId();
     
+    // Formatear startTime y endTime para MySQL
+    let formattedStartTime = startTime;
+    let formattedEndTime = endTime;
+    
+    // Si startTime es solo hora (formato del panel admin), combinar con la fecha
+    if (startTime && startTime.length <= 8 && !startTime.includes(' ') && !startTime.includes('T')) {
+      formattedStartTime = `${date} ${startTime}:00`;
+      console.log('Formato admin detectado - startTime:', formattedStartTime);
+    }
+    
+    // Si endTime es solo hora (formato del panel admin), combinar con la fecha
+    if (endTime && endTime.length <= 8 && !endTime.includes(' ') && !endTime.includes('T')) {
+      formattedEndTime = `${date} ${endTime}:00`;
+      console.log('Formato admin detectado - endTime:', formattedEndTime);
+    }
+    
+    console.log('Datos finales para inserción:', {
+      startTime: formattedStartTime,
+      endTime: formattedEndTime,
+      date,
+      clientId: actualClientId
+    });
+    
     await query(`
       INSERT INTO appointments (
         id, companyId, clientId, employeeId, date, startTime, endTime, 
@@ -554,8 +615,8 @@ export const createAppointment = async (
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?, NOW(), NOW())
     `, [
-      appointmentId, companyId, clientId, validatedUserId, date, 
-      `${date} ${startTime}`, `${date} ${endTime}`, 
+      appointmentId, companyId, actualClientId, validatedUserId, date, 
+      formattedStartTime, formattedEndTime, 
       notes || null, totalAmount
     ]);
 
