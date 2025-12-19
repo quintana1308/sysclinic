@@ -52,6 +52,7 @@ interface ClientAppointment {
   notes?: string;
   totalAmount?: number;
   createdAt: string;
+  createdBy?: string;
   treatments?: Array<{
     name: string;
   }>;
@@ -161,6 +162,7 @@ const ClientAppointments: React.FC = () => {
             notes: apt.notes,
             totalAmount: apt.totalAmount || apt.calculatedTotal || 0,
             createdAt: apt.createdAt,
+            createdBy: apt.createdBy,
             treatments: apt.treatments,
             employee: apt.employee
           };
@@ -386,11 +388,14 @@ const ClientAppointments: React.FC = () => {
     const now = new Date();
     const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 3600);
     
-    // Permitir cancelar si la cita es en el futuro (más de 2 horas) y no está cancelada o completada
+    // Solo permitir cancelar si:
+    // 1. La cita es en el futuro (más de 2 horas) y no está cancelada o completada
+    // 2. La cita fue creada por el cliente actual (createdBy igual al userId)
     return hoursDifference > 2 && 
            appointment.status !== 'CANCELLED' && 
            appointment.status !== 'COMPLETED' && 
-           appointment.status !== 'NO_SHOW';
+           appointment.status !== 'NO_SHOW' &&
+           appointment.createdBy === user?.id;
   };
 
   const canConfirmAppointment = (appointment: ClientAppointment): boolean => {
@@ -398,8 +403,12 @@ const ClientAppointments: React.FC = () => {
     const now = new Date();
     const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 3600);
     
-    // Permitir confirmar si la cita está programada y es en el futuro
-    return hoursDifference > 0 && appointment.status === 'SCHEDULED';
+    // Solo permitir confirmar si:
+    // 1. La cita está programada y es en el futuro
+    // 2. La cita NO fue creada por el cliente actual (createdBy diferente al userId)
+    return hoursDifference > 0 && 
+           appointment.status === 'SCHEDULED' && 
+           appointment.createdBy !== user?.id;
   };
 
   const openCancelModal = (appointment: ClientAppointment) => {

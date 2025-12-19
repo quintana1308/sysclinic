@@ -10,6 +10,7 @@ export interface Appointment {
   status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' | 'RESCHEDULED';
   notes?: string;
   totalAmount: number;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
   client?: {
@@ -22,6 +23,11 @@ export interface Appointment {
     firstName: string;
     lastName: string;
     position: string;
+  };
+  createdByUser?: {
+    firstName: string;
+    lastName: string;
+    email: string;
   };
   treatments?: Array<{
     id: string;

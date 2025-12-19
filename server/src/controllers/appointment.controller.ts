@@ -196,6 +196,9 @@ export const getAppointments = async (
         ue.lastName as employeeLastName,
         ue.email as employeeEmail,
         e.position as employeePosition,
+        ucreated.firstName as createdByFirstName,
+        ucreated.lastName as createdByLastName,
+        ucreated.email as createdByEmail,
         CASE 
           WHEN e.id IS NOT NULL THEN 'employee'
           WHEN ucomp.role = 'admin' THEN 'admin'
@@ -207,6 +210,7 @@ export const getAppointments = async (
       LEFT JOIN users ue ON a.employeeId = ue.id
       LEFT JOIN employees e ON a.employeeId = e.userId
       LEFT JOIN user_companies ucomp ON a.employeeId = ucomp.userId AND ucomp.role = 'admin'
+      LEFT JOIN users ucreated ON a.createdBy = ucreated.id
       ${whereClause}
       ORDER BY a.date DESC, a.startTime DESC
     `;
@@ -632,13 +636,13 @@ export const createAppointment = async (
     await query(`
       INSERT INTO appointments (
         id, companyId, clientId, employeeId, date, startTime, endTime, 
-        status, notes, totalAmount, createdAt, updatedAt
+        status, notes, totalAmount, createdBy, createdAt, updatedAt
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?, NOW(), NOW())
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?, ?, NOW(), NOW())
     `, [
       appointmentId, companyId, actualClientId, validatedUserId, date, 
       formattedStartTime, formattedEndTime, 
-      notes || null, totalAmount
+      notes || null, totalAmount, req.user?.id
     ]);
 
     // Agregar tratamientos
