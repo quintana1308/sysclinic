@@ -188,6 +188,18 @@ const ClientBooking: React.FC = () => {
         selectedTreatment: selectedTreatment?.name
       });
       
+      // DEBUG: Mostrar TODAS las citas con sus horarios exactos
+      console.log(`🔍 DEBUGGING - Todas las citas del ${dateStr}:`);
+      existingAppointments.forEach((apt, index) => {
+        console.log(`  Cita ${index + 1}:`, {
+          id: apt.id,
+          startTime: apt.startTime,
+          endTime: apt.endTime,
+          status: apt.status,
+          date: apt.date
+        });
+      });
+      
       // Log de citas existentes para debugging
       existingAppointments.forEach(apt => {
         console.log(`📋 Cita existente:`, {

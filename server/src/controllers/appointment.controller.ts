@@ -212,7 +212,14 @@ export const getAppointments = async (
     console.log(`📊 Parámetros utilizados:`, params);
 
     // Aplicar paginación manual (compatible con Railway MySQL)
-    const appointments = allAppointments.slice(offset, offset + limit);
+    // EXCEPCIÓN: Para validación de horarios, devolver TODAS las citas sin paginación
+    let appointments;
+    if (isDateRangeQuery) {
+      console.log(`🔍 Consulta de validación de horarios - devolviendo TODAS las ${allAppointments.length} citas sin paginación`);
+      appointments = allAppointments; // Todas las citas para validación
+    } else {
+      appointments = allAppointments.slice(offset, offset + limit); // Paginación normal
+    }
 
     // Obtener tratamientos para cada cita y mapear datos del cliente
     for (const appointment of appointments) {
