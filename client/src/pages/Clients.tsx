@@ -469,7 +469,23 @@ const Clients: React.FC = () => {
       const response = await clientService.createClient(clientData);
       
       if (response.success) {
-        await loadClients();
+        // Agregar el nuevo cliente a la lista local sin recargar
+        const newClient: Client = {
+          ...clientData,
+          id: response.data?.id || Date.now().toString(),
+          phone: clientData.phone || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          totalAppointments: 0,
+          completedAppointments: 0,
+          status: 'active',
+          clientSince: new Date().toISOString(),
+          clientCode: `CLI-${Date.now()}`,
+          userId: response.data?.userId || '',
+          isActive: true
+        };
+        
+        setAllClients(prevClients => [newClient, ...prevClients]);
         handleCloseModal();
         
         // Mostrar información del cliente creado
@@ -873,8 +889,14 @@ const Clients: React.FC = () => {
       const response = await clientService.toggleClientStatus(client.id);
       
       if (response.success) {
-        // Recargar la lista de clientes para obtener datos actualizados
-        await loadClients();
+        // Actualizar el estado del cliente en la lista local sin recargar
+        setAllClients(prevClients => 
+          prevClients.map(c => 
+            c.id === client.id 
+              ? { ...c, status: client.status === 'active' ? 'inactive' : 'active', isActive: !c.isActive }
+              : c
+          )
+        );
         
         toast.success(`Cliente ${action}do exitosamente`, {
           duration: 4000,
@@ -924,8 +946,10 @@ const Clients: React.FC = () => {
       const response = await clientService.deleteClient(clientToDelete.id);
       
       if (response.success) {
-        // Recargar la lista de clientes para obtener datos actualizados
-        await loadClients();
+        // Eliminar el cliente de la lista local sin recargar
+        setAllClients(prevClients => 
+          prevClients.filter(c => c.id !== clientToDelete.id)
+        );
         
         toast.success('Cliente eliminado exitosamente', {
           duration: 4000,
@@ -1083,8 +1107,14 @@ const Clients: React.FC = () => {
       const response = await clientService.updateClient(selectedClient.id, clientData);
       
       if (response.success) {
-        // Recargar la lista de clientes para obtener datos actualizados
-        await loadClients();
+        // Actualizar el cliente en la lista local sin recargar
+        setAllClients(prevClients => 
+          prevClients.map(c => 
+            c.id === selectedClient.id 
+              ? { ...c, ...clientData, id: selectedClient.id }
+              : c
+          )
+        );
         
         handleCloseEditModal();
         

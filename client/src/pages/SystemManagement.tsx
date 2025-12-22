@@ -4600,6 +4600,7 @@ const SystemManagement: React.FC = () => {
                         step="0.01"
                         value={templateFormData.price}
                         onChange={(e) => setTemplateFormData({...templateFormData, price: parseFloat(e.target.value) || 0})}
+                        onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         min="0"
                         required
@@ -4834,6 +4835,7 @@ const SystemManagement: React.FC = () => {
                         step="0.01"
                         value={templateFormData.price}
                         onChange={(e) => setTemplateFormData({...templateFormData, price: parseFloat(e.target.value) || 0})}
+                        onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                         min="0"
                         required

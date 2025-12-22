@@ -36,7 +36,8 @@ export const getInvoices = async (
       limit = 10,
       search = '',
       status,
-      clientId
+      clientId,
+      createdDate
     } = req.query;
 
     const pageNum = parseInt(page as string) || 1;
@@ -49,7 +50,8 @@ export const getInvoices = async (
       offset,
       search,
       status,
-      clientId
+      clientId,
+      createdDate
     });
 
     // Construir condiciones WHERE
@@ -123,6 +125,13 @@ export const getInvoices = async (
     if (clientId && clientId.trim() && !isClient) {
       whereConditions.push('i.clientId = ?');
       queryParams.push(clientId);
+    }
+
+    // Filtro por fecha de creación
+    if (createdDate && createdDate.trim()) {
+      whereConditions.push('DATE(i.createdAt) = ?');
+      queryParams.push(createdDate);
+      console.log('📅 Filtro por fecha de creación aplicado:', createdDate);
     }
 
     const whereClause = whereConditions.join(' AND ');
@@ -409,6 +418,58 @@ export const getInvoiceById = async (
     res.json(response);
   } catch (error) {
     next(error);
+  }
+};
+
+// Verificar si existe factura por appointmentId
+export const checkInvoiceByAppointment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { appointmentId } = req.params;
+    
+    console.log('🔍 Verificando si existe factura para appointmentId:', appointmentId);
+    
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'appointmentId es requerido'
+      });
+    }
+    
+    // Buscar factura por appointmentId
+    const invoice = await queryOne(
+      'SELECT id, status, amount FROM invoices WHERE appointmentId = ?',
+      [appointmentId]
+    );
+    
+    console.log('📋 Resultado de búsqueda:', invoice);
+    
+    if (invoice) {
+      console.log('✅ Factura encontrada:', invoice.id);
+      return res.json({
+        success: true,
+        exists: true,
+        data: {
+          invoiceId: invoice.id,
+          status: invoice.status,
+          amount: invoice.amount
+        }
+      });
+    } else {
+      console.log('❌ No se encontró factura para esta cita');
+      return res.json({
+        success: true,
+        exists: false,
+        data: null
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error verificando factura por appointmentId:', error);
+    return next(new AppError('Error al verificar factura', 500));
   }
 };
 

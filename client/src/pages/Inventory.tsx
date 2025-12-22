@@ -219,7 +219,22 @@ const Inventory: React.FC = () => {
         toast.success('Insumo creado exitosamente');
         setShowCreateModal(false);
         resetForm();
-        loadSupplies(true); // Recargar todos los datos
+        // Agregar el nuevo insumo a la lista local sin recargar
+        const newSupply: ApiSupply = {
+          ...formData,
+          id: response.data?.id || Date.now().toString(),
+          maxStock: formData.maxStock || 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          isActive: true
+        };
+        setAllSupplies(prevSupplies => [newSupply, ...prevSupplies]);
+        if (useLocalFiltering) {
+          applyLocalFilters([newSupply, ...allSupplies]);
+        } else {
+          setSupplies(prevSupplies => [newSupply, ...prevSupplies]);
+        }
       }
     } catch (error) {
       console.error('Error creating supply:', error);
@@ -245,7 +260,25 @@ const Inventory: React.FC = () => {
         toast.success('Insumo actualizado exitosamente');
         setShowEditModal(false);
         resetForm();
-        loadSupplies(true); // Recargar todos los datos
+        // Actualizar el insumo en la lista local sin recargar
+        setAllSupplies(prevSupplies => 
+          prevSupplies.map(s => 
+            s.id === selectedSupply.id 
+              ? { ...s, ...formData, id: selectedSupply.id }
+              : s
+          )
+        );
+        if (useLocalFiltering) {
+          applyLocalFilters();
+        } else {
+          setSupplies(prevSupplies => 
+            prevSupplies.map(s => 
+              s.id === selectedSupply.id 
+                ? { ...s, ...formData, id: selectedSupply.id }
+                : s
+            )
+          );
+        }
       }
     } catch (error) {
       console.error('Error updating supply:', error);
@@ -273,7 +306,29 @@ const Inventory: React.FC = () => {
         } exitosamente`);
         setShowStockModal(false);
         setStockMovement({ quantity: 0, type: 'add', reason: '', reference: undefined });
-        loadSupplies(true); // Recargar todos los datos
+        // Actualizar el stock del insumo en la lista local sin recargar
+        const newStock = stockMovement.type === 'add' 
+          ? selectedSupply.stock + stockMovement.quantity
+          : selectedSupply.stock - stockMovement.quantity;
+        
+        setAllSupplies(prevSupplies => 
+          prevSupplies.map(s => 
+            s.id === selectedSupply.id 
+              ? { ...s, stock: newStock }
+              : s
+          )
+        );
+        if (useLocalFiltering) {
+          applyLocalFilters();
+        } else {
+          setSupplies(prevSupplies => 
+            prevSupplies.map(s => 
+              s.id === selectedSupply.id 
+                ? { ...s, stock: newStock }
+                : s
+            )
+          );
+        }
       }
     } catch (error) {
       console.error('Error updating stock:', error);
@@ -847,6 +902,7 @@ const Inventory: React.FC = () => {
                         step="0.01"
                         value={formData.unitPrice}
                         onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+                        onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         min="0"
                         required
@@ -1086,6 +1142,7 @@ const Inventory: React.FC = () => {
                         step="0.01"
                         value={formData.unitPrice}
                         onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+                        onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                         min="0"
                         required

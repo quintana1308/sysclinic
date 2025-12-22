@@ -23,6 +23,12 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Configurar idioma del documento
+  React.useEffect(() => {
+    document.documentElement.lang = 'es';
+    document.documentElement.setAttribute('translate', 'no');
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

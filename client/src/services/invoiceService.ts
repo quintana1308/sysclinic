@@ -80,6 +80,7 @@ export interface InvoiceFilters {
   search?: string;
   status?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED';
   clientId?: string;
+  createdDate?: string;
 }
 
 export interface DiscountData {

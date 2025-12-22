@@ -562,12 +562,12 @@ export const createAppointment = async (
       });
     }
 
-    // Verificar disponibilidad del encargado (admin o empleado)
+    // Verificar disponibilidad del encargado (máximo 3 citas simultáneas)
     if (validatedUserId) {
       const startDateTimeStr = `${date} ${startTime}`;
       const endDateTimeStr = `${date} ${endTime}`;
       
-      const conflictingAppointment = await queryOne<any>(`
+      const conflictingAppointments = await query<any>(`
         SELECT id FROM appointments 
         WHERE employeeId = ? 
         AND date = ? 
@@ -579,8 +579,8 @@ export const createAppointment = async (
         )
       `, [validatedUserId, date, startDateTimeStr, startDateTimeStr, endDateTimeStr, endDateTimeStr, startDateTimeStr, endDateTimeStr]);
 
-      if (conflictingAppointment) {
-        throw new AppError('El encargado ya tiene una cita en ese horario', 400);
+      if (conflictingAppointments.length >= 3) {
+        throw new AppError('El encargado ya tiene el máximo de 3 citas simultáneas en ese horario', 400);
       }
     }
 
@@ -743,13 +743,13 @@ export const updateAppointment = async (
       validatedUserId = encargado.userId || encargado.id;
     }
 
-    // Verificar disponibilidad del encargado si se cambia
+    // Verificar disponibilidad del encargado si se cambia (máximo 3 citas simultáneas)
     if (validatedUserId && (date || startTime || endTime)) {
       const checkDate = date || appointment.date.toISOString().split('T')[0];
       const checkStartTime = startTime || appointment.startTime.toTimeString().slice(0, 5);
       const checkEndTime = endTime || appointment.endTime.toTimeString().slice(0, 5);
 
-      const conflictingAppointment = await queryOne<any>(`
+      const conflictingAppointments = await query<any>(`
         SELECT id FROM appointments 
         WHERE employeeId = ? 
         AND id != ?
@@ -762,8 +762,8 @@ export const updateAppointment = async (
         )
       `, [validatedUserId, id, checkDate, checkStartTime, checkStartTime, checkEndTime, checkEndTime, checkStartTime, checkEndTime]);
 
-      if (conflictingAppointment) {
-        throw new AppError('El encargado ya tiene una cita en ese horario', 400);
+      if (conflictingAppointments.length >= 3) {
+        throw new AppError('El encargado ya tiene el máximo de 3 citas simultáneas en ese horario', 400);
       }
     }
 
@@ -1303,14 +1303,34 @@ export const cancelAppointment = async (
       throw new AppError('No se puede cancelar una cita completada', 400);
     }
 
-    // Verificar si tiene pagos relacionados (opcional - depende de la lógica de negocio)
-    const hasPayments = await queryOne<any>(`
-      SELECT COUNT(*) as count FROM payments 
-      WHERE appointmentId = ? AND status = 'PAID'
+    // Verificar si la cita tiene factura asociada
+    const invoice = await queryOne<any>(`
+      SELECT id, amount FROM invoices WHERE appointmentId = ?
     `, [id]);
 
-    if (hasPayments && hasPayments.count > 0) {
-      throw new AppError('No se puede cancelar una cita con pagos realizados', 400);
+    if (invoice) {
+      console.log('📄 Factura encontrada para la cita:', invoice.id);
+      
+      // Verificar si la factura tiene pagos abonados
+      const hasPayments = await queryOne<any>(`
+        SELECT COUNT(*) as count, COALESCE(SUM(amount), 0) as totalPaid 
+        FROM payments 
+        WHERE invoiceId = ? AND status = 'PAID'
+      `, [invoice.id]);
+
+      console.log('💰 Pagos de la factura:', hasPayments);
+
+      if (hasPayments && hasPayments.count > 0 && hasPayments.totalPaid > 0) {
+        throw new AppError('No se puede cancelar una cita que tiene una factura con pagos abonados', 400);
+      }
+
+      console.log('🗑️ La factura no tiene pagos, se eliminará junto con la cita');
+      
+      // Eliminar la factura ya que no tiene pagos
+      await query(`DELETE FROM invoices WHERE id = ?`, [invoice.id]);
+      console.log('✅ Factura eliminada exitosamente');
+    } else {
+      console.log('📋 No se encontró factura asociada a la cita');
     }
 
     console.log('✅ Validaciones pasadas, procediendo con la cancelación');

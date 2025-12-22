@@ -373,23 +373,37 @@ export const getTreatmentsReport = async (
     
     const { startDate: formattedStartDate, endDate: formattedEndDate } = validateAndFormatDates(startDate, endDate);
     
-    // Consulta ultra-básica de tratamientos para Railway debugging
+    // Consulta real de tratamientos más populares basada en citas
     const treatmentsQuery = `
       SELECT 
-        name,
-        1 as count,
-        100 as revenue
-      FROM treatments
-      LIMIT 5
+        t.name,
+        COUNT(at.treatmentId) as count,
+        SUM(at.price * at.quantity) as revenue
+      FROM treatments t
+      INNER JOIN appointment_treatments at ON t.id = at.treatmentId
+      INNER JOIN appointments a ON at.appointmentId = a.id
+      WHERE a.date BETWEEN ? AND ?
+        AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
+        ${companyId ? 'AND t.companyId = ?' : ''}
+      GROUP BY t.id, t.name
+      ORDER BY COUNT(at.treatmentId) DESC
+      LIMIT 10
     `;
     
-    // Consulta ultra-básica para total de tratamientos
+    // Consulta para total de tratamientos utilizados en el período
     const totalTreatmentsCountQuery = `
-      SELECT COUNT(*) as totalCount
-      FROM treatments
+      SELECT COUNT(at.treatmentId) as totalCount
+      FROM appointment_treatments at
+      INNER JOIN appointments a ON at.appointmentId = a.id
+      WHERE a.date BETWEEN ? AND ?
+        AND a.status NOT IN ('CANCELLED', 'NO_SHOW')
+        ${companyId ? 'AND a.companyId = ?' : ''}
     `;
     
-    const params: any[] = [];
+    const params: any[] = [formattedStartDate, formattedEndDate];
+    if (companyId) {
+      params.push(companyId);
+    }
     
     console.log('🔧 Parámetros SQL (Treatments - Railway debugging):', params);
     console.log('📊 Consulta Treatments:', treatmentsQuery.replace(/\s+/g, ' ').trim());

@@ -374,8 +374,14 @@ const Treatments: React.FC = () => {
       const response = await treatmentService.updateTreatment(selectedTreatment.id, editFormData);
 
       if (response.success) {
-        // Recargar la lista de tratamientos para obtener datos actualizados
-        await loadTreatments();
+        // Actualizar el tratamiento en la lista local sin recargar
+        setTreatments(prevTreatments => 
+          prevTreatments.map(t => 
+            t.id === selectedTreatment.id 
+              ? { ...t, ...editFormData, id: selectedTreatment.id }
+              : t
+          )
+        );
 
         handleCloseEditModal();
 
@@ -504,8 +510,10 @@ const Treatments: React.FC = () => {
       const response = await treatmentService.deleteTreatment(selectedTreatment.id);
 
       if (response.success) {
-        // Recargar la lista de tratamientos para obtener datos actualizados
-        await loadTreatments();
+        // Eliminar el tratamiento de la lista local sin recargar
+        setTreatments(prevTreatments => 
+          prevTreatments.filter(t => t.id !== selectedTreatment.id)
+        );
 
         handleCloseDeleteModal();
 
@@ -626,8 +634,14 @@ const Treatments: React.FC = () => {
       const response = await treatmentService.toggleTreatmentStatus(treatment.id);
 
       if (response.success) {
-        // Recargar la lista de tratamientos para obtener datos actualizados
-        await loadTreatments();
+        // Actualizar el estado del tratamiento en la lista local sin recargar
+        setTreatments(prevTreatments => 
+          prevTreatments.map(t => 
+            t.id === treatment.id 
+              ? { ...t, status: treatment.status === 'active' ? 'inactive' : 'active', isActive: !t.isActive }
+              : t
+          )
+        );
 
         const statusText = treatment.status === 'active' ? 'desactivado' : 'activado';
         toast.success(`Tratamiento ${statusText} exitosamente`, {
@@ -655,8 +669,18 @@ const Treatments: React.FC = () => {
       const response = await treatmentService.createTreatment(formData);
 
       if (response.success) {
-        // Recargar la lista de tratamientos para obtener datos actualizados
-        await loadTreatments();
+        // Agregar el nuevo tratamiento a la lista local sin recargar
+        const newTreatment: Treatment = {
+          ...formData,
+          id: response.data?.id || Date.now().toString(),
+          status: 'active' as const,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          canDelete: true
+        };
+        
+        setTreatments(prevTreatments => [newTreatment, ...prevTreatments]);
 
         handleCloseModal();
 
@@ -821,6 +845,12 @@ const Treatments: React.FC = () => {
                   placeholder="Min"
                   value={filters.minPrice}
                   onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                  onWheel={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    e.currentTarget.blur(); 
+                    return false; 
+                  }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
                 <input
@@ -828,6 +858,12 @@ const Treatments: React.FC = () => {
                   placeholder="Max"
                   value={filters.maxPrice}
                   onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                  onWheel={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    e.currentTarget.blur(); 
+                    return false; 
+                  }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                 />
               </div>
@@ -1165,6 +1201,12 @@ const Treatments: React.FC = () => {
                         onChange={e =>
                           setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })
                         }
+                        onWheel={(e) => { 
+                          e.preventDefault(); 
+                          e.stopPropagation(); 
+                          e.currentTarget.blur(); 
+                          return false; 
+                        }}
                         min="1"
                         max="480"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1183,6 +1225,12 @@ const Treatments: React.FC = () => {
                         onChange={e =>
                           setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
                         }
+                        onWheel={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    e.currentTarget.blur(); 
+                    return false; 
+                  }}
                         min="0"
                         step="0.01"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1533,6 +1581,12 @@ const Treatments: React.FC = () => {
                             duration: parseInt(e.target.value) || 0,
                           })
                         }
+                        onWheel={(e) => { 
+                          e.preventDefault(); 
+                          e.stopPropagation(); 
+                          e.currentTarget.blur(); 
+                          return false; 
+                        }}
                         min="1"
                         max="480"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -1554,6 +1608,12 @@ const Treatments: React.FC = () => {
                             price: parseFloat(e.target.value) || 0,
                           })
                         }
+                        onWheel={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    e.currentTarget.blur(); 
+                    return false; 
+                  }}
                         min="0"
                         step="0.01"
                         className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"

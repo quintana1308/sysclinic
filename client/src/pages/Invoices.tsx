@@ -99,7 +99,8 @@ const Invoices: React.FC = () => {
     limit: 10,
     search: '',
     status: undefined,
-    clientId: undefined
+    clientId: undefined,
+    createdDate: ''
   });
   
   // Formulario
@@ -189,7 +190,7 @@ const Invoices: React.FC = () => {
   useEffect(() => {
     loadInvoices();
     loadStats();
-  }, [filters.status, filters.clientId, filters.page, filters.limit]);
+  }, [filters.status, filters.clientId, filters.page, filters.limit, filters.createdDate]);
 
   // Funciones de manejo
   const handleCreateInvoice = async (e: React.FormEvent) => {
@@ -201,7 +202,16 @@ const Invoices: React.FC = () => {
         toast.success('Factura creada exitosamente');
         setShowCreateModal(false);
         resetForm();
-        loadInvoices();
+        // Agregar la nueva factura a la lista local sin recargar
+        const newInvoice: Invoice = {
+          ...formData,
+          id: response.data?.id || Date.now().toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'PENDING',
+          paymentHistory: []
+        };
+        setInvoices(prevInvoices => [newInvoice, ...prevInvoices]);
         loadStats();
       }
     } catch (error) {
@@ -215,7 +225,14 @@ const Invoices: React.FC = () => {
       const response = await invoiceService.updateInvoiceStatus(invoiceId, status);
       if (response.success) {
         toast.success('Estado actualizado exitosamente');
-        loadInvoices();
+        // Actualizar el estado de la factura en la lista local sin recargar
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => 
+            inv.id === invoiceId 
+              ? { ...inv, status }
+              : inv
+          )
+        );
         loadStats();
       }
     } catch (error) {
@@ -231,7 +248,10 @@ const Invoices: React.FC = () => {
       const response = await invoiceService.deleteInvoice(invoiceId);
       if (response.success) {
         toast.success('Factura eliminada exitosamente');
-        loadInvoices();
+        // Eliminar la factura de la lista local sin recargar
+        setInvoices(prevInvoices => 
+          prevInvoices.filter(inv => inv.id !== invoiceId)
+        );
         loadStats();
       }
     } catch (error) {
@@ -274,7 +294,14 @@ const Invoices: React.FC = () => {
         toast.success('Descuento aplicado exitosamente');
         setShowDiscountModal(false);
         resetDiscountForm();
-        loadInvoices();
+        // Actualizar la factura con el descuento en la lista local sin recargar
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => 
+            inv.id === selectedInvoice.id 
+              ? { ...inv, discountAmount: discountData.discountValue, amount: response.data?.newAmount || inv.amount }
+              : inv
+          )
+        );
         loadStats();
       }
     } catch (error) {
@@ -290,7 +317,14 @@ const Invoices: React.FC = () => {
       const response = await invoiceService.removeDiscount(invoiceId);
       if (response.success) {
         toast.success('Descuento removido exitosamente');
-        loadInvoices();
+        // Actualizar la factura removiendo el descuento en la lista local sin recargar
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => 
+            inv.id === invoiceId 
+              ? { ...inv, discountAmount: 0, amount: response.data?.newAmount || inv.amount }
+              : inv
+          )
+        );
         loadStats();
       }
     } catch (error) {
@@ -538,7 +572,8 @@ const Invoices: React.FC = () => {
 
       // Paso 2: Determinar el nuevo estado de la factura
       const invoiceAmount = parseFloat(selectedInvoice.amount?.toString() || '0');
-      const newStatus = paymentData.amount >= invoiceAmount ? 'PAID' : 'PARTIAL';
+      const currentTotalPaid = (selectedInvoice.totalPaid || 0) + paymentData.amount;
+      const newStatus = currentTotalPaid >= invoiceAmount ? 'PAID' : 'PARTIAL';
 
       // Paso 3: Actualizar el estado de la factura
       const invoiceResponse = await invoiceService.updateInvoiceStatus(selectedInvoice.id, newStatus);
@@ -547,11 +582,41 @@ const Invoices: React.FC = () => {
         toast.success(`Abono registrado exitosamente. Factura marcada como ${newStatus === 'PAID' ? 'pagada' : 'parcial'}.`);
         setShowPaymentModal(false);
         
-        // Recargar los detalles de la factura para mostrar el historial actualizado
-        await reloadSelectedInvoiceDetails(selectedInvoice.id);
+        // Calcular nuevos montos para actualización inmediata
+        const newTotalPaid = (selectedInvoice.totalPaid || 0) + paymentData.amount;
+        const newRemainingAmount = selectedInvoice.amount - newTotalPaid;
         
-        loadInvoices();
+        // Actualizar selectedInvoice inmediatamente para reflejar cambios visuales
+        const updatedInvoice: Invoice = {
+          ...selectedInvoice,
+          status: newStatus as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+          totalPaid: newTotalPaid,
+          remainingAmount: newRemainingAmount,
+          paymentHistory: [...(selectedInvoice.paymentHistory || []), {
+            id: Date.now().toString(),
+            amount: paymentData.amount,
+            method: paymentData.paymentMethod,
+            notes: paymentData.notes,
+            transactionId: paymentData.transactionId,
+            createdAt: new Date().toISOString()
+          }]
+        };
+        
+        setSelectedInvoice(updatedInvoice);
+        
+        // Actualizar la factura en la lista local sin recargar
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => 
+            inv.id === selectedInvoice.id ? updatedInvoice : inv
+          )
+        );
+        
+        // Recargar solo la tabla de facturas manteniendo la posición
+        await loadInvoices();
         loadStats();
+        
+        // Recargar los detalles de la factura para sincronizar con el servidor
+        await reloadSelectedInvoiceDetails(selectedInvoice.id);
       } else {
         toast.success('Abono registrado exitosamente');
         toast.error('Error al actualizar el estado de la factura: ' + invoiceResponse.message);
@@ -604,7 +669,8 @@ const Invoices: React.FC = () => {
                   limit: 10,
                   search: '',
                   status: undefined,
-                  clientId: undefined
+                  clientId: undefined,
+                  createdDate: ''
                 });
                 loadInvoices();
               }}
@@ -624,7 +690,7 @@ const Invoices: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900">🔍 Filtros de Búsqueda</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Búsqueda */}
             <div>
               <label className="block text-sm font-medium text-pink-700 mb-2">
@@ -661,6 +727,22 @@ const Invoices: React.FC = () => {
                 <option value="PARTIAL">🔄 Parciales</option>
                 <option value="CANCELLED">❌ Canceladas</option>
               </select>
+            </div>
+
+            {/* Filtro por fecha de creación */}
+            <div>
+              <label className="block text-sm font-medium text-pink-700 mb-2">
+                📅 Fecha de Creación
+              </label>
+              <input
+                type="date"
+                value={filters.createdDate || ''}
+                onChange={(e) => {
+                  setFilters({ ...filters, createdDate: e.target.value, page: 1 });
+                }}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                placeholder="Seleccionar fecha de creación"
+              />
             </div>
           </div>
         </div>
@@ -813,7 +895,9 @@ const Invoices: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <div className="text-sm font-medium text-gray-900">
-                          {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                          {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('es-ES', {
+                            timeZone: 'America/Caracas'
+                          }) : 'N/A'}
                         </div>
                         <div className="text-xs text-gray-400">
                           📅 Creación
@@ -949,6 +1033,7 @@ const Invoices: React.FC = () => {
                   step="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                  onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-lg"
                   min="0"
                   required
@@ -1068,6 +1153,7 @@ const Invoices: React.FC = () => {
                       {selectedInvoice.discountAppliedAt && (
                         <div className="text-green-600 text-xs mt-1">
                           Aplicado el: {new Date(selectedInvoice.discountAppliedAt).toLocaleDateString('es-ES', {
+                            timeZone: 'America/Caracas',
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
@@ -1114,7 +1200,19 @@ const Invoices: React.FC = () => {
                     <div>
                       <span className="text-sm text-gray-700 font-medium">Fecha y Hora:</span>
                       <p className="text-sm text-gray-800 bg-white p-2 rounded border">
-                        {selectedInvoice.appointment.date ? new Date(selectedInvoice.appointment.date).toLocaleDateString('es-ES') : 'N/A'}
+                        {selectedInvoice.appointment.date ? (() => {
+                          // Crear fecha local para evitar problemas de zona horaria
+                          const dateStr = selectedInvoice.appointment.date.toString();
+                          const [year, month, day] = dateStr.includes('T') 
+                            ? dateStr.split('T')[0].split('-')
+                            : dateStr.split('-');
+                          const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                          return localDate.toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          });
+                        })() : 'N/A'}
                         {selectedInvoice.appointment.startTime && `, ${selectedInvoice.appointment.startTime.substring(11, 16)}`}
                       </p>
                     </div>
@@ -1201,7 +1299,11 @@ const Invoices: React.FC = () => {
                                 </div>
                                 <div className="flex items-center space-x-4 mt-1">
                                   <div className="text-sm text-gray-600">
-                                    📅 {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('es-ES') : new Date(payment.createdAt).toLocaleDateString('es-ES')}
+                                    📅 {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString('es-ES', {
+                                      timeZone: 'America/Caracas'
+                                    }) : new Date(payment.createdAt).toLocaleDateString('es-ES', {
+                                      timeZone: 'America/Caracas'
+                                    })}
                                   </div>
                                   <div className="text-sm text-gray-600">
                                     💳 {payment.method}
@@ -1356,6 +1458,7 @@ const Invoices: React.FC = () => {
                           const validAmount = Math.min(newAmount, remainingAmount);
                           setPaymentData({ ...paymentData, amount: validAmount });
                         }}
+                        onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                         className={`block w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-pink-500 focus:border-pink-500 ${
                           isAmountValid ? 'border-gray-300' : 'border-red-300 bg-red-50'
                         }`}
@@ -1533,26 +1636,26 @@ const Invoices: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      📅 Fecha de Pago
+                      💰 Fecha de Pago
                     </label>
                     <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border border-gray-200">
                       {selectedPayment.paidDate 
                         ? new Date(selectedPayment.paidDate).toLocaleDateString('es-ES', {
+                            timeZone: 'America/Caracas',
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
                           })
-                        : 'No especificada'
-                      }
+                        : 'No especificada'}
                     </div>
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       🗓️ Fecha de Registro
                     </label>
                     <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded border border-gray-200">
                       {new Date(selectedPayment.createdAt).toLocaleDateString('es-ES', {
+                        timeZone: 'America/Caracas',
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
@@ -1725,6 +1828,7 @@ const Invoices: React.FC = () => {
                     step={discountData.discountType === 'PERCENTAGE' ? '0.1' : '0.01'}
                     value={discountData.discountValue}
                     onChange={(e) => setDiscountData({ ...discountData, discountValue: parseFloat(e.target.value) || 0 })}
+                    onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder={discountData.discountType === 'PERCENTAGE' ? 'Ej: 15' : 'Ej: 25.00'}
                     required

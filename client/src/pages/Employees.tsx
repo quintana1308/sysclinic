@@ -154,7 +154,14 @@ const Employees: React.FC = () => {
           role: 'employee',
           isActive: true
         });
-        loadEmployees(); // Recargar la lista
+        // Actualizar el empleado en la lista local sin recargar
+        setEmployees(prevEmployees => 
+          prevEmployees.map(emp => 
+            emp.id === selectedEmployee.id 
+              ? { ...emp, ...editFormData, id: selectedEmployee.id }
+              : emp
+          )
+        );
       } else {
         toast.error('Error al actualizar empleado');
       }
@@ -216,7 +223,17 @@ const Employees: React.FC = () => {
           position: '',
           password: ''
         });
-        await loadEmployees(); // Recargar la lista
+        // Agregar el nuevo empleado a la lista local sin recargar
+        const newEmployee: Employee = {
+          ...createFormData,
+          id: response.data?.id || Date.now().toString(),
+          hireDate: new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          role: 'employee',
+          isActive: true
+        };
+        setEmployees(prevEmployees => [newEmployee, ...prevEmployees]);
       } else {
         const errorMessage = response.message || 'Error al crear empleado';
         toast.error(errorMessage);
@@ -287,7 +304,10 @@ const Employees: React.FC = () => {
         setShowDeleteModal(false);
         setSelectedEmployee(null);
         setEmployeeAppointments([]);
-        await loadEmployees(); // Recargar la lista
+        // Eliminar el empleado de la lista local sin recargar
+        setEmployees(prevEmployees => 
+          prevEmployees.filter(emp => emp.id !== selectedEmployee.id)
+        );
       } else {
         const errorMessage = response.message || 'Error al eliminar empleado';
         toast.error(errorMessage);
@@ -982,8 +1002,10 @@ const Employees: React.FC = () => {
                     step="0.01"
                     value={editFormData.salary}
                     onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
+                    onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Salario mensual"
+                    placeholder="Ej: 1500.00"
+                    min="0"
                   />
                 </div>
 

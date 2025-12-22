@@ -10,7 +10,8 @@ import {
   getInvoiceStats,
   markOverdueInvoices,
   applyDiscountToInvoice,
-  removeDiscountFromInvoice
+  removeDiscountFromInvoice,
+  checkInvoiceByAppointment
 } from '../controllers/invoice.controller';
 import { debugPayments } from '../controllers/payment.controller';
 
@@ -18,6 +19,12 @@ const router = Router();
 
 // Todas las rutas requieren autenticación
 router.use(authenticate);
+
+// Verificar si existe factura por appointmentId
+router.get('/check-by-appointment/:appointmentId', 
+  requirePermission({ resource: 'invoices', action: 'read' }),
+  checkInvoiceByAppointment
+);
 
 // Obtener todas las facturas
 router.get('/', 
@@ -43,16 +50,16 @@ router.post('/',
   createInvoice
 );
 
-// Debug: Verificar pagos de una factura
-router.get('/:id/debug-payments', 
-  requirePermission({ resource: 'invoices', action: 'read' }),
-  debugPayments
-);
-
 // Obtener factura específica
 router.get('/:id', 
   requirePermission({ resource: 'invoices', action: 'read' }),
   getInvoiceById
+);
+
+// Debug: Verificar pagos de una factura
+router.get('/:id/debug-payments', 
+  requirePermission({ resource: 'invoices', action: 'read' }),
+  debugPayments
 );
 
 // Actualizar factura
