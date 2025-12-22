@@ -387,7 +387,7 @@ export const getTreatmentsReport = async (
         ${companyId ? 'AND t.companyId = ?' : ''}
       GROUP BY t.id, t.name
       ORDER BY COUNT(at.treatmentId) DESC
-      LIMIT 10
+      LIMIT 5
     `;
     
     // Consulta para total de tratamientos utilizados en el período
