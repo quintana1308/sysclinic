@@ -1036,7 +1036,8 @@ const Appointments: React.FC = () => {
       
       // Verificar si ya existe una factura para esta cita
       const token = localStorage.getItem('token');
-      const invoiceCheck = await fetch(`http://localhost:5000/api/invoices/check-by-appointment/${selectedAppointment.id}`, {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const invoiceCheck = await fetch(`${API_BASE_URL}/billing/check-by-appointment/${selectedAppointment.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
