@@ -570,57 +570,16 @@ const Invoices: React.FC = () => {
         throw new Error(paymentResponse.message || 'Error al registrar el pago');
       }
 
-      // Paso 2: Determinar el nuevo estado de la factura
-      const invoiceAmount = parseFloat(selectedInvoice.amount?.toString() || '0');
-      const currentTotalPaid = (selectedInvoice.totalPaid || 0) + paymentData.amount;
-      const newStatus = currentTotalPaid >= invoiceAmount ? 'PAID' : 'PARTIAL';
-
-      // Paso 3: Actualizar el estado de la factura
-      const invoiceResponse = await invoiceService.updateInvoiceStatus(selectedInvoice.id, newStatus);
+      // El backend automáticamente recalcula y actualiza el estado de la factura
+      toast.success('Abono registrado exitosamente');
+      setShowPaymentModal(false);
       
-      if (invoiceResponse.success) {
-        toast.success(`Abono registrado exitosamente. Factura marcada como ${newStatus === 'PAID' ? 'pagada' : 'parcial'}.`);
-        setShowPaymentModal(false);
-        
-        // Calcular nuevos montos para actualización inmediata
-        const newTotalPaid = (selectedInvoice.totalPaid || 0) + paymentData.amount;
-        const newRemainingAmount = selectedInvoice.amount - newTotalPaid;
-        
-        // Actualizar selectedInvoice inmediatamente para reflejar cambios visuales
-        const updatedInvoice: Invoice = {
-          ...selectedInvoice,
-          status: newStatus as 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED',
-          totalPaid: newTotalPaid,
-          remainingAmount: newRemainingAmount,
-          paymentHistory: [...(selectedInvoice.paymentHistory || []), {
-            id: Date.now().toString(),
-            amount: paymentData.amount,
-            method: paymentData.paymentMethod,
-            notes: paymentData.notes,
-            transactionId: paymentData.transactionId,
-            createdAt: new Date().toISOString()
-          }]
-        };
-        
-        setSelectedInvoice(updatedInvoice);
-        
-        // Actualizar la factura en la lista local sin recargar
-        setInvoices(prevInvoices => 
-          prevInvoices.map(inv => 
-            inv.id === selectedInvoice.id ? updatedInvoice : inv
-          )
-        );
-        
-        // Recargar solo la tabla de facturas manteniendo la posición
-        await loadInvoices();
-        loadStats();
-        
-        // Recargar los detalles de la factura para sincronizar con el servidor
-        await reloadSelectedInvoiceDetails(selectedInvoice.id);
-      } else {
-        toast.success('Abono registrado exitosamente');
-        toast.error('Error al actualizar el estado de la factura: ' + invoiceResponse.message);
-      }
+      // Recargar las facturas y estadísticas desde el servidor
+      await loadInvoices();
+      loadStats();
+      
+      // Recargar los detalles de la factura para mostrar el estado actualizado
+      await reloadSelectedInvoiceDetails(selectedInvoice.id);
     } catch (error: any) {
       console.error('Error procesando pago:', error);
       toast.error('Error al procesar el abono: ' + (error.message || 'Error desconocido'));

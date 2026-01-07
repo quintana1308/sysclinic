@@ -150,6 +150,51 @@ export const createPayment = async (
       transactionId: transactionId || null
     });
 
+    // Si el pago está asociado a una factura, recalcular automáticamente el estado
+    if (invoiceId) {
+      console.log('🔄 Recalculando estado de la factura:', invoiceId);
+      
+      // Obtener el monto total de la factura y el total pagado
+      const invoiceData = await queryOne<any>(`
+        SELECT 
+          i.id,
+          i.amount as invoiceAmount,
+          COALESCE(SUM(p.amount), 0) as totalPaid
+        FROM invoices i
+        LEFT JOIN payments p ON i.id = p.invoiceId AND p.status = 'PAID'
+        WHERE i.id = ?
+        GROUP BY i.id, i.amount
+      `, [invoiceId]);
+
+      if (invoiceData) {
+        const { invoiceAmount, totalPaid } = invoiceData;
+        let newStatus = 'PENDING';
+
+        // Determinar el nuevo estado basado en el total pagado
+        if (totalPaid >= invoiceAmount) {
+          newStatus = 'PAID';
+        } else if (totalPaid > 0) {
+          newStatus = 'PARTIAL';
+        }
+
+        console.log('📊 Cálculo de estado:', {
+          invoiceAmount,
+          totalPaid,
+          newStatus,
+          difference: invoiceAmount - totalPaid
+        });
+
+        // Actualizar el estado de la factura
+        await query(`
+          UPDATE invoices 
+          SET status = ?, updatedAt = NOW()
+          WHERE id = ?
+        `, [newStatus, invoiceId]);
+
+        console.log(`✅ Estado de factura actualizado a: ${newStatus}`);
+      }
+    }
+
     const response: ApiResponse = {
       success: true,
       message: 'Pago registrado exitosamente',

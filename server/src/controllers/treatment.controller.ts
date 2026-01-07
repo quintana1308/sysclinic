@@ -164,8 +164,8 @@ export const createTreatment = async (
       throw new AppError('La duración debe ser mayor a 0 minutos', 400);
     }
 
-    if (price <= 0) {
-      throw new AppError('El precio debe ser mayor a 0', 400);
+    if (price < 0) {
+      throw new AppError('El precio no puede ser negativo', 400);
     }
 
     // Obtener empresa actual
@@ -259,8 +259,8 @@ export const updateTreatment = async (
       throw new AppError('La duración debe ser mayor a 0 minutos', 400);
     }
 
-    if (price && price <= 0) {
-      throw new AppError('El precio debe ser mayor a 0', 400);
+    if (price !== undefined && price < 0) {
+      throw new AppError('El precio no puede ser negativo', 400);
     }
 
     // Verificar si ya existe otro tratamiento con el mismo nombre

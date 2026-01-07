@@ -147,6 +147,8 @@ const Appointments: React.FC = () => {
 
   // Data for dropdowns
   const [clients, setClients] = useState<Client[]>([]);
+  const [searchedClients, setSearchedClients] = useState<Client[]>([]);
+  const [isSearchingClients, setIsSearchingClients] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -889,6 +891,13 @@ const Appointments: React.FC = () => {
     setClientSearch(value);
     setFormData({ ...formData, clientName: value, clientId: '' });
     setShowClientDropdown(value.length > 0);
+    
+    // Buscar en el servidor si hay más de 2 caracteres
+    if (value.length >= 2) {
+      searchClientsInServer(value);
+    } else {
+      setSearchedClients([]);
+    }
   };
 
   const handleClientSelect = (client: Client) => {
@@ -898,7 +907,40 @@ const Appointments: React.FC = () => {
     setShowClientDropdown(false);
   };
 
-  const filteredClients = clients.filter(client => {
+  // Búsqueda dinámica de clientes
+  const searchClientsInServer = async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setSearchedClients([]);
+      return;
+    }
+
+    setIsSearchingClients(true);
+    try {
+      const response = await clientService.getClients({ 
+        search: searchTerm, 
+        status: 'active',
+        limit: 50 // Limitar resultados de búsqueda
+      });
+      
+      if (response.success && response.data) {
+        const mappedClients: Client[] = response.data.map((client: any) => ({
+          id: client.id,
+          firstName: client.firstName || client.user?.firstName || '',
+          lastName: client.lastName || client.user?.lastName || '',
+          email: client.email || client.user?.email || '',
+          name: `${client.firstName || client.user?.firstName || ''} ${client.lastName || client.user?.lastName || ''}`.trim()
+        }));
+        setSearchedClients(mappedClients);
+      }
+    } catch (error) {
+      console.error('Error buscando clientes:', error);
+    } finally {
+      setIsSearchingClients(false);
+    }
+  };
+
+  // Usar resultados de búsqueda si hay término de búsqueda, sino usar clientes cargados
+  const filteredClients = clientSearch.length >= 2 ? searchedClients : clients.filter(client => {
     const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
     const email = client.email.toLowerCase();
     const searchTerm = clientSearch.toLowerCase();
@@ -2028,11 +2070,15 @@ const Appointments: React.FC = () => {
                       onChange={(e) => handleClientSearch(e.target.value)}
                       onFocus={() => setShowClientDropdown(clientSearch.length > 0)}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Buscar cliente por nombre o email..."
+                      placeholder="Buscar cliente por nombre o email... (mín. 2 caracteres)"
                       required
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                      {isSearchingClients ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+                      ) : (
+                        <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                      )}
                     </div>
                   </div>
                   

@@ -670,8 +670,6 @@ export const generateInvoiceFromAppointment = async (
       return existingInvoice.id;
     }
 
-    const invoiceId = generateId();
-    
     // Asegurar que el monto sea un número válido
     let amount = 0;
     if (appointment.totalAmount && !isNaN(parseFloat(appointment.totalAmount))) {
@@ -679,6 +677,14 @@ export const generateInvoiceFromAppointment = async (
     }
     
     console.log('💰 Monto calculado para la factura:', amount, 'desde totalAmount:', appointment.totalAmount);
+    
+    // NO crear factura si el monto total es $0
+    if (amount <= 0) {
+      console.log('⚠️ No se creará factura porque el monto es $0');
+      return ''; // Retornar string vacío para indicar que no se creó factura
+    }
+
+    const invoiceId = generateId();
     
     const clientName = `${appointment.clientFirstName} ${appointment.clientLastName}`;
     const description = `Factura por ${appointment.treatmentNames || 'Tratamientos'} - ${clientName}`;
